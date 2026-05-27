@@ -59,7 +59,7 @@ const KEY_ACTIONS = {
     // 可配置（初始映射，运行时由 settings 覆盖）
     'KeyF':         'clearInput',
     'KeyD':         'delete',
-    'KeyS':         'clearOutput',
+    'KeyC':         'clearOutput',
     'KeyR':         'readAloud',
 };
 
@@ -67,7 +67,7 @@ const KEY_ACTIONS = {
 const CONFIGURABLE_ACTIONS = {
     clearInput:  { defaultKey: 'KeyF', label: '清空当前输入' },
     delete:      { defaultKey: 'KeyD', label: '删除上一个字符' },
-    clearOutput: { defaultKey: 'KeyS', label: '清空输出区' },
+    clearOutput: { defaultKey: 'KeyC', label: '清空输出区' },
 };
 
 // 组合键（修饰键 + 按键匹配时触发）

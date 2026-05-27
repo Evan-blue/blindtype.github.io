@@ -169,7 +169,7 @@
         <div class="welcome-mask-content">
             <h2 class="welcome-mask-title">欢迎使用盲文输入工具</h2>
             <p class="welcome-mask-desc">这是一个面向视障人士的盲文输入工具，支持拼音、数字、英文盲文输入，并提供语音播报反馈。</p>
-            <p class="welcome-mask-question">是否需要观看新手教程？</p>
+            <p class="welcome-mask-question">是否需要开始新手教程？</p>
             <div class="welcome-mask-actions">
                 <button class="welcome-btn welcome-btn-primary" id="welcomeBtnYes" autofocus>开始教程</button>
                 <button class="welcome-btn welcome-btn-secondary" id="welcomeBtnNo">跳过</button>
@@ -211,12 +211,13 @@
                 <div class="help-row"><kbd id="helpReadAloud"></kbd> 朗读</div>
                 <div class="help-row"><kbd id="helpPageUp"></kbd> / <kbd id="helpPageDown"></kbd> 翻页</div>
                 <div class="help-row"><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> 调整光标</div>
+                <div class="help-row" id="helpRowShiftSelect"><kbd>Shift</kbd>+<kbd>←</kbd> / <kbd>Shift</kbd>+<kbd>→</kbd> 范围选择</div>
             </div>
             <div class="help-section">
                 <h3>组合键</h3>
                 <div class="help-row"><kbd id="helpComboUndo"></kbd> 撤销</div>
                 <div class="help-row"><kbd id="helpComboRedo"></kbd> 重做</div>
-                <div class="help-row"><kbd id="helpComboSelectAll"></kbd> 全选</div>
+                <div class="help-row" id="helpRowSelectAll"><kbd id="helpComboSelectAll"></kbd> 全选</div>
                 <div class="help-row"><kbd id="helpComboSave"></kbd> 保存</div>
                 <div class="help-row"><kbd id="helpComboOpenFile"></kbd> 打开文件</div>
                 <div class="help-row"><kbd id="helpComboResetKeyBindings"></kbd> 自定义键位</div>

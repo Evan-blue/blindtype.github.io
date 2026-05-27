@@ -12,7 +12,7 @@ const DEFAULT_SETTINGS = {
         numpad:   { ...DOT_KEY_DEFAULTS.numpad },
     },
     actionKeyBindings: { ..._defaultActionKeyBindings },
-    speechRate: 3,
+    speechRate: 2,
     debounceSpeech: true,
     maxUndoHistory: 10,
     brailleFontSize: 12,
@@ -364,11 +364,22 @@ function _startSeqBinding() {
     speakText('请按下第1个按键，1号点');
 }
 
+// KEY_ACTIONS 中不可配置的键位（不在 CONFIGURABLE_ACTIONS 管理范围内）
+const _NON_CONFIGURABLE_KEYS = new Set([
+    'Numpad0', 'NumpadDivide', 'NumpadMultiply',
+    'Backspace', 'Delete', 'Space',
+    'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+    'KeyG', 'KeyH',
+]);
+
 function applyActionKeyBindings() {
     const akb = SETTINGS.actionKeyBindings;
-    for (const [action, cfg] of Object.entries(CONFIGURABLE_ACTIONS)) {
-        const oldKey = cfg.defaultKey;
-        if (oldKey && KEY_ACTIONS[oldKey] === action) delete KEY_ACTIONS[oldKey];
+    const configurableActions = new Set(Object.keys(CONFIGURABLE_ACTIONS));
+    // 清理可配置动作的旧键位（保留不可配置键如 NumpadDivide、Backspace）
+    for (const [key, act] of Object.entries(KEY_ACTIONS)) {
+        if (configurableActions.has(act) && !_NON_CONFIGURABLE_KEYS.has(key)) {
+            delete KEY_ACTIONS[key];
+        }
     }
     for (const [action, key] of Object.entries(akb)) {
         if (key) KEY_ACTIONS[key] = action;

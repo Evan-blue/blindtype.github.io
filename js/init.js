@@ -243,6 +243,9 @@ loadAllMappings().then(async () => {
             return;
         }
 
+        // 修饰键组合（Ctrl/Alt/Meta）留给浏览器，本项目不拦截
+        if (e.ctrlKey || e.altKey || e.metaKey) return;
+
         // 小键盘：用 e.code 查找
         if (e.code.startsWith('Numpad')) {
             if (tryDispatch(e.code)) {
@@ -361,6 +364,12 @@ loadAllMappings().then(async () => {
             const combos = comboMap[action];
             if (el && combos && combos.length) el.textContent = combos.join(' / ');
         }
+
+        // 多选关闭时隐藏相关条目
+        const selectAllRow = document.getElementById('helpRowSelectAll');
+        if (selectAllRow) selectAllRow.style.display = SETTINGS.multiSelect ? '' : 'none';
+        const shiftSelectRow = document.getElementById('helpRowShiftSelect');
+        if (shiftSelectRow) shiftSelectRow.style.display = SETTINGS.multiSelect ? '' : 'none';
     }
 
     /**
@@ -650,6 +659,8 @@ loadAllMappings().then(async () => {
                 renderOutput();
             }
             saveSettings();
+            // 帮助面板打开时刷新，同步多选相关条目
+            if (helpSlide.classList.contains('open')) renderHelpPanel();
         });
     }
 
