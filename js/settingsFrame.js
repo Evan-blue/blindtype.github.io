@@ -22,6 +22,7 @@ const DEFAULT_SETTINGS = {
     cursorJumpMode: 'sentenceEnd',
     punctAutoSpacing: true,
     multiSelect: false,
+    forceWelcome: false,
 };
 
 const DOT_NAMES = ['①点', '②点', '③点', '④点', '⑤点', '⑥点'];
@@ -142,6 +143,7 @@ function loadSettings() {
     if (SETTINGS.punctAutoSpacing === undefined) SETTINGS.punctAutoSpacing = DEFAULT_SETTINGS.punctAutoSpacing;
     if (SETTINGS.multiSelect === undefined) SETTINGS.multiSelect = DEFAULT_SETTINGS.multiSelect;
     if (SETTINGS.allowSpeech === undefined) SETTINGS.allowSpeech = DEFAULT_SETTINGS.allowSpeech;
+    if (SETTINGS.forceWelcome === undefined) SETTINGS.forceWelcome = DEFAULT_SETTINGS.forceWelcome;
     applyBrailleFontSize();
 
     // 清理旧版备选键组存储（已迁移至 SETTINGS.keyBindings）

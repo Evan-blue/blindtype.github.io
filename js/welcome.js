@@ -1,7 +1,6 @@
 // welcome.js - 首次访问欢迎遮罩
 
 const WELCOME_KEY = 'braille-welcome-shown';
-const FORCE_WELCOME_KEY = 'braille-force-welcome';
 const COOLDOWN_DAYS = 7;
 const COOLDOWN_MS = COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
 const welcomeMask = document.getElementById('welcomeMask');
@@ -12,7 +11,7 @@ let _welcomeInterval = null;
 let _welcomeActive = false;
 
 function _isForceWelcomeActive() {
-    return localStorage.getItem(FORCE_WELCOME_KEY) === '1';
+    return SETTINGS.forceWelcome === true;
 }
 
 function _markWelcomed() {
@@ -81,8 +80,9 @@ function initWelcome() {
 function initForceWelcomeToggle() {
     const checkbox = document.getElementById('forceWelcome');
     if (!checkbox) return;
-    checkbox.checked = _isForceWelcomeActive();
+    checkbox.checked = SETTINGS.forceWelcome;
     checkbox.addEventListener('change', () => {
-        localStorage.setItem(FORCE_WELCOME_KEY, checkbox.checked ? '1' : '0');
+        SETTINGS.forceWelcome = checkbox.checked;
+        saveSettings();
     });
 }
