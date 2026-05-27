@@ -1,0 +1,262 @@
+// brailleSpeech.js - 语音播报功能
+
+// ── 双通道语音调度器 ──
+// 统一队列，按 channel 标记区分「主通道」（操作反馈）和「教程通道」。
+// 任意时刻只有一条语音在 speechSynthesis 中播放，其余在本队列排队。
+// 这样 cancel() 只会影响当前正在播放的语音，不会误杀另一通道的排队语音。
+
+const _speechQueue = []; // { text, rate, channel:'main'|'tutorial', onend? }
+let _speechPlaying = false;
+let _speechGen = 0;           // 代计数器，忽略已取消语音的过期 onend
+let _speechCurrentChannel = null;
+
+function _playNext() {
+    if (_speechPlaying || _speechQueue.length === 0) {
+        if (!_speechPlaying) {
+            const hasMain = _speechQueue.some(i => i.channel === 'main');
+            if (!hasMain) {
+                const btn = document.getElementById('btnReadAloud');
+                if (btn) btn.textContent = '朗读全部';
+            }
+        }
+        return;
+    }
+    _speechPlaying = true;
+    const gen = ++_speechGen;
+    const item = _speechQueue.shift();
+    _speechCurrentChannel = item.channel;
+    const u = new SpeechSynthesisUtterance(item.text);
+    u.lang = 'zh-CN';
+    u.rate = item.rate;
+    u.onend = () => {
+        if (gen !== _speechGen) return; // 过期回调，忽略
+        _speechPlaying = false;
+        _speechCurrentChannel = null;
+        if (item.onend) item.onend();
+        _playNext();
+    };
+    u.onerror = () => {
+        if (gen !== _speechGen) return;
+        _speechPlaying = false;
+        _speechCurrentChannel = null;
+        _playNext();
+    };
+    window.speechSynthesis.speak(u);
+}
+
+/**
+ * @description: 主通道播报（操作反馈、朗读等），新请求替换排队中的旧请求
+ * @param {string} text  播报内容
+ * @param {number} rate  播报速度
+ * @return {boolean}
+ */
+function speakText(text, rate) {
+    if (!SETTINGS.allowSpeech) return false;
+    if (rate === undefined) rate = SETTINGS.speechRate || 0.9;
+    if (!window.speechSynthesis) return false;
+    // 移除队列中旧的主通道项（保留教程通道项）
+    for (let i = _speechQueue.length - 1; i >= 0; i--) {
+        if (_speechQueue[i].channel === 'main') _speechQueue.splice(i, 1);
+    }
+    _speechQueue.push({ text, rate, channel: 'main' });
+    _playNext();
+    return true;
+}
+
+/**
+ * @description: 停止主通道语音（不影响教程通道）
+ * @return {void}
+ */
+function stopSpeech() {
+    for (let i = _speechQueue.length - 1; i >= 0; i--) {
+        if (_speechQueue[i].channel === 'main') _speechQueue.splice(i, 1);
+    }
+    if (_speechPlaying && _speechCurrentChannel === 'main') {
+        _speechPlaying = false;
+        _speechCurrentChannel = null;
+        window.speechSynthesis.cancel();
+        _playNext();
+    }
+}
+
+/**
+ * @description: 教程通道播报
+ * @param {string} text
+ * @param {number} rate
+ * @param {function} onend 播报自然结束时回调（被取消时不回调）
+ * @return {boolean}
+ */
+function speakTutorialText(text, rate, onend) {
+    if (!SETTINGS.allowSpeech) { if (onend) onend(); return false; }
+    if (!window.speechSynthesis) return false;
+    _speechQueue.push({ text, rate, channel: 'tutorial', onend });
+    _playNext();
+    return true;
+}
+
+/**
+ * @description: 停止教程通道语音（不影响主通道）
+ * @return {void}
+ */
+function stopTutorialSpeech() {
+    for (let i = _speechQueue.length - 1; i >= 0; i--) {
+        if (_speechQueue[i].channel === 'tutorial') _speechQueue.splice(i, 1);
+    }
+    if (_speechPlaying && _speechCurrentChannel === 'tutorial') {
+        _speechPlaying = false;
+        _speechCurrentChannel = null;
+        window.speechSynthesis.cancel();
+        _playNext();
+    }
+}
+
+/**
+ * @description: 停止全部语音（双通道）
+ * @return {void}
+ */
+function cancelAllSpeech() {
+    _speechQueue.length = 0;
+    _speechPlaying = false;
+    _speechCurrentChannel = null;
+    window.speechSynthesis.cancel();
+}
+
+/**
+ * @description: 判断主通道是否有活跃语音
+ * @return {boolean}
+ */
+function isMainSpeechActive() {
+    return (_speechPlaying && _speechCurrentChannel === 'main') ||
+           _speechQueue.some(i => i.channel === 'main');
+}
+
+// ── 盲文字符播报 ──
+
+/**
+ * @description: 播报盲文字符。数字上下文中自动切换为数字读法。
+ * @param {string} input       盲文的onehot编码
+ * @param {number} [rate]      播报速度
+ * @param {object} [opts]      选项
+ * @param {boolean} [opts.forceNumber] 强制按数字映射播报
+ * @return {boolean}
+ */
+function speakBraille(input, rate, opts = {}) {
+    if (typeof rate === 'object') { opts = rate; rate = undefined; }
+    if (rate === undefined) rate = (SETTINGS.speechRate || 0.9) + 0.3;
+    let oneHot;
+    if (typeof input === 'string' && input.includes('+')) {
+        oneHot = input;
+    } else {
+        oneHot = indexToOnehot(input);
+    }
+
+    if (isInNumberContext() || opts.forceNumber) {
+        const digit = NUMBER_MAPPING[oneHot];
+        if (digit) {
+            return speakText(digit.audio || digit.label, rate);
+        }
+    }
+    if (isInEnglishContext()) {
+        const letter = LETTER_MAPPING[oneHot];
+        if (letter && letter.char) {
+            const engItem = outputItems[getEnglishStartIdx()];
+            const isUpper = engItem.letterCase === 'upper';
+            const audioParts = (letter.audio || '').split(' ');
+            return speakText(isUpper ? (audioParts[0] || letter.char[0]) : (audioParts[1] || letter.char[1]), rate);
+        }
+    }
+    if (oneHot === NUMBER_SIGN && NUMBER_MAPPING[oneHot]) {
+        return speakText(NUMBER_MAPPING[oneHot].audio, rate);
+    }
+
+    const entry = _lookupBraille(oneHot);
+    if (!entry) return false;
+
+    const raw = entry.audio || entry.label;
+    if (!raw || !window.speechSynthesis) return false;
+
+    return speakText(pinyinToHanzi(raw), rate);
+}
+
+
+// ── 按键音效 ──
+
+let _audioCtx = null;
+
+function playBeep(freq = 880, duration = 50) {
+    try {
+        if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = _audioCtx.createOscillator();
+        const gain = _audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.3, _audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, _audioCtx.currentTime + duration / 1000);
+        osc.connect(gain);
+        gain.connect(_audioCtx.destination);
+        osc.start(_audioCtx.currentTime);
+        osc.stop(_audioCtx.currentTime + duration / 1000);
+    } catch (_) { /* 静默失败，不影响功能 */ }
+}
+
+// ── 全文朗读 ──
+
+function readAloud() {
+    const btn = document.getElementById('btnReadAloud');
+    if (isMainSpeechActive()) {
+        stopSpeech();
+        if (btn) btn.textContent = '朗读全部';
+        return;
+    }
+    if (outputItems.length === 0) {
+        speakText('输出区为空');
+        return;
+    }
+
+    const meta = typeof computeItemMeta === 'function' ? computeItemMeta() : null;
+    const TONE_SYM_TO_NUM = { '¯': '1', '´': '2', 'ˇ': '3', '`': '4' };
+    const pinyinList = [];
+    for (let i = 0; i < outputItems.length; i++) {
+        const item = outputItems[i];
+        if (item.oneHot === '000000') {
+            if (SETTINGS.announceEmptyCell) pinyinList.push('空方');
+            continue;
+        }
+        if (item.isNumber) { pinyinList.push(item.audio || item.char || ''); continue; }
+        if (item.isEnglish) { pinyinList.push(item.audio || item.char || ''); continue; }
+        if (PUNC_MAPPING[item.oneHot]) { pinyinList.push(item.char || ''); continue; }
+
+        const m = meta && meta[i];
+        if (m && m.isFirst) {
+            pinyinList.push(m.merged);
+            while (i + 1 < outputItems.length && meta && meta[i + 1] && !meta[i + 1].isFirst) i++;
+            continue;
+        }
+
+        if (item.char && TONE_SYM_TO_NUM[item.char]) {
+            const toneNum = TONE_SYM_TO_NUM[item.char];
+            if (pinyinList.length > 0) {
+                const prevItem = outputItems[i - 1] || {};
+                const base = (prevItem.audio || prevItem.pinyin || pinyinList.pop() || '').trim();
+                const combined = (base + toneNum).trim();
+                pinyinList.push(combined);
+            } else {
+                pinyinList.push(item.audio || item.char);
+            }
+            continue;
+        }
+
+        let py = (item.audio || item.pinyin || '').trim();
+        if (typeof resolveSoloFinal === 'function') py = resolveSoloFinal(py);
+        pinyinList.push(py || (SETTINGS.announceEmptyCell ? '空方' : ''));
+    }
+
+    let text = '';
+    for (let py of pinyinList) {
+        if (!py) continue;
+        if (py === '空方') { text += '空方'; continue; }
+        text += pinyinToHanzi(py) || py;
+    }
+    speakText(text, SETTINGS.speechRate || 0.85);
+    if (btn) btn.textContent = '停止';
+}

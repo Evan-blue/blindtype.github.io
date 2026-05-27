@@ -1,0 +1,273 @@
+/* index_dev.css - 开发者面板 */
+
+.dev-panel {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 999;
+}
+
+.dev-panel.flip .dev-sections-wrap {
+    bottom: auto;
+    top: 52px;
+    transform-origin: top right;
+}
+
+.dev-sections-wrap {
+    position: absolute;
+    right: 0;
+    bottom: 52px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    transform-origin: bottom right;
+    transition: transform .25s ease, opacity .25s ease;
+}
+
+.dev-panel.collapsed .dev-sections-wrap {
+    transform: scale(0);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.dev-header {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-weight: bold;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    box-shadow: 0 2px 8px #00000044;
+    transition: transform .2s, box-shadow .2s, background .2s;
+}
+
+.dev-header:hover {
+    transform: scale(1.08);
+    box-shadow: 0 4px 16px #00000066;
+}
+
+.dev-header:active {
+    transform: scale(0.95);
+}
+
+.dev-panel.pinned .dev-header {
+    box-shadow: 0 0 12px var(--accent-glow), 0 2px 8px #00000044;
+}
+
+.dev-section {
+    background: var(--dev-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: 0 4px 16px #00000066;
+}
+
+.dev-pin,
+.dev-close {
+    position: absolute;
+    top: -6px;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: var(--dev-bg);
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: scale(0.6);
+    transition: opacity .15s, transform .15s, background .15s, color .15s;
+    border: 1px solid var(--border);
+}
+
+.dev-pin { left: -6px; }
+.dev-close { right: -6px; }
+
+.dev-pin.pinned {
+    opacity: 1;
+    transform: scale(1) rotate(-25deg);
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.dev-header:hover .dev-pin:not(.pinned),
+.dev-header:hover .dev-close {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.dev-close:hover {
+    background: var(--danger);
+    color: #fff;
+    border-color: var(--danger);
+}
+
+.dev-pin:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.dev-pin.pinned:hover {
+    background: var(--danger);
+    color: #fff;
+    border-color: var(--danger);
+}
+
+.dev-mode-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 4px;
+}
+
+.dev-mode-label {
+    color: var(--text-muted);
+    font-size: 11px;
+    margin-right: 2px;
+}
+
+.dev-mode-btn {
+    padding: 3px 8px;
+    border: 1px solid var(--border-light);
+    border-radius: 4px;
+    background: var(--bg-toolbar);
+    color: var(--text-muted);
+    font-size: 11px;
+    cursor: pointer;
+    transition: .1s;
+}
+
+.dev-mode-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.dev-mode-btn:hover:not(.active) {
+    border-color: var(--accent);
+    color: var(--text);
+}
+
+.dev-btn {
+    padding: 6px 12px;
+    border: 1px solid var(--border-light);
+    border-radius: 4px;
+    background: var(--bg-toolbar);
+    color: var(--text);
+    font-size: 12px;
+    cursor: pointer;
+    transition: .1s;
+    text-align: left;
+}
+
+.dev-btn:hover {
+    background: var(--bg-kbd);
+    border-color: var(--accent);
+}
+
+.dev-btn:active {
+    transform: scale(0.97);
+}
+
+.dev-sep {
+    height: 1px;
+    background: var(--border-light);
+    margin: 2px 0;
+}
+
+.dev-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 4px;
+    font-size: 11px;
+    color: var(--text);
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background .1s;
+}
+
+.dev-toggle-row:hover {
+    background: var(--bg-hover);
+}
+
+.dev-toggle-row input[type="checkbox"] {
+    width: 28px;
+    height: 16px;
+    margin: 0;
+    cursor: pointer;
+}
+
+.dev-action-keys .dev-toggle-row .kb-badge {
+    min-width: 28px;
+    padding: 1px 8px;
+    border: 1px solid var(--border-kbd);
+    border-radius: 4px;
+    background: var(--bg-kbd);
+    font-size: 11px;
+    cursor: pointer;
+    line-height: 1.4;
+}
+
+.dev-action-keys .dev-toggle-row .kb-badge .key-label {
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.dev-radio-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 4px;
+    font-size: 10px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.dev-radio-label {
+    margin-right: 4px;
+    color: var(--text);
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.dev-radio {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: background .1s;
+    flex-shrink: 0;
+}
+
+.dev-radio:hover {
+    background: var(--bg-hover);
+}
+
+.dev-radio input[type="radio"] {
+    width: 12px;
+    height: 12px;
+    margin: 0;
+    cursor: pointer;
+}

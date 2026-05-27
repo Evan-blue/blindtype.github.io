@@ -1,0 +1,154 @@
+{
+  "categories": [
+    {
+      "name": "声母",
+      "entries": [
+        { "oneHot": "110000", "char": "b", "label": "b", "audio": "波" },
+        { "oneHot": "111100", "char": "p", "label": "p", "audio": "泼" },
+        { "oneHot": "101100", "char": "m", "label": "m", "audio": "摸" },
+        { "oneHot": "110100", "char": "f", "label": "f", "audio": "佛" },
+        { "oneHot": "100110", "char": "d", "label": "d", "audio": "得" },
+        { "oneHot": "011110", "char": "t", "label": "t", "audio": "特" },
+        { "oneHot": "101110", "char": "n", "label": "n", "audio": "讷" },
+        { "oneHot": "111000", "char": "l", "label": "l", "audio": "勒" },
+        { "oneHot": "110110", "char": "g/j", "label": "g/j", "audio": "哥 基" },
+        { "oneHot": "101000", "char": "k/q", "label": "k/q", "audio": "科 七" },
+        { "oneHot": "110010", "char": "h/x", "label": "h/x", "audio": "喝 西" },
+        { "oneHot": "001100", "char": "zh", "label": "zh", "audio": "知" },
+        { "oneHot": "111110", "char": "ch", "label": "ch", "audio": "吃" },
+        { "oneHot": "100011", "char": "sh", "label": "sh", "audio": "诗" },
+        { "oneHot": "010110", "char": "r", "label": "r", "audio": "日" },
+        { "oneHot": "101011", "char": "z", "label": "z", "audio": "资" },
+        { "oneHot": "100100", "char": "c", "label": "c", "audio": "呲" },
+        { "oneHot": "011100", "char": "s", "label": "s", "audio": "思" }
+      ]
+    },
+    {
+      "name": "韵母",
+      "entries": [
+        { "oneHot": "001010", "char": "a", "label": "a", "audio": "啊" },
+        { "oneHot": "010001", "char": "e/o", "label": "e/o", "audio": "额 哦" },
+        { "oneHot": "010100", "char": "i", "label": "i", "audio": "衣" },
+        { "oneHot": "101001", "char": "u", "label": "u", "audio": "乌" },
+        { "oneHot": "001101", "char": "ü", "label": "ü", "audio": "迂" },
+        { "oneHot": "010101", "char": "ai", "label": "ai", "audio": "哀" },
+        { "oneHot": "011101", "char": "ei", "label": "ei", "audio": "诶" },
+        { "oneHot": "010111", "char": "ui", "label": "ui", "audio": "威" },
+        { "oneHot": "011010", "char": "ao", "label": "ao", "audio": "凹" },
+        { "oneHot": "111011", "char": "ou", "label": "ou", "audio": "欧" },
+        { "oneHot": "110011", "char": "iu", "label": "iu", "audio": "优" },
+        { "oneHot": "100010", "char": "ie", "label": "ie", "audio": "耶" },
+        { "oneHot": "011111", "char": "üe", "label": "üe", "audio": "约" },
+        { "oneHot": "111010", "char": "er", "label": "er", "audio": "尔" },
+        { "oneHot": "111001", "char": "an", "label": "an", "audio": "安" },
+        { "oneHot": "001011", "char": "en", "label": "en", "audio": "恩" },
+        { "oneHot": "110001", "char": "in", "label": "in", "audio": "音" },
+        { "oneHot": "010010", "char": "un", "label": "un", "audio": "温" },
+        { "oneHot": "000111", "char": "ün", "label": "ün", "audio": "晕" },
+        { "oneHot": "011001", "char": "ang", "label": "ang", "audio": "昂" },
+        { "oneHot": "001111", "char": "eng", "label": "eng", "audio": "鞥" },
+        { "oneHot": "100001", "char": "ing", "label": "ing", "audio": "英" },
+        { "oneHot": "010011", "char": "ong", "label": "ong", "audio": "翁" },
+        { "oneHot": "110101", "char": "ia", "label": "ia", "audio": "呀" },
+        { "oneHot": "100101", "char": "ian", "label": "ian", "audio": "烟" },
+        { "oneHot": "001110", "char": "iao", "label": "iao", "audio": "腰" },
+        { "oneHot": "101101", "char": "iang", "label": "iang", "audio": "央" },
+        { "oneHot": "100111", "char": "iong", "label": "iong", "audio": "拥" },
+        { "oneHot": "111111", "char": "ua", "label": "ua", "audio": "蛙" },
+        { "oneHot": "101111", "char": "uai", "label": "uai", "audio": "歪" },
+        { "oneHot": "110111", "char": "uan", "label": "uan", "audio": "弯" },
+        { "oneHot": "101010", "char": "uo", "label": "uo", "audio": "窝" },
+        { "oneHot": "011011", "char": "uang", "label": "uang", "audio": "汪" },
+        { "oneHot": "111101", "char": "üan", "label": "üan", "audio": "冤" }
+      ]
+    },
+    {
+      "name": "声调",
+      "entries": [
+        { "oneHot": "100000", "char": "¯", "label": "¯(阴平)", "audio": "1声" },
+        { "oneHot": "010000", "char": "´", "label": "´(阳平)", "audio": "2声" },
+        { "oneHot": "001000", "char": "ˇ", "label": "ˇ(上声)", "audio": "3声" },
+        { "oneHot": "011000", "char": "`", "label": "`(去声)", "audio": "4声" }
+      ]
+    },
+    {
+      "name": "标点",
+      "entries": [
+        { "oneHot": "000010", "char": "，", "label": "，(逗号)", "audio": "逗号" },
+        { "oneHot": "000011", "char": "；", "label": "；(分号)", "audio": "分号" },
+        { "oneHot": "001001", "char": "：", "label": "：(冒号)", "audio": "冒号" },
+        { "oneHot": "000100", "char": "、", "label": "、(顿号)", "audio": "顿号" },
+        { "oneHot": "000110", "char": "\"", "label": "\"(双引号)", "audio": "双引号" },
+        { "oneHot": "000010+011000", "char": "。", "label": "。(句号)", "audio": "句号" },
+        { "oneHot": "000011+010000", "char": "！", "label": "！(叹号)", "audio": "叹号" },
+        { "oneHot": "000010+001000", "char": "？", "label": "？(问号)", "audio": "问号" },
+        { "oneHot": "000001+001000", "char": "·", "label": "·(间隔号)", "audio": "间隔号" },
+        { "oneHot": "000001+001001", "char": "——", "label": "——(破折号)", "audio": "破折号" },
+        { "oneHot": "000010+000010+000010", "char": "……", "label": "……(省略号)", "audio": "省略号" },
+        { "oneHot": "000010+000010", "char": "……", "label": "……(省略号前两段)", "audio": "省略号", "hidden": true },
+        { "oneHot": "000110+000110", "char": "'", "label": "'(单引号)", "audio": "单引号" },
+        { "oneHot": "000011+001000", "char": "（", "label": "（(左圆括号)", "audio": "左圆括号" },
+        { "oneHot": "000001+011000", "char": "）", "label": "）(右圆括号)", "audio": "右圆括号" },
+        { "oneHot": "000011+011000", "char": "［/］", "label": "［(左方括号) / ］(右方括号)", "audio": "方括号" },
+        { "oneHot": "000010+001001", "char": "《", "label": "《(左书名号)", "audio": "左书名号" },
+        { "oneHot": "001001+010000", "char": "》", "label": "》(右书名号)", "audio": "右书名号" }
+      ]
+    },
+    {
+      "name": "数字",
+      "entries": [
+        { "oneHot": "001111", "char": "数号", "label": "数号(数字符号)", "audio": "数号" },
+        { "oneHot": "100000", "char": "1", "label": "1", "audio": "1" },
+        { "oneHot": "110000", "char": "2", "label": "2", "audio": "2" },
+        { "oneHot": "100100", "char": "3", "label": "3", "audio": "3" },
+        { "oneHot": "100110", "char": "4", "label": "4", "audio": "4" },
+        { "oneHot": "100010", "char": "5", "label": "5", "audio": "5" },
+        { "oneHot": "110100", "char": "6", "label": "6", "audio": "6" },
+        { "oneHot": "110110", "char": "7", "label": "7", "audio": "7" },
+        { "oneHot": "110010", "char": "8", "label": "8", "audio": "8" },
+        { "oneHot": "010100", "char": "9", "label": "9", "audio": "9" },
+        { "oneHot": "010110", "char": "0", "label": "0", "audio": "0" },
+        { "oneHot": "010000", "char": ".", "label": "小数点", "audio": "点" }
+      ]
+    },
+    {
+      "name": "空方",
+      "entries": [
+        { "oneHot": "000000", "char": "⠀", "label": "空方", "audio": "空方" }
+      ]
+    },
+    {
+      "name": "英文字母",
+      "entries": [
+        { "oneHot": "000001", "char": "", "label": "大写字母符号", "audio": "大写" },
+        { "oneHot": "000011", "char": "", "label": "小写字母符号", "audio": "小写" },
+        { "oneHot": "100000", "char": "Aa", "label": "Aa", "audio": "A" },
+        { "oneHot": "110000", "char": "Bb", "label": "Bb", "audio": "B" },
+        { "oneHot": "100100", "char": "Cc", "label": "Cc", "audio": "C" },
+        { "oneHot": "100110", "char": "Dd", "label": "Dd", "audio": "D" },
+        { "oneHot": "100010", "char": "Ee", "label": "Ee", "audio": "E" },
+        { "oneHot": "110100", "char": "Ff", "label": "Ff", "audio": "F" },
+        { "oneHot": "110110", "char": "Gg", "label": "Gg", "audio": "G" },
+        { "oneHot": "110010", "char": "Hh", "label": "Hh", "audio": "H" },
+        { "oneHot": "010100", "char": "Ii", "label": "Ii", "audio": "I" },
+        { "oneHot": "010110", "char": "Jj", "label": "Jj", "audio": "J" },
+        { "oneHot": "101000", "char": "Kk", "label": "Kk", "audio": "K" },
+        { "oneHot": "111000", "char": "Ll", "label": "Ll", "audio": "L" },
+        { "oneHot": "101100", "char": "Mm", "label": "Mm", "audio": "M" },
+        { "oneHot": "101110", "char": "Nn", "label": "Nn", "audio": "N" },
+        { "oneHot": "101010", "char": "Oo", "label": "Oo", "audio": "O" },
+        { "oneHot": "111100", "char": "Pp", "label": "Pp", "audio": "P" },
+        { "oneHot": "111110", "char": "Qq", "label": "Qq", "audio": "Q" },
+        { "oneHot": "111010", "char": "Rr", "label": "Rr", "audio": "R" },
+        { "oneHot": "011100", "char": "Ss", "label": "Ss", "audio": "S" },
+        { "oneHot": "011110", "char": "Tt", "label": "Tt", "audio": "T" },
+        { "oneHot": "101100", "char": "Uu", "label": "Uu", "audio": "U" },
+        { "oneHot": "111001", "char": "Vv", "label": "Vv", "audio": "V" },
+        { "oneHot": "010111", "char": "Ww", "label": "Ww", "audio": "W" },
+        { "oneHot": "101101", "char": "Xx", "label": "Xx", "audio": "X" },
+        { "oneHot": "101111", "char": "Yy", "label": "Yy", "audio": "Y" },
+        { "oneHot": "101011", "char": "Zz", "label": "Zz", "audio": "Z" }
+      ]
+    }
+  ]
+}

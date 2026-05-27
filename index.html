@@ -1,1 +1,324 @@
-<h1>test</h1>
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="盲文输入工具，无障碍盲文打印，双手配合，高效打字">
+    <title>盲文输入工具</title>
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" alt="盲文输入工具图标">
+    <link rel="stylesheet" href="./css/index.css">
+</head>
+
+<body>
+
+    <header>
+        <h1>盲文输入工具</h1>
+        <button class="header-btn" id="btnTutorial" title="新手教程" aria-label="新手教程">新手教程</button>
+        <button class="theme-toggle" id="themeToggle" title="切换主题" aria-label="切换主题">🌙</button>
+    </header>
+
+    <main class="main-area">
+        <!-- Input Panel -->
+        <section class="input-panel" aria-label="输入区">
+            <h2>输入区</h2>
+            <div class="dot-grid" id="dotGrid">
+                <!-- 盲文点位按国标列序: dot1 dot4 / dot2 dot5 / dot3 dot6 -->
+                <button class="dot-cell" data-idx="1" aria-label="点位1" tabindex="-1">
+                    <span class="dot-label">①</span><span class="key-label"></span>
+                </button>
+                <button class="dot-cell" data-idx="4" aria-label="点位4" tabindex="-1">
+                    <span class="dot-label">④</span><span class="key-label"></span>
+                </button>
+                <button class="dot-cell" data-idx="2" aria-label="点位2" tabindex="-1">
+                    <span class="dot-label">②</span><span class="key-label"></span>
+                </button>
+                <button class="dot-cell" data-idx="5" aria-label="点位5" tabindex="-1">
+                    <span class="dot-label">⑤</span><span class="key-label"></span>
+                </button>
+                <button class="dot-cell" data-idx="3" aria-label="点位3" tabindex="-1">
+                    <span class="dot-label">③</span><span class="key-label"></span>
+                </button>
+                <button class="dot-cell" data-idx="6" aria-label="点位6" tabindex="-1">
+                    <span class="dot-label">⑥</span><span class="key-label"></span>
+                </button>
+            </div>
+            <button class="preview-box empty" id="previewBox" aria-label="预览区，点击朗读当前点位">
+                <span class="braille-char" id="previewChar">⠀</span>
+                <span class="preview-dots" id="previewDots"></span>
+                <span class="pinyin-label" id="previewPinyin">—</span>
+            </button>
+            <div class="help-settings-row">
+                <button class="help-btn" id="btnMapping" title="盲文对照表" aria-label="盲文对照表"
+                    aria-expanded="false">📄</button>
+                <span class="help-right-group">
+                    <button class="help-btn" id="helpBtn" title="键位帮助" aria-label="键位帮助"
+                        aria-expanded="false">?</button>
+                    <button class="help-btn" id="btnSettings" title="设置" aria-label="设置"
+                        aria-expanded="false">⚙</button>
+                </span>
+            </div>
+            <!-- Action buttons -->
+            <div class="action-bar" id="actionBar">
+                <button class="action-btn confirm-btn" data-action="confirm">确认</button>
+                <button class="action-btn clear-btn" data-action="clearInput">清除</button>
+                <button class="action-btn delete-btn" data-action="delete">删</button>
+        </section>
+
+        <!-- Output Area -->
+        <section class="output-panel" aria-label="输出区">
+            <div class="output-header">
+                <h2>输出区</h2>
+                <div class="toolbar">
+                    <button class="toolbar-btn" id="btnReadAloud" title="朗读内容">朗读全部</button>
+                    <button class="toolbar-btn" id="btnOpenFile" title="打开文件">打开文件</button>
+                    <button class="toolbar-btn" id="btnSaveContent" title="保存内容">保存内容</button>
+                </div>
+                <div class="page-nav" id="pageNav" style="display:none;">
+                    <button class="page-btn" id="btnPrevPage" title="上一页" aria-label="上一页">&#9664;</button>
+                    <span class="page-indicator" id="pageIndicator">1/1</span>
+                    <button class="page-btn" id="btnNextPage" title="下一页" aria-label="下一页">&#9654;</button>
+                </div>
+            </div>
+            <div class="output-text" id="outputArea" tabindex="0" role="textbox" aria-live="polite" aria-label="输出内容区">
+                <span class="cursor" id="cursor"></span>
+            </div>
+        </section>
+    </main>
+
+    <!-- Settings Slide Panel -->
+    <div class="settings-overlay" id="settingsOverlay"></div>
+    <div class="settings-slide" id="settingsSlide" role="dialog" aria-modal="true" aria-label="设置面板" inert>
+        <div class="settings-slide-header">
+            <h2>设置</h2>
+            <button class="settings-slide-close" id="settingsSlideClose" aria-label="关闭设置">&times;</button>
+        </div>
+        <form class="settings-body" id="settingsForm">
+            <button type="button" class="kb-reset-defaults" id="btnResetDefaults"
+                aria-label="恢复所有设置为默认值">恢复默认设置</button>
+            <div class="settings-section">
+                <h3>点位键位</h3>
+                <span class="kb-preset-label">单击按钮以设置对应键位</span>
+                <div class="kb-dual-bindings">
+                    <div class="kb-binding-group">
+                        <span class="kb-group-label">主键盘</span>
+                        <div class="key-bindings" id="keyBindings"></div>
+                    </div>
+                    <div class="kb-binding-group">
+                        <span class="kb-group-label">小键盘</span>
+                        <div class="key-bindings" id="keyBindingsAlt"></div>
+                    </div>
+                </div>
+                <button type="button" class="kb-reset-btn" id="kbResetBtn">自定义键位</button>
+                <div class="kb-presets" id="kbPresets">
+                    <span class="kb-preset-label">常用键位预设</span>
+                    <div class="kb-preset-row">
+                        <span class="kb-preset-cat">纵向</span>
+                        <button type="button" class="kb-preset" data-preset="kbd-v-u">ujmik,</button>
+                        <button type="button" class="kb-preset" data-preset="kbd-v-i">ik,ol.</button>
+                        <button type="button" class="kb-preset" data-preset="numpad-v-7">741852</button>
+                        <button type="button" class="kb-preset" data-preset="numpad-v-8">852963</button>
+                    </div>
+                    <div class="kb-preset-row">
+                        <span class="kb-preset-cat">横向</span>
+                        <button type="button" class="kb-preset" data-preset="kbd-h-o">oiulkj</button>
+                        <button type="button" class="kb-preset" data-preset="kbd-h-l">lkj.,m</button>
+                        <button type="button" class="kb-preset" data-preset="numpad-h-9">987654</button>
+                        <button type="button" class="kb-preset" data-preset="numpad-h-6">654321</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>其他设置</h3>
+
+                <div class="setting-row">
+                    <label for="debounceSpeech">输入实时语音播报</label>
+                    <input type="checkbox" id="debounceSpeech" checked>
+                </div>
+
+                <div class="setting-row">
+                    <label for="speechRate">语音播报速度</label>
+                    <div class="setting-range-wrap">
+                        <input type="range" id="speechRate" min="0.5" max="4" step="0.05" value="0.9">
+                        <span class="setting-val" id="speechRateVal">0.9</span>
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <label for="brailleFontSize">盲文字体大小</label>
+                    <div class="setting-range-wrap">
+                        <input type="range" id="brailleFontSize" min="6" max="30" step="1" value="10">
+                        <span class="setting-val" id="brailleFontSizeVal">22</span>
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <label for="maxUndoHistory">最大撤销历史</label>
+                    <div class="setting-range-wrap">
+                        <input type="range" id="maxUndoHistory" min="1" max="50" step="1" value="10">
+                        <span class="setting-val" id="maxUndoHistoryVal">10</span>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- 键位绑定遮罩（body层级，避免受 settings-slide 的 transform 影响 fixed 定位） -->
+    <div class="bind-mask" id="bindMask">
+        <div class="bind-mask-text" id="bindMaskText"></div>
+        <div class="bind-mask-hint">按 Esc 取消</div>
+    </div>
+
+    <!-- Help Slide Panel -->
+    <div class="help-overlay" id="helpOverlay"></div>
+    <div class="help-slide" id="helpSlide" role="dialog" aria-modal="true" aria-label="键位帮助面板" inert>
+        <div class="help-slide-header">
+            <h2>键位帮助</h2>
+            <button class="help-slide-close" id="helpSlideClose" aria-label="关闭帮助">&times;</button>
+        </div>
+        <div class="help-body" id="helpBody">
+            <div class="help-section">
+                <button class="help-tutorial-btn" id="helpTutorialBtn" aria-label="播放新手教程，也可按 Control+Shift+H 触发">播放新手教程</button>
+            </div>
+            <div class="help-section">
+                <h3>操作</h3>
+                <div class="help-table">
+                    <div class="ht-row ht-header"><span class="ht-label"></span><span class="ht-keys">主键盘</span><span class="ht-keys">小键盘</span></div>
+                    <div class="ht-row">
+                        <span class="ht-label"><span class="ht-dot-grid"><span>①</span><span>④</span><span>②</span><span>⑤</span><span>③</span><span>⑥</span></span></span>
+                        <span class="ht-keys"><span class="ht-dot-grid"><kbd id="helpDot1L">?</kbd><kbd id="helpDot4L">?</kbd><kbd id="helpDot2L">?</kbd><kbd id="helpDot5L">?</kbd><kbd id="helpDot3L">?</kbd><kbd id="helpDot6L">?</kbd></span></span><span class="ht-keys"><span class="ht-dot-grid"><kbd id="helpDot1Np">?</kbd><kbd id="helpDot4Np">?</kbd><kbd id="helpDot2Np">?</kbd><kbd id="helpDot5Np">?</kbd><kbd id="helpDot3Np">?</kbd><kbd id="helpDot6Np">?</kbd></span></span></div>
+                    <div class="ht-row"><span class="ht-label">确认/空方</span><span class="ht-keys"><kbd id="htKbdSpace"></kbd></span><span class="ht-keys"><kbd id="htNpSpace"></kbd></span></div>
+                    <div class="ht-row"><span class="ht-label">清空输入</span><span class="ht-keys"><kbd id="htKbdClearInput"></kbd></span><span class="ht-keys"><kbd id="htNpClearInput"></kbd></span></div>
+                    <div class="ht-row"><span class="ht-label">删除光标前盲文</span><span class="ht-keys"><kbd id="htKbdDelete"></kbd></span><span class="ht-keys"><kbd id="htNpDelete"></kbd></span></div>
+                </div>
+                <div class="help-row"><kbd>⌫</kbd> 删除光标前盲文</div>
+                <div class="help-row"><kbd id="helpDeleteForward"></kbd> 删除光标后盲文</div>
+                <div class="help-row"><kbd id="helpClearOutput"></kbd> 清空输出区</div>
+                <div class="help-row"><kbd id="helpReadAloud"></kbd> 朗读</div>
+                <div class="help-row"><kbd id="helpPageUp"></kbd> / <kbd id="helpPageDown"></kbd> 翻页</div>
+                <div class="help-row"><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> 调整光标</div>
+            </div>
+            <div class="help-section">
+                <h3>组合键</h3>
+                <div class="help-row"><kbd id="helpComboUndo"></kbd> 撤销</div>
+                <div class="help-row"><kbd id="helpComboRedo"></kbd> 重做</div>
+                <div class="help-row"><kbd id="helpComboSelectAll"></kbd> 全选</div>
+                <div class="help-row"><kbd id="helpComboSave"></kbd> 保存</div>
+                <div class="help-row"><kbd id="helpComboOpenFile"></kbd> 打开文件</div>
+                <div class="help-row"><kbd id="helpComboResetKeyBindings"></kbd> 自定义键位</div>
+                <div class="help-row"><kbd id="helpComboToggleSettings"></kbd> 打开/关闭设置</div>
+                <div class="help-row"><kbd id="helpComboToggleHelp"></kbd> 打开/关闭帮助</div>
+                <div class="help-row"><kbd id="helpComboToggleMapping"></kbd> 打开/关闭盲文对照表</div>
+                <div class="help-row"><kbd id="helpComboTutorial"></kbd> 新手教程</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mapping Slide Panel -->
+    <div class="mapping-overlay" id="mappingOverlay"></div>
+    <div class="mapping-slide" id="mappingSlide" role="dialog" aria-modal="true" aria-label="盲文对照表面板" inert>
+        <div class="mapping-slide-header">
+            <h2>盲文对照表</h2>
+            <div class="mapping-header-right">
+                <button class="pin-toggle" id="pinToggle" title="锁定面板" aria-label="锁定面板">
+                    <span class="pin-icon">📌</span>
+                </button>
+                <button class="mapping-slide-close" id="mappingSlideClose" aria-label="关闭对照表">&times;</button>
+            </div>
+        </div>
+        <div class="mapping-body" id="mappingContainer"></div>
+    </div>
+
+    <!-- Developer Panel -->
+    <aside class="dev-panel collapsed" id="devPanel" aria-label="开发者工具">
+        <div class="dev-sections-wrap">
+            <div class="dev-section dev-section-settings">
+                <label class="dev-toggle-row">
+                    <span>允许播报</span>
+                    <input type="checkbox" id="allowSpeech" checked>
+                </label>
+                <label class="dev-toggle-row">
+                    <span>播报空方</span>
+                    <input type="checkbox" id="announceEmptyCell">
+                </label>
+                <label class="dev-toggle-row">
+                    <span>分词</span>
+                    <input type="checkbox" id="wordSegmentation">
+                </label>
+                <label class="dev-toggle-row">
+                    <span>空方补全</span>
+                    <input type="checkbox" id="punctAutoSpacing" checked>
+                </label>
+                <label class="dev-toggle-row">
+                    <span>启用多选</span>
+                    <input type="checkbox" id="multiSelect">
+                </label>
+                <div class="dev-sep"></div>
+                <div class="dev-action-keys" id="actionKeyBindings">
+                    <div class="dev-toggle-row">
+                        <span>清空输入</span>
+                        <button type="button" class="kb-badge" data-action="clearInput" title="点击后按键盘任意键设置">
+                            <span class="key-label">f</span>
+                        </button>
+                    </div>
+                    <div class="dev-toggle-row">
+                        <span>删除盲文</span>
+                        <button type="button" class="kb-badge" data-action="delete" title="点击后按键盘任意键设置">
+                            <span class="key-label">d</span>
+                        </button>
+                    </div>
+                    <div class="dev-toggle-row">
+                        <span>清空输出</span>
+                        <button type="button" class="kb-badge" data-action="clearOutput" title="点击后按键盘任意键设置">
+                            <span class="key-label">s</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="dev-sep"></div>
+                <div class="dev-radio-group" id="cursorJumpModeRow" role="radiogroup" aria-label="上下箭头移动依据">
+                    <span class="dev-radio-label">↑↓箭头</span>
+                    <label class="dev-radio"><input type="radio" name="cursorJumpMode" value="emptyCell">空方</label>
+                    <label class="dev-radio"><input type="radio" name="cursorJumpMode" value="newline">换行</label>
+                    <label class="dev-radio"><input type="radio" name="cursorJumpMode" value="sentenceEnd" checked>句子</label>
+                </div>
+            </div>
+            <div class="dev-section dev-section-main">
+                <div class="dev-mode-row">
+                    <span class="dev-mode-label">模式</span>
+                    <button class="dev-mode-btn active" data-mode="input">输入</button>
+                    <button class="dev-mode-btn" data-mode="type">键入</button>
+                </div>
+                <button class="dev-btn" id="devChineseInput">输入汉字</button>
+                <button class="dev-btn" id="devLove">我爱你</button>
+                <button class="dev-btn" id="devJingYeSi">静夜思</button>
+                <button class="dev-btn" id="devMouseLoveRice">老鼠爱大米</button>
+                <button class="dev-btn" id="devRandom">随机若干字符</button>
+            </div>
+        </div>
+        <div class="dev-header">
+            Dev
+            <button class="dev-pin" id="devPin" title="固定面板" aria-label="固定面板" aria-pressed="false">📌</button>
+            <button class="dev-close" id="devClose" title="关闭" aria-label="关闭">×</button>
+        </div>
+    </aside>
+    <script src="https://unpkg.com/pinyin-pro"></script>
+    <script src="./js/pinyinUtils.js"></script>
+    <script src="./js/brailleUtils.js"></script>
+    <script src="./js/loadMappings.js"></script>
+    <script src="./js/textSplitting.js"></script>
+    <script src="./js/brailleState.js"></script>
+    <script src="./js/pages.js"></script>
+    <script src="./js/keyConfig.js"></script>
+    <script src="./js/brailleRender.js"></script>
+    <script src="./js/settingsFrame.js"></script>
+    <script src="./js/brailleInput.js"></script>
+    <script src="./js/brailleSpeech.js"></script>
+    <script src="./js/tutorial.js"></script>
+    <script src="./js/fileOperations.js"></script>
+    <script src="./js/history.js"></script>
+    <script src="./js/devPanel.js"></script>
+    <script src="./js/init.js"></script>
+</body>
+
+</html>

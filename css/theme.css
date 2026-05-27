@@ -1,0 +1,83 @@
+/* 盲文输入工具 - 配色方案（深色/浅色） */
+
+:root {
+    --bg: #1a1a2e;
+    --bg-card: #16213e;
+    --bg-input: #0f3460;
+    --bg-toolbar: #1a1a3e;
+    --bg-kbd: #2a2a4e;
+    --bg-hover: #ffffff15;
+    --bg-active: #0f1530;
+    --bg-braille-frame: rgba(255,255,255,0.015);
+    --bg-empty: rgba(128,128,128,0.15);
+
+    --text: #e0e0e0;
+    --text-heading: #ececff;
+    --text-sub: #c0c0ff;
+    --text-muted: #888;
+    --text-label: #a0ffa0;
+
+    --border: #333;
+    --border-light: #444;
+    --border-kbd: #555;
+    --border-card: #333;
+    --border-hover: #7f5af0;
+    --border-active: #5a3fb0;
+    --border-frame: rgba(255,255,255,0.05);
+
+    --accent: #7f5af0;
+    --accent-sub: #a0a0ff;
+    --accent-glow: #7f5af088;
+    --accent-light: #7f5af033;
+
+    --danger: #ef5350;
+    --danger-border: #c6282855;
+    --confirm-bg: #2e7d32;
+    --confirm-border: #4caf50;
+
+    --dev-bg: #0d0d1aee;
+    --empty-color: #444;
+    --scrollbar-thumb: #7f5af066;
+    --scrollbar-thumb-hover: #7f5af0aa;
+}
+
+body.light {
+    --bg: #f0f2f5;
+    --bg-card: #ffffff;
+    --bg-input: #f9fafb;
+    --bg-toolbar: #f5f5f5;
+    --bg-kbd: #e8e8e8;
+    --bg-hover: #00000008;
+    --bg-active: #e8e4f5;
+    --bg-braille-frame: rgba(0,0,0,0.02);
+    --bg-empty: rgba(128,128,128,0.1);
+
+    --text: #333333;
+    --text-heading: #222222;
+    --text-sub: #6c3fd4;
+    --text-muted: #999999;
+    --text-label: #2e7d32;
+
+    --border: #d0d0d0;
+    --border-light: #cccccc;
+    --border-kbd: #bbbbbb;
+    --border-card: #e0e0e0;
+    --border-hover: #6c3fd4;
+    --border-active: #5a2fb0;
+    --border-frame: rgba(0,0,0,0.08);
+
+    --accent: #6c3fd4;
+    --accent-sub: #6c3fd4;
+    --accent-glow: #6c3fd488;
+    --accent-light: #6c3fd422;
+
+    --danger: #d32f2f;
+    --danger-border: #d32f2f55;
+    --confirm-bg: #2e7d32;
+    --confirm-border: #388e3c;
+
+    --dev-bg: #ffffffee;
+    --empty-color: #cccccc;
+    --scrollbar-thumb: #6c3fd466;
+    --scrollbar-thumb-hover: #6c3fd4aa;
+}

@@ -1,0 +1,224 @@
+/* index_output.css - 输出面板 */
+
+.output-panel {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 24px;
+    flex: 1;
+    min-width: 420px;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+}
+
+.output-panel h2 {
+    font-size: 16px;
+    color: var(--text-sub);
+}
+
+.output-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.toolbar {
+    display: flex;
+    gap: 8px;
+}
+
+.toolbar-btn {
+    padding: 6px 14px;
+    width: 82px;
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    background: var(--bg-toolbar);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    transition: .15s;
+}
+
+.toolbar-btn:hover {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.toolbar-btn:active {
+    background: #6341c9;
+}
+
+.page-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-sub);
+}
+
+.page-btn {
+    padding: 2px 8px;
+    border: 1px solid var(--border-light);
+    border-radius: 4px;
+    background: var(--bg-toolbar);
+    color: var(--text);
+    font-size: 12px;
+    cursor: pointer;
+    transition: .15s;
+    line-height: 1.4;
+}
+
+.page-btn:hover:not(:disabled) {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.page-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.page-indicator {
+    min-width: 36px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.output-text {
+    flex: 1;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    background: var(--bg-input);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    align-content: flex-start;
+    gap: 2px;
+    min-height: 200px;
+    max-height: 400px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+    outline: none;
+    position: relative;
+}
+
+.output-text:focus {
+    border-color: var(--accent-glow);
+    box-shadow: 0 0 8px var(--accent-light);
+}
+
+.output-text::-webkit-scrollbar {
+    width: 6px;
+}
+
+.output-text::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 3px;
+}
+
+.output-text::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 3px;
+}
+
+.output-text::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+}
+
+.output-text.is-empty::after {
+    content: " 确认后的盲文将显示在这里…";
+    color: var(--empty-color);
+    font-size: 14px;
+    position: absolute;
+    pointer-events: none;
+}
+
+.braille-unit {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    padding: calc(var(--braille-font-size, 22px) * 0.09) calc(var(--braille-font-size, 22px) * 0.14);
+    border-radius: calc(var(--braille-font-size, 22px) * 0.18);
+    cursor: pointer;
+    min-width: calc(var(--braille-font-size, 22px) * 1.27);
+}
+
+.braille-unit:hover {
+    background: var(--bg-hover);
+}
+
+.braille-unit.selected {
+    background: var(--accent-light);
+    outline: 1px solid var(--accent-glow);
+    border-radius: calc(var(--braille-font-size, 22px) * 0.14);
+}
+
+.braille-unit.merged-first {
+    border-radius: calc(var(--braille-font-size, 22px) * 0.18) 0 0 calc(var(--braille-font-size, 22px) * 0.18);
+}
+
+.braille-unit.merged-last {
+    border-radius: 0 calc(var(--braille-font-size, 22px) * 0.18) calc(var(--braille-font-size, 22px) * 0.18) 0;
+}
+
+/* 拼音分组容器 */
+.braille-group {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    vertical-align: bottom;
+    margin: 0 2px;
+}
+
+.braille-group-row {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 0;
+}
+
+.bu-group-pinyin {
+    font-size: 11px;
+    color: var(--text-label);
+    line-height: 1.2;
+}
+
+.braille-unit .bu-dots {
+    font-size: var(--braille-font-size, 22px);
+    line-height: 1;
+}
+
+.braille-unit .bu-char {
+    font-size: 11px;
+    color: var(--text-label);
+    line-height: 1.2;
+}
+
+/* 空方：窄宽 + 背景色 + 虚线边框，可辨识但不占太多空间 */
+.braille-unit.empty-braille {
+    min-width: 0;
+    padding-left: calc(var(--braille-font-size, 22px) * 0.06);
+    padding-right: calc(var(--braille-font-size, 22px) * 0.06);
+    background: var(--bg-empty, rgba(128, 128, 128, 0.15));
+    border: 1px dashed var(--text-muted, #999);
+}
+
+.cursor {
+    width: 2px;
+    height: calc(var(--braille-font-size, 22px) * 1.27);
+    background: var(--accent);
+    display: inline-block;
+    animation: blink 1s step-end infinite;
+    vertical-align: bottom;
+    margin: 0 1px;
+}
+
+@keyframes blink {
+    50% { opacity: 0; }
+}

@@ -1,0 +1,238 @@
+/* index_input.css - 输入面板 */
+
+.input-panel {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    min-width: 240px;
+}
+
+.input-panel h2 {
+    font-size: 16px;
+    color: var(--text-sub);
+}
+
+.dot-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.dot-cell {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid var(--border-light);
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    transition: all .15s;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    padding: 0;
+    font-family: inherit;
+    text-align: center;
+    line-height: 1;
+}
+
+.dot-cell:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.dot-cell.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.dot-cell .dot-label {
+    font-size: 10px;
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    color: #666;
+}
+
+body.light .dot-cell .dot-label {
+    color: #999;
+}
+
+.dot-cell.active .dot-label {
+    color: #ccc;
+}
+
+body.light .dot-cell.active .dot-label {
+    color: #ddd;
+}
+
+.dot-cell .key-label {
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 1.1;
+}
+
+.dot-cell .kb-lbl,
+.dot-cell .np-lbl {
+    transition: opacity .2s, font-size .2s;
+    display: inline-block;
+}
+
+/* 默认（无 active-group 类时）：主键盘点亮 */
+.dot-cell .kb-lbl {
+    font-size: 14px;
+    opacity: 1;
+}
+
+.dot-cell .np-lbl {
+    font-size: 9px;
+    opacity: 0.35;
+}
+
+.dot-cell .key-sep {
+    font-size: 8px;
+    opacity: 0.35;
+}
+
+/* 主键盘活跃 */
+.active-group-keyboard .dot-cell .kb-lbl {
+    font-size: 14px;
+    opacity: 1;
+}
+
+.active-group-keyboard .dot-cell .np-lbl {
+    font-size: 9px;
+    opacity: 0.35;
+}
+
+.active-group-keyboard .dot-cell .key-sep {
+    opacity: 0.35;
+}
+
+/* 小键盘活跃 */
+.active-group-numpad .dot-cell .kb-lbl {
+    font-size: 9px;
+    opacity: 0.35;
+}
+
+.active-group-numpad .dot-cell .np-lbl {
+    font-size: 14px;
+    opacity: 1;
+}
+
+.active-group-numpad .dot-cell .key-sep {
+    opacity: 0.35;
+}
+
+.preview-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 72px;
+    height: 90px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    font-family: inherit;
+    text-align: center;
+    line-height: 1;
+}
+
+.preview-box:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.preview-box:hover {
+    border-color: var(--accent);
+    background: var(--bg-hover);
+}
+
+.preview-box:active {
+    transform: scale(0.95);
+    background: var(--bg-input);
+    border-color: var(--accent);
+}
+
+.preview-box .braille-char {
+    font-size: 28px;
+    line-height: 1;
+    color: var(--text);
+}
+
+.preview-box .preview-dots {
+    font-size: 11px;
+    color: var(--text-sub);
+}
+
+.preview-box .pinyin-label {
+    font-size: 13px;
+    color: var(--text-sub);
+    font-weight: bold;
+}
+
+.preview-box.empty .braille-char {
+    color: var(--empty-color);
+}
+
+.preview-box.empty .preview-dots {
+    color: var(--empty-color);
+}
+
+.preview-box.empty .pinyin-label {
+    color: var(--empty-color);
+}
+
+.help-settings-row {
+    display: flex;
+    /* gap: 20px; */
+    align-items: center;
+}
+
+.help-right-group {
+    display: flex;
+    gap: 8px;
+    margin-left: 8px;
+}
+
+.help-btn {
+    min-width: 44px;
+    min-height: 44px;
+    line-height: 44px;
+    /* border-radius: 50%; */
+    border-radius: 22px;
+    border: 1px solid var(--border-kbd);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: .15s;
+    padding: 0;
+    text-align: center;
+}
+
+.help-btn#btnMapping { 
+    width: 66px;
+}
+
+.help-btn:hover {
+    border-color: var(--accent);
+    color: #fff;
+    background: var(--accent-light);
+}
+

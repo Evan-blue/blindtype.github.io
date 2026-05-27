@@ -1,0 +1,37 @@
+/* index_action.css - 操作按钮栏 */
+
+.action-bar {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.action-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    background: var(--bg-toolbar);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    transition: .1s;
+}
+
+.action-btn:active {
+    transform: scale(0.95);
+}
+
+.action-btn.clear-btn {
+    border-color: var(--border-kbd);
+}
+
+.action-btn.delete-btn {
+    border-color: var(--danger-border);
+    color: var(--danger);
+}
+
+.action-btn.confirm-btn {
+    background: var(--confirm-bg);
+    color: #fff;
+    border-color: var(--confirm-border);
+}
