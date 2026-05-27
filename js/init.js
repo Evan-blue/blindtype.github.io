@@ -144,7 +144,7 @@ function renderMappingTable() {
                 '<span class="mc-dots">' + dotsStr + '</span>' +
                 '<span class="mc-label">' + entry.label + '</span>';
             const forceNum = cat.name === '数字';
-            card.addEventListener('click', () => {
+            card.addEventListener('mouseenter', () => {
                 speakBraille(entry.oneHot, 1, { forceNumber: forceNum });
                 speakText('键位' + onehotToIndex(entry.oneHot), 2);
             });
