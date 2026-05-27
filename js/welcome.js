@@ -67,7 +67,7 @@ function initWelcome() {
     welcomeMask.classList.add('active');
     welcomeBtnYes.focus();
 
-    const welcomeText = '欢迎使用盲文输入工具。这是一个面向视障人士的盲文输入工具，支持拼音、数字、英文盲文输入，并提供语音播报反馈。是否需要观看新手教程？';
+    const welcomeText = '欢迎使用盲文输入工具。这是一个面向视障人士的盲文输入工具，支持拼音、数字、英文盲文输入，并提供语音播报反馈。是否需要开始新手教程？';
     speakText(welcomeText);
     _welcomeInterval = setInterval(() => {
         speakText(welcomeText);
