@@ -119,7 +119,8 @@ function renderPreview() {
         previewBox.classList.remove('empty');
         previewChar.textContent = braille;
         previewDots.textContent = activeDotsLabel(dotState);
-        previewPinyin.textContent = entry ? entry.label : '';
+        const ctx = _getContextPreview(key);
+        previewPinyin.textContent = ctx ? ctx.label : (entry ? entry.label : '');
     } else {
         resetPreview();
     }

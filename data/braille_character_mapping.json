@@ -142,7 +142,7 @@
         { "oneHot": "111010", "char": "Rr", "label": "Rr", "audio": "R" },
         { "oneHot": "011100", "char": "Ss", "label": "Ss", "audio": "S" },
         { "oneHot": "011110", "char": "Tt", "label": "Tt", "audio": "T" },
-        { "oneHot": "101100", "char": "Uu", "label": "Uu", "audio": "U" },
+        { "oneHot": "101001", "char": "Uu", "label": "Uu", "audio": "U" },
         { "oneHot": "111001", "char": "Vv", "label": "Vv", "audio": "V" },
         { "oneHot": "010111", "char": "Ww", "label": "Ww", "audio": "W" },
         { "oneHot": "101101", "char": "Xx", "label": "Xx", "audio": "X" },

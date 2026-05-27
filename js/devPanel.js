@@ -336,6 +336,20 @@ function initDevPanel() {
         execMode(chineseToBraille(input.trim()));
     });
 
+    // ── 输入数字 ──
+    document.getElementById('devNumberInput').addEventListener('click', () => {
+        const input = prompt('请输入数字');
+        if (!input || !input.trim()) return;
+        inputNumber(input.trim());
+    });
+
+    // ── 输入英文 ──
+    document.getElementById('devEnglishInput').addEventListener('click', () => {
+        const input = prompt('请输入英文内容');
+        if (!input || !input.trim()) return;
+        inputEnglish(input.trim());
+    });
+
     // ── 我爱你 ──
     document.getElementById('devLove').addEventListener('click', () => {
         const cells = [
@@ -354,6 +368,16 @@ function initDevPanel() {
     // ── 老鼠爱大米 ──
     document.getElementById('devMouseLoveRice').addEventListener('click', () => {
         execMode(chineseToBraille('我爱你，爱着你，就像老鼠爱大米。'));
+    });
+
+    // ── 123.456 ──
+    document.getElementById('devNumber').addEventListener('click', () => {
+        inputNumber('123.456');
+    });
+
+    // ── English sentence ──
+    document.getElementById('devEnglish').addEventListener('click', () => {
+        inputEnglish('Can you type without looking?');
     });
 
     // ── 随机若干字符 ──

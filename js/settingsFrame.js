@@ -12,7 +12,7 @@ const DEFAULT_SETTINGS = {
         numpad:   { ...DOT_KEY_DEFAULTS.numpad },
     },
     actionKeyBindings: { ..._defaultActionKeyBindings },
-    speechRate: 2,
+    speechRate: 1.2,
     debounceSpeech: true,
     maxUndoHistory: 10,
     brailleFontSize: 12,

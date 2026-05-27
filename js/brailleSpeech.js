@@ -222,7 +222,7 @@ function readAloud() {
             if (SETTINGS.announceEmptyCell) pinyinList.push('空方');
             continue;
         }
-        if (item.isNumber) { pinyinList.push(item.audio || item.char || ''); continue; }
+        if (item.isNumber) { pinyinList.push((item.audio || item.char || '').replace('数号', '')); continue; }
         if (item.isEnglish) { pinyinList.push(item.audio || item.char || ''); continue; }
         if (PUNC_MAPPING[item.oneHot]) { pinyinList.push(item.char || ''); continue; }
 
@@ -256,6 +256,7 @@ function readAloud() {
         if (!py) continue;
         if (py === '空方') { text += '空方'; continue; }
         text += pinyinToHanzi(py) || py;
+        text += ' ';
     }
     speakText(text, SETTINGS.speechRate || 0.85);
     if (btn) btn.textContent = '停止';

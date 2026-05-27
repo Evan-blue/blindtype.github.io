@@ -265,6 +265,7 @@ loadAllMappings().then(async () => {
     dotCells.forEach(cell => {
         cell.addEventListener('click', () => {
             toggleDot(+cell.dataset.idx);
+            cell.blur(); // 点击后移除焦点，避免后续空格键误触发按钮原生click
         });
     });
 

@@ -10,6 +10,27 @@ function activeDotsLabel(dotState) {
 }
 
 /**
+ * @description: 根据当前上下文（英文/数字模式）获取预览字符，无上下文时返回 null
+ * @param {string} key dotState.join('') 的oneHot编码
+ * @return {{ char: string, label: string }|null}
+ */
+function _getContextPreview(key) {
+    if (isInNumberContext()) {
+        const digit = NUMBER_MAPPING[key];
+        if (digit && digit.char !== '数号') return { char: digit.char, label: digit.label };
+    }
+    if (isInEnglishContext()) {
+        const letter = LETTER_MAPPING[key];
+        if (letter && letter.char && letter.char.length >= 2) {
+            const engCase = getEnglishCase();
+            const ch = letter.char;
+            return { char: engCase === 'upper' ? (ch[0] || '') : (ch[1] || ''), label: letter.label };
+        }
+    }
+    return null;
+}
+
+/**
  * @description: 重置预览区域为空状态
  * @return {void}
  */
@@ -779,7 +800,7 @@ function moveCursorUp() {
         const itemMeta = curMeta[cursorIdx - 1];
         if (item.oneHot === '000000') speakText('空方');
         else if (itemMeta && itemMeta.merged) speakText(pinyinToHanzi(itemMeta.merged));
-        else speakText(pinyinToHanzi(item.audio || item.pinyin.trim()) || '空方');
+        else speakText(pinyinToHanzi((item.audio || '').replace('数号', '') || item.pinyin.trim()) || '空方');
     }, CURSOR_DEBOUNCE_MS);
 }
 
@@ -810,7 +831,7 @@ function moveCursorDown() {
         const itemMeta = curMeta[cursorIdx - 1];
         if (item.oneHot === '000000') speakText('空方');
         else if (itemMeta && itemMeta.merged) speakText(pinyinToHanzi(itemMeta.merged));
-        else speakText(pinyinToHanzi(item.audio || item.pinyin.trim()) || '空方');
+        else speakText(pinyinToHanzi((item.audio || '').replace('数号', '') || item.pinyin.trim()) || '空方');
     }, CURSOR_DEBOUNCE_MS);
 }
 
@@ -966,4 +987,93 @@ function inputOneHot(oneHot) {
     cursorIdx += _applyPunctSpacing(outputItems[cursorIdx - 1].oneHot, cursorIdx - 1);
 
     renderOutput();
+}
+
+// ── 数字输入 ──
+let _digitToOneHot = null;
+
+/**
+ * @description: 输入数字到输出区，自动补充数号建立数字上下文
+ * @param {string|number} num 数字，如 "123.456" 或 42
+ * @return {void}
+ */
+function inputNumber(num) {
+    if (!_digitToOneHot) {
+        _digitToOneHot = {};
+        for (const [oh, entry] of Object.entries(NUMBER_MAPPING)) {
+            if (entry.char && entry.char !== '数号') {
+                _digitToOneHot[entry.char] = oh;
+            }
+        }
+    }
+    // 若已在数字上下文中，先插入空方脱离当前上下文
+    if (isInNumberContext()) {
+        inputSpace();
+    }
+    const str = String(num);
+    const oneHotList = [NUMBER_SIGN];
+    for (const ch of str) {
+        const oh = _digitToOneHot[ch];
+        if (oh) oneHotList.push(oh);
+    }
+    for (const oh of oneHotList) {
+        inputOneHot(oh);
+    }
+}
+
+// ── 英文输入 ──
+let _letterToOneHot = null;
+const _EN_PUNCT_TO_ONEHOT = {
+    '?': '000010+001000',
+    '!': '000011+010000',
+    '.': '000010+011000',
+    ',': '000010',
+};
+
+/**
+ * @description: 输入英文文本到输出区，自动处理大小写符号和空格
+ * @param {string} text 英文文本，如 "Can you type without looking?"
+ * @return {void}
+ */
+function inputEnglish(text) {
+    if (!_letterToOneHot) {
+        _letterToOneHot = {};
+        for (const [oh, entry] of Object.entries(LETTER_MAPPING)) {
+            if (entry.char && entry.char.length === 2) {
+                _letterToOneHot[entry.char[1]] = oh; // 小写字母 → oneHot
+            }
+        }
+    }
+    // 若已在英文上下文中，先脱离
+    if (isInEnglishContext()) inputSpace();
+
+    for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (ch === ' ') { inputSpace(); continue; }
+
+        const punctOh = _EN_PUNCT_TO_ONEHOT[ch];
+        if (punctOh) { inputOneHot(punctOh); continue; }
+
+        const lower = ch.toLowerCase();
+        const oh = _letterToOneHot[lower];
+        if (!oh) continue;
+
+        const isUpper = ch >= 'A' && ch <= 'Z';
+        const inEng = isInEnglishContext();
+
+        if (!inEng) {
+            if (isUpper) {
+                inputOneHot(CAPITAL_SIGN);
+            } else {
+                if (cursorIdx === 0 || outputItems[cursorIdx - 1].oneHot !== '000000') {
+                    inputSpace();
+                }
+                inputOneHot(LOWERCASE_SIGN);
+            }
+        } else if (isUpper) {
+            inputOneHot(CAPITAL_SIGN);
+        }
+
+        inputOneHot(oh);
+    }
 }
