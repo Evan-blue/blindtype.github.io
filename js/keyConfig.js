@@ -8,8 +8,16 @@
 
 // 默认点位键组（两组并列，始终同时生效）
 const DOT_KEY_DEFAULTS = {
-    keyboard: { '1': 'KeyU', '2': 'KeyJ', '3': 'KeyM', '4': 'KeyI', '5': 'KeyK', '6': 'Comma' },
-    numpad:   { '1': 'Numpad7', '2': 'Numpad4', '3': 'Numpad1', '4': 'Numpad8', '5': 'Numpad5', '6': 'Numpad2' },
+    keyboard: { 
+        '1': 'KeyU', '4': 'KeyI', 
+        '2': 'KeyJ', '5': 'KeyK', 
+        '3': 'KeyM', '6': 'Comma'
+    },
+    numpad:   { 
+        '1': 'Numpad7', '4': 'Numpad8', 
+        '2': 'Numpad4', '5': 'Numpad5',
+        '3': 'Numpad1', '6': 'Numpad2' 
+    },
 };
 
 // 运行时点位映射：按键标识 → 点位索引 (1-6)
