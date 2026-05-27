@@ -164,6 +164,19 @@
         </form>
     </div>
 
+    <!-- 首次访问欢迎遮罩（body层级，避免受 settings-slide 的 transform 影响 fixed 定位） -->
+    <div class="welcome-mask" id="welcomeMask" role="dialog" aria-modal="true" aria-label="欢迎">
+        <div class="welcome-mask-content">
+            <h2 class="welcome-mask-title">欢迎使用盲文输入工具</h2>
+            <p class="welcome-mask-desc">这是一个面向视障人士的盲文输入工具，支持拼音、数字、英文盲文输入，并提供语音播报反馈。</p>
+            <p class="welcome-mask-question">是否需要观看新手教程？</p>
+            <div class="welcome-mask-actions">
+                <button class="welcome-btn welcome-btn-primary" id="welcomeBtnYes" autofocus>开始教程</button>
+                <button class="welcome-btn welcome-btn-secondary" id="welcomeBtnNo">跳过</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 键位绑定遮罩（body层级，避免受 settings-slide 的 transform 影响 fixed 定位） -->
     <div class="bind-mask" id="bindMask">
         <div class="bind-mask-text" id="bindMaskText"></div>
@@ -254,6 +267,10 @@
                     <span>启用多选</span>
                     <input type="checkbox" id="multiSelect">
                 </label>
+                <label class="dev-toggle-row">
+                    <span>强制欢迎询问</span>
+                    <input type="checkbox" id="forceWelcome">
+                </label>
                 <div class="dev-sep"></div>
                 <div class="dev-action-keys" id="actionKeyBindings">
                     <div class="dev-toggle-row">
@@ -317,6 +334,7 @@
     <script src="./js/tutorial.js"></script>
     <script src="./js/fileOperations.js"></script>
     <script src="./js/history.js"></script>
+    <script src="./js/welcome.js"></script>
     <script src="./js/devPanel.js"></script>
     <script src="./js/init.js"></script>
 </body>

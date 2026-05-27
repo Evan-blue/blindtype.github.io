@@ -332,6 +332,100 @@
     font-size: 12px;
 }
 
+/* 首次访问欢迎遮罩 */
+.welcome-mask {
+    position: fixed;
+    inset: 0;
+    background: #000000cc;
+    z-index: 2100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.welcome-mask.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.welcome-mask-content {
+    background: var(--bg-card, #1e1e2e);
+    border-radius: 12px;
+    padding: 32px 28px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+.welcome-mask-title {
+    color: var(--accent, #89b4fa);
+    font-size: 22px;
+    font-weight: bold;
+    margin: 0 0 16px 0;
+}
+
+.welcome-mask-desc {
+    color: var(--text, #cdd6f4);
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0 0 12px 0;
+}
+
+.welcome-mask-question {
+    color: var(--text-muted, #a6adc8);
+    font-size: 16px;
+    margin: 0 0 24px 0;
+}
+
+.welcome-mask-actions {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+}
+
+.welcome-btn {
+    padding: 10px 28px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    min-width: 100px;
+}
+
+.welcome-btn:focus-visible {
+    outline: 3px solid var(--accent, #89b4fa);
+    outline-offset: 2px;
+}
+
+.welcome-btn:active {
+    transform: scale(0.96);
+}
+
+.welcome-btn-primary {
+    background: var(--accent, #89b4fa);
+    color: #1e1e2e;
+}
+
+.welcome-btn-primary:hover {
+    background: #b4d0fb;
+}
+
+.welcome-btn-secondary {
+    background: #45475a;
+    color: var(--text, #cdd6f4);
+}
+
+.welcome-btn-secondary:hover {
+    background: #585b70;
+}
+
 .setting-row {
     display: flex;
     align-items: center;

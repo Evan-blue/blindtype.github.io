@@ -170,10 +170,24 @@ loadAllMappings().then(async () => {
     // ── Render mapping table ──
     renderMappingTable();
 
+    // ── Welcome mask for first-time visitors ──
+    initWelcome();
+
     // ── Keyboard handler ──
     document.addEventListener('keydown', (e) => {
         // 焦点在 button 上时不拦截 Enter/Space（让原生 button 处理）
         if (e.target.closest('button') && (e.key === 'Enter' || e.key === ' ')) return;
+
+        // 欢迎遮罩键盘选择：Escape 跳过，其他任意键确认
+        if (_welcomeActive) {
+            e.preventDefault();
+            if (e.key === 'Escape') {
+                welcomeSkip();
+            } else {
+                welcomeConfirm();
+            }
+            return;
+        }
 
         // 键位设置捕获优先（监听模式下拦截所有按键）
         if (handleKeyBindingCapture(e)) return;
@@ -183,7 +197,7 @@ loadAllMappings().then(async () => {
 
         // 面板焦点陷阱：Tab 在打开的面板内循环
         if (e.key === 'Tab') {
-            const openPanel = document.querySelector('.settings-slide.open, .help-slide.open, .mapping-slide.open');
+            const openPanel = document.querySelector('.settings-slide.open, .help-slide.open, .mapping-slide.open, .welcome-mask.active');
             if (openPanel) {
                 const focusable = openPanel.querySelectorAll(
                     'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -638,6 +652,9 @@ loadAllMappings().then(async () => {
             saveSettings();
         });
     }
+
+    // 强制欢迎询问（dev panel）
+    initForceWelcomeToggle();
 
     const maxUndoInput = document.getElementById('maxUndoHistory');
     const maxUndoVal = document.getElementById('maxUndoHistoryVal');
