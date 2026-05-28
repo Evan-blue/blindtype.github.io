@@ -25,7 +25,7 @@ const DEFAULT_SETTINGS = {
     forceWelcome: false,
 };
 
-const DOT_NAMES = ['①点', '②点', '③点', '④点', '⑤点', '⑥点'];
+const DOT_NAMES = ['1点', '2点', '3点', '4点', '5点', '6点'];
 const DOT_NAME_AUDIOS = ['1号点', '2号点', '3号点', '4号点', '5号点', '6号点'];
 const SEQ_ORDER = [1, 2, 3, 4, 5, 6]; // 一键重设顺序
 
@@ -296,7 +296,7 @@ function _renderGroupBindings(container, group, ORDER) {
         keyBadge.dataset.dot = d;
         keyBadge.dataset.group = group;
         keyBadge.title = '点击后按键盘任意键设置';
-        keyBadge.innerHTML = `<span class="dot-name">${'①②③④⑤⑥'[d - 1]}</span><span class="key-label">${_keyIdToLabel(kb[d])}</span>`;
+        keyBadge.innerHTML = `<span class="dot-name">${d}</span><span class="key-label">${_keyIdToLabel(kb[d])}</span>`;
 
         keyBadge.addEventListener('click', () => {
             if (_kbListening === d && _kbListeningGroup === group && !_seqBinding) {

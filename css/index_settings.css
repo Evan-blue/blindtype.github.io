@@ -208,8 +208,8 @@
 .key-bindings .kb-badge .dot-name {
     font-size: 10px;
     position: absolute;
-    top: -5px;
-    left: -5px;
+    bottom: var(--dot-label-distance);
+    left: var(--dot-label-distance);
     color: var(--text-muted);
 }
 

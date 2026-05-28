@@ -167,6 +167,23 @@ loadAllMappings().then(async () => {
     // ── Fill key-label from config ──
     updateKeyLabels();
 
+    // ── 移动端语音唤醒：首次用户触摸时激活 speechSynthesis ──
+    (function () {
+        if (!window.speechSynthesis) return;
+        function prime() {
+            document.removeEventListener('touchstart', prime);
+            document.removeEventListener('click', prime);
+            const u = new SpeechSynthesisUtterance('');
+            u.volume = 0;
+            window.speechSynthesis.speak(u);
+            if (typeof window.speechSynthesis.resume === 'function') {
+                window.speechSynthesis.resume();
+            }
+        }
+        document.addEventListener('touchstart', prime, { once: true });
+        document.addEventListener('click', prime, { once: true });
+    })();
+
     // ── Render mapping table ──
     renderMappingTable();
 
@@ -282,7 +299,7 @@ loadAllMappings().then(async () => {
     const helpBtn = document.getElementById('helpBtn');
     const helpSlideClose = document.getElementById('helpSlideClose');
 
-    const DOT_NAMES_HELP = ['①', '②', '③', '④', '⑤', '⑥'];
+    const DOT_NAMES_HELP = ['1', '2', '3', '4', '5', '6'];
 
     /**
      * @description: 渲染键位帮助面板中的动态按键标签
@@ -444,6 +461,12 @@ loadAllMappings().then(async () => {
     const btnReadAloud = document.getElementById('btnReadAloud');
     if (btnReadAloud) {
         btnReadAloud.addEventListener('click', readAloud);
+    }
+
+    // ── Clear all ──
+    const btnClearAll = document.getElementById('btnClearAll');
+    if (btnClearAll) {
+        btnClearAll.addEventListener('click', clearOutput);
     }
 
     // ── Mapping slide panel ──

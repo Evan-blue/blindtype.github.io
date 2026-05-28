@@ -25,6 +25,10 @@ function _playNext() {
     const gen = ++_speechGen;
     const item = _speechQueue.shift();
     _speechCurrentChannel = item.channel;
+    // iOS 移动端 speechSynthesis 可能被暂停，每次播放前恢复
+    if (window.speechSynthesis.paused && typeof window.speechSynthesis.resume === 'function') {
+        window.speechSynthesis.resume();
+    }
     const u = new SpeechSynthesisUtterance(item.text);
     u.lang = 'zh-CN';
     u.rate = item.rate;

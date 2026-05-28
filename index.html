@@ -21,26 +21,25 @@
     <main class="main-area">
         <!-- Input Panel -->
         <section class="input-panel" aria-label="输入区">
-            <h2>输入区</h2>
             <div class="dot-grid" id="dotGrid">
                 <!-- 盲文点位按国标列序: dot1 dot4 / dot2 dot5 / dot3 dot6 -->
                 <button class="dot-cell" data-idx="1" aria-label="点位1" tabindex="-1">
-                    <span class="dot-label">①</span><span class="key-label"></span>
+                    <span class="dot-label">1</span><span class="key-label"></span>
                 </button>
                 <button class="dot-cell" data-idx="4" aria-label="点位4" tabindex="-1">
-                    <span class="dot-label">④</span><span class="key-label"></span>
+                    <span class="dot-label">4</span><span class="key-label"></span>
                 </button>
                 <button class="dot-cell" data-idx="2" aria-label="点位2" tabindex="-1">
-                    <span class="dot-label">②</span><span class="key-label"></span>
+                    <span class="dot-label">2</span><span class="key-label"></span>
                 </button>
                 <button class="dot-cell" data-idx="5" aria-label="点位5" tabindex="-1">
-                    <span class="dot-label">⑤</span><span class="key-label"></span>
+                    <span class="dot-label">5</span><span class="key-label"></span>
                 </button>
                 <button class="dot-cell" data-idx="3" aria-label="点位3" tabindex="-1">
-                    <span class="dot-label">③</span><span class="key-label"></span>
+                    <span class="dot-label">3</span><span class="key-label"></span>
                 </button>
                 <button class="dot-cell" data-idx="6" aria-label="点位6" tabindex="-1">
-                    <span class="dot-label">⑥</span><span class="key-label"></span>
+                    <span class="dot-label">6</span><span class="key-label"></span>
                 </button>
             </div>
             <button class="preview-box empty" id="previewBox" aria-label="预览区，点击朗读当前点位">
@@ -68,9 +67,9 @@
         <!-- Output Area -->
         <section class="output-panel" aria-label="输出区">
             <div class="output-header">
-                <h2>输出区</h2>
                 <div class="toolbar">
                     <button class="toolbar-btn" id="btnReadAloud" title="朗读内容">朗读全部</button>
+                    <button class="toolbar-btn" id="btnClearAll" title="清除输出区">清除全部</button>
                     <button class="toolbar-btn" id="btnOpenFile" title="打开文件">打开文件</button>
                     <button class="toolbar-btn" id="btnSaveContent" title="保存内容">保存内容</button>
                 </div>
@@ -199,7 +198,7 @@
                 <div class="help-table">
                     <div class="ht-row ht-header"><span class="ht-label"></span><span class="ht-keys">主键盘</span><span class="ht-keys">小键盘</span></div>
                     <div class="ht-row">
-                        <span class="ht-label"><span class="ht-dot-grid"><span>①</span><span>④</span><span>②</span><span>⑤</span><span>③</span><span>⑥</span></span></span>
+                        <span class="ht-label"><span class="ht-dot-grid"><span>1</span><span>4</span><span>2</span><span>5</span><span>3</span><span>6</span></span></span>
                         <span class="ht-keys"><span class="ht-dot-grid"><kbd id="helpDot1L">?</kbd><kbd id="helpDot4L">?</kbd><kbd id="helpDot2L">?</kbd><kbd id="helpDot5L">?</kbd><kbd id="helpDot3L">?</kbd><kbd id="helpDot6L">?</kbd></span></span><span class="ht-keys"><span class="ht-dot-grid"><kbd id="helpDot1Np">?</kbd><kbd id="helpDot4Np">?</kbd><kbd id="helpDot2Np">?</kbd><kbd id="helpDot5Np">?</kbd><kbd id="helpDot3Np">?</kbd><kbd id="helpDot6Np">?</kbd></span></span></div>
                     <div class="ht-row"><span class="ht-label">确认/空方</span><span class="ht-keys"><kbd id="htKbdSpace"></kbd></span><span class="ht-keys"><kbd id="htNpSpace"></kbd></span></div>
                     <div class="ht-row"><span class="ht-label">清空输入</span><span class="ht-keys"><kbd id="htKbdClearInput"></kbd></span><span class="ht-keys"><kbd id="htNpClearInput"></kbd></span></div>

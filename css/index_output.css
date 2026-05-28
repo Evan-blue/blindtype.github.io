@@ -3,7 +3,7 @@
 .output-panel {
     background: var(--bg-card);
     border-radius: 12px;
-    padding: 24px;
+    padding: 20px;
     flex: 1;
     min-width: 420px;
     min-height: 300px;
@@ -11,15 +11,10 @@
     flex-direction: column;
 }
 
-.output-panel h2 {
-    font-size: 16px;
-    color: var(--text-sub);
-}
-
 .output-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     margin-bottom: 12px;
     gap: 8px;
     flex-wrap: wrap;
