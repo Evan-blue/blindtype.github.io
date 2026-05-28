@@ -27,7 +27,7 @@
 
 .toolbar-btn {
     padding: 6px 14px;
-    width: 82px;
+    min-width: 82px;
     border: 1px solid var(--border-light);
     border-radius: 6px;
     background: var(--bg-toolbar);
@@ -45,6 +45,13 @@
 
 .toolbar-btn:active {
     background: #6341c9;
+}
+
+.toolbar-btn kbd {
+    font-size: 10px;
+    opacity: 0.55;
+    font-family: inherit;
+    margin-left: 4px;
 }
 
 .page-nav {

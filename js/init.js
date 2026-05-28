@@ -163,6 +163,7 @@ loadAllMappings().then(async () => {
     applyKeyBindings();
     applyActionKeyBindings();
     renderActionKeyBindingsUI(document.getElementById('actionKeyBindings'));
+    renderToolbarKeyLabels();
 
     // ── Fill key-label from config ──
     updateKeyLabels();

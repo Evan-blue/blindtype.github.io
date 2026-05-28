@@ -51,25 +51,20 @@
     box-shadow: 0 0 12px var(--accent-glow);
 }
 
-.dot-cell .dot-label {
-    font-size: 10px;
+.dot-label {
+    font-size: 8px;
     position: absolute;
     bottom: var(--dot-label-distance);
     left: var(--dot-label-distance);
-    color: #666;
 }
 
-body.light .dot-cell .dot-label {
-    color: #999;
-}
+.dot-cell .dot-label { color: #666; }
 
-.dot-cell.active .dot-label {
-    color: #ccc;
-}
+body.light .dot-cell .dot-label { color: #999; }
 
-body.light .dot-cell.active .dot-label {
-    color: #ddd;
-}
+.dot-cell.active .dot-label { color: #ccc; }
+
+body.light .dot-cell.active .dot-label { color: #ddd; }
 
 .dot-cell .key-label {
     font-size: 11px;

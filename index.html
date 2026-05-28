@@ -14,7 +14,8 @@
 
     <header>
         <h1>盲文输入工具</h1>
-        <button class="header-btn" id="btnTutorial" title="新手教程" aria-label="新手教程">新手教程</button>
+        <button class="header-btn" id="btnTutorial" title="新手教程" aria-label="新手教程">新手教程<kbd
+                id="tkbd-tutorial">?</kbd></button>
         <button class="theme-toggle" id="themeToggle" title="切换主题" aria-label="切换主题">🌙</button>
     </header>
 
@@ -59,19 +60,22 @@
             </div>
             <!-- Action buttons -->
             <div class="action-bar" id="actionBar">
-                <button class="action-btn confirm-btn" data-action="confirm">确认</button>
+                <button class="action-btn confirm-btn" data-action="confirm">输入</button>
                 <button class="action-btn clear-btn" data-action="clearInput">清除</button>
                 <button class="action-btn delete-btn" data-action="delete">删</button>
+            </div>
         </section>
 
         <!-- Output Area -->
         <section class="output-panel" aria-label="输出区">
             <div class="output-header">
                 <div class="toolbar">
-                    <button class="toolbar-btn" id="btnReadAloud" title="朗读内容">朗读全部</button>
-                    <button class="toolbar-btn" id="btnClearAll" title="清除输出区">清除全部</button>
-                    <button class="toolbar-btn" id="btnOpenFile" title="打开文件">打开文件</button>
-                    <button class="toolbar-btn" id="btnSaveContent" title="保存内容">保存内容</button>
+                    <button class="toolbar-btn" id="btnReadAloud" title="朗读内容">朗读<kbd
+                            id="tkbd-readAloud"></kbd></button>
+                    <button class="toolbar-btn" id="btnClearAll" title="清除输出区">清空<kbd
+                            id="tkbd-clearOutput"></kbd></button>
+                    <button class="toolbar-btn" id="btnOpenFile" title="打开文件">打开<kbd id="tkbd-openFile"></kbd></button>
+                    <button class="toolbar-btn" id="btnSaveContent" title="保存内容">保存<kbd id="tkbd-save"></kbd></button>
                 </div>
                 <div class="page-nav" id="pageNav" style="display:none;">
                     <button class="page-btn" id="btnPrevPage" title="上一页" aria-label="上一页">&#9664;</button>
@@ -191,26 +195,42 @@
         </div>
         <div class="help-body" id="helpBody">
             <div class="help-section">
-                <button class="help-tutorial-btn" id="helpTutorialBtn" aria-label="播放新手教程，也可按 Control+Shift+H 触发">播放新手教程</button>
+                <button class="help-tutorial-btn" id="helpTutorialBtn"
+                    aria-label="播放新手教程，也可按 Control+Shift+H 触发">播放新手教程</button>
             </div>
             <div class="help-section">
                 <h3>操作</h3>
                 <div class="help-table">
-                    <div class="ht-row ht-header"><span class="ht-label"></span><span class="ht-keys">主键盘</span><span class="ht-keys">小键盘</span></div>
+                    <div class="ht-row ht-header"><span class="ht-label"></span><span class="ht-keys">主键盘</span><span
+                            class="ht-keys">小键盘</span></div>
                     <div class="ht-row">
-                        <span class="ht-label"><span class="ht-dot-grid"><span>1</span><span>4</span><span>2</span><span>5</span><span>3</span><span>6</span></span></span>
-                        <span class="ht-keys"><span class="ht-dot-grid"><kbd id="helpDot1L">?</kbd><kbd id="helpDot4L">?</kbd><kbd id="helpDot2L">?</kbd><kbd id="helpDot5L">?</kbd><kbd id="helpDot3L">?</kbd><kbd id="helpDot6L">?</kbd></span></span><span class="ht-keys"><span class="ht-dot-grid"><kbd id="helpDot1Np">?</kbd><kbd id="helpDot4Np">?</kbd><kbd id="helpDot2Np">?</kbd><kbd id="helpDot5Np">?</kbd><kbd id="helpDot3Np">?</kbd><kbd id="helpDot6Np">?</kbd></span></span></div>
-                    <div class="ht-row"><span class="ht-label">确认/空方</span><span class="ht-keys"><kbd id="htKbdSpace"></kbd></span><span class="ht-keys"><kbd id="htNpSpace"></kbd></span></div>
-                    <div class="ht-row"><span class="ht-label">清空输入</span><span class="ht-keys"><kbd id="htKbdClearInput"></kbd></span><span class="ht-keys"><kbd id="htNpClearInput"></kbd></span></div>
-                    <div class="ht-row"><span class="ht-label">删除光标前盲文</span><span class="ht-keys"><kbd id="htKbdDelete"></kbd></span><span class="ht-keys"><kbd id="htNpDelete"></kbd></span></div>
+                        <span class="ht-label"><span
+                                class="ht-dot-grid"><span>1</span><span>4</span><span>2</span><span>5</span><span>3</span><span>6</span></span></span>
+                        <span class="ht-keys"><span class="ht-dot-grid"><kbd id="helpDot1L">?</kbd><kbd
+                                    id="helpDot4L">?</kbd><kbd id="helpDot2L">?</kbd><kbd id="helpDot5L">?</kbd><kbd
+                                    id="helpDot3L">?</kbd><kbd id="helpDot6L">?</kbd></span></span><span
+                            class="ht-keys"><span class="ht-dot-grid"><kbd id="helpDot1Np">?</kbd><kbd
+                                    id="helpDot4Np">?</kbd><kbd id="helpDot2Np">?</kbd><kbd id="helpDot5Np">?</kbd><kbd
+                                    id="helpDot3Np">?</kbd><kbd id="helpDot6Np">?</kbd></span></span>
+                    </div>
+                    <div class="ht-row"><span class="ht-label">输入 盲文/空方</span><span class="ht-keys"><kbd
+                                id="htKbdSpace"></kbd></span><span class="ht-keys"><kbd id="htNpSpace"></kbd></span>
+                    </div>
+                    <div class="ht-row"><span class="ht-label">清空当前点位</span><span class="ht-keys"><kbd
+                                id="htKbdClearInput"></kbd></span><span class="ht-keys"><kbd
+                                id="htNpClearInput"></kbd></span></div>
+                    <div class="ht-row"><span class="ht-label">删除光标前的盲文</span><span class="ht-keys"><kbd
+                                id="htKbdDelete"></kbd></span><span class="ht-keys"><kbd id="htNpDelete"></kbd></span>
+                    </div>
                 </div>
-                <div class="help-row"><kbd>⌫</kbd> 删除光标前盲文</div>
-                <div class="help-row"><kbd id="helpDeleteForward"></kbd> 删除光标后盲文</div>
+                <div class="help-row"><kbd>⌫</kbd> 删除光标前的盲文</div>
+                <div class="help-row"><kbd id="helpDeleteForward"></kbd> 删除光标后的盲文</div>
                 <div class="help-row"><kbd id="helpClearOutput"></kbd> 清空输出区</div>
                 <div class="help-row"><kbd id="helpReadAloud"></kbd> 朗读</div>
                 <div class="help-row"><kbd id="helpPageUp"></kbd> / <kbd id="helpPageDown"></kbd> 翻页</div>
                 <div class="help-row"><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> 调整光标</div>
-                <div class="help-row" id="helpRowShiftSelect"><kbd>Shift</kbd>+<kbd>←</kbd> / <kbd>Shift</kbd>+<kbd>→</kbd> 范围选择</div>
+                <div class="help-row" id="helpRowShiftSelect"><kbd>Shift</kbd>+<kbd>←</kbd> /
+                    <kbd>Shift</kbd>+<kbd>→</kbd> 范围选择</div>
             </div>
             <div class="help-section">
                 <h3>组合键</h3>
@@ -297,7 +317,8 @@
                     <span class="dev-radio-label">↑↓箭头</span>
                     <label class="dev-radio"><input type="radio" name="cursorJumpMode" value="emptyCell">空方</label>
                     <label class="dev-radio"><input type="radio" name="cursorJumpMode" value="newline">换行</label>
-                    <label class="dev-radio"><input type="radio" name="cursorJumpMode" value="sentenceEnd" checked>句子</label>
+                    <label class="dev-radio"><input type="radio" name="cursorJumpMode" value="sentenceEnd"
+                            checked>句子</label>
                 </div>
             </div>
             <div class="dev-section dev-section-main">

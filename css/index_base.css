@@ -15,6 +15,7 @@ h1 {
     font-size: 22px;
     color: var(--text-heading);
     margin: 0;
+    white-space: nowrap;
 }
 
 header {
@@ -46,6 +47,13 @@ header {
 
 .header-btn:active {
     transform: scale(0.96);
+}
+
+.header-btn kbd {
+    font-size: 10px;
+    opacity: 0.55;
+    font-family: inherit;
+    margin-left: 4px;
 }
 
 .theme-toggle {

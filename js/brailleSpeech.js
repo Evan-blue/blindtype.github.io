@@ -10,14 +10,18 @@ let _speechPlaying = false;
 let _speechGen = 0;           // 代计数器，忽略已取消语音的过期 onend
 let _speechCurrentChannel = null;
 
+function _setReadAloudLabel(text) {
+    const btn = document.getElementById('btnReadAloud');
+    if (!btn) return;
+    const tn = btn.firstChild;
+    if (tn && tn.nodeType === Node.TEXT_NODE) tn.textContent = text;
+}
+
 function _playNext() {
     if (_speechPlaying || _speechQueue.length === 0) {
         if (!_speechPlaying) {
             const hasMain = _speechQueue.some(i => i.channel === 'main');
-            if (!hasMain) {
-                const btn = document.getElementById('btnReadAloud');
-                if (btn) btn.textContent = '朗读全部';
-            }
+            if (!hasMain) _setReadAloudLabel('朗读');
         }
         return;
     }
@@ -206,10 +210,9 @@ function playBeep(freq = 880, duration = 50) {
 // ── 全文朗读 ──
 
 function readAloud() {
-    const btn = document.getElementById('btnReadAloud');
     if (isMainSpeechActive()) {
         stopSpeech();
-        if (btn) btn.textContent = '朗读全部';
+        _setReadAloudLabel('朗读');
         return;
     }
     if (outputItems.length === 0) {
@@ -263,5 +266,5 @@ function readAloud() {
         text += ' ';
     }
     speakText(text, SETTINGS.speechRate || 0.85);
-    if (btn) btn.textContent = '停止';
+    _setReadAloudLabel('停止');
 }

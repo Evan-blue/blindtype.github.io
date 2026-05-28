@@ -205,13 +205,7 @@
     animation: kb-pulse 1s ease-in-out infinite;
 }
 
-.key-bindings .kb-badge .dot-name {
-    font-size: 10px;
-    position: absolute;
-    bottom: var(--dot-label-distance);
-    left: var(--dot-label-distance);
-    color: var(--text-muted);
-}
+.kb-badge .dot-label { color: var(--text-muted); }
 
 .key-bindings .kb-badge .key-label {
     font-size: 16px;

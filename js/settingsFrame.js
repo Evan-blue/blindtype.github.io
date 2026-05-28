@@ -168,6 +168,7 @@ function resetToDefaults() {
     applyActionKeyBindings();
     updateKeyLabels();
     applyBrailleFontSize();
+    renderToolbarKeyLabels();
     const kbContainer = document.getElementById('keyBindings');
     if (kbContainer) renderKeyBindingsUI(kbContainer);
     const akbContainer = document.getElementById('actionKeyBindings');
@@ -296,7 +297,7 @@ function _renderGroupBindings(container, group, ORDER) {
         keyBadge.dataset.dot = d;
         keyBadge.dataset.group = group;
         keyBadge.title = '点击后按键盘任意键设置';
-        keyBadge.innerHTML = `<span class="dot-name">${d}</span><span class="key-label">${_keyIdToLabel(kb[d])}</span>`;
+        keyBadge.innerHTML = `<span class="dot-label">${d}</span><span class="key-label">${_keyIdToLabel(kb[d])}</span>`;
 
         keyBadge.addEventListener('click', () => {
             if (_kbListening === d && _kbListeningGroup === group && !_seqBinding) {
@@ -582,6 +583,7 @@ function handleKeyBindingCapture(e) {
         SETTINGS.actionKeyBindings[boundAction] = keyId;
         saveSettings();
         applyActionKeyBindings();
+        renderToolbarKeyLabels();
         const badge = document.querySelector('#actionKeyBindings .kb-badge.listening');
         if (badge) {
             badge.classList.remove('listening');
@@ -650,6 +652,42 @@ function clearOutput() {
     invalidatePageCache();
     speakText('输出区已清除');
     renderOutput();
+}
+
+/**
+ * @description: 渲染工具栏按钮中的快捷键标签
+ * @return {void}
+ */
+function renderToolbarKeyLabels() {
+    function _labelForAction(action) {
+        // 优先查组合键
+        for (const combo of KEY_COMBOS) {
+            if (combo.action === action) {
+                const parts = [];
+                if (combo.ctrl) parts.push('Ctrl');
+                if (combo.alt) parts.push('Alt');
+                if (combo.shift) parts.push('Shift');
+                parts.push(combo.key.length === 1 ? combo.key.toUpperCase() : combo.key);
+                return parts.join('+');
+            }
+        }
+        // 再查单键
+        for (const [key, act] of Object.entries(KEY_ACTIONS)) {
+            if (act === action) return _keyIdToLabel(key);
+        }
+        return '?';
+    }
+    const map = {
+        'tkbd-tutorial': 'tutorial',
+        'tkbd-readAloud': 'readAloud',
+        'tkbd-clearOutput': 'clearOutput',
+        'tkbd-openFile': 'openFile',
+        'tkbd-save': 'save',
+    };
+    for (const [id, action] of Object.entries(map)) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = _labelForAction(action);
+    }
 }
 
 // 键位监听时点击遮罩取消绑定
