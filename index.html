@@ -50,12 +50,12 @@
             </button>
             <div class="help-settings-row">
                 <button class="help-btn" id="btnMapping" title="盲文对照表" aria-label="盲文对照表"
-                    aria-expanded="false">📄</button>
+                    aria-expanded="false">📄<kbd id="tkbd-toggleMapping"></kbd></button>
                 <span class="help-right-group">
                     <button class="help-btn" id="helpBtn" title="键位帮助" aria-label="键位帮助"
-                        aria-expanded="false">?</button>
+                        aria-expanded="false">?<kbd id="tkbd-toggleHelp"></kbd></button>
                     <button class="help-btn" id="btnSettings" title="设置" aria-label="设置"
-                        aria-expanded="false">⚙</button>
+                        aria-expanded="false">⚙<kbd id="tkbd-toggleSettings"></kbd></button>
                 </span>
             </div>
             <!-- Action buttons -->
@@ -77,17 +77,21 @@
                     <button class="toolbar-btn" id="btnOpenFile" title="打开文件">打开<kbd id="tkbd-openFile"></kbd></button>
                     <button class="toolbar-btn" id="btnSaveContent" title="保存内容">保存<kbd id="tkbd-save"></kbd></button>
                 </div>
-                <div class="page-nav" id="pageNav" style="display:none;">
-                    <button class="page-btn" id="btnPrevPage" title="上一页" aria-label="上一页">&#9664;</button>
-                    <span class="page-indicator" id="pageIndicator">1/1</span>
-                    <button class="page-btn" id="btnNextPage" title="下一页" aria-label="下一页">&#9654;</button>
-                </div>
             </div>
             <div class="output-text" id="outputArea" tabindex="0" role="textbox" aria-live="polite" aria-label="输出内容区">
                 <span class="cursor" id="cursor"></span>
             </div>
+            <div class="page-nav" id="pageNav" style="display:none;">
+                <button class="page-btn page-btn-prev" id="btnPrevPage" title="上一页" aria-label="上一页">&#9664;</button>
+                <span class="page-indicator" id="pageIndicator">1/1</span>
+                <button class="page-btn page-btn-next" id="btnNextPage" title="下一页" aria-label="下一页">&#9654;</button>
+            </div>
         </section>
     </main>
+
+    <footer class="site-footer">
+        <a href="https://evan-blue.github.io/blindtype.github.io/" target="_blank" rel="noopener">evan-blue.github.io/blindtype.github.io</a>
+    </footer>
 
     <!-- Settings Slide Panel -->
     <div class="settings-overlay" id="settingsOverlay"></div>
@@ -240,9 +244,9 @@
                 <div class="help-row"><kbd id="helpComboSave"></kbd> 保存</div>
                 <div class="help-row"><kbd id="helpComboOpenFile"></kbd> 打开文件</div>
                 <div class="help-row"><kbd id="helpComboResetKeyBindings"></kbd> 自定义键位</div>
-                <div class="help-row"><kbd id="helpComboToggleSettings"></kbd> 打开/关闭设置</div>
-                <div class="help-row"><kbd id="helpComboToggleHelp"></kbd> 打开/关闭帮助</div>
-                <div class="help-row"><kbd id="helpComboToggleMapping"></kbd> 打开/关闭盲文对照表</div>
+                <div class="help-row"><kbd id="helpComboToggleMapping"></kbd> 打开/关闭 盲文对照表</div>
+                <div class="help-row"><kbd id="helpComboToggleHelp"></kbd> 打开/关闭 帮助</div>
+                <div class="help-row"><kbd id="helpComboToggleSettings"></kbd> 打开/关闭 设置</div>
                 <div class="help-row"><kbd id="helpComboTutorial"></kbd> 新手教程</div>
             </div>
         </div>
@@ -336,6 +340,7 @@
                 <button class="dev-btn" id="devNumber">123.456</button>
                 <button class="dev-btn" id="devEnglish">Can you type without looking?</button>
                 <button class="dev-btn" id="devRandom">随机若干字符</button>
+                <button class="dev-btn" id="devLoadTestFile">加载测试文件</button>
             </div>
         </div>
         <div class="dev-header">

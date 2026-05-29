@@ -221,6 +221,14 @@ body.light .dot-cell.active .dot-label { color: #ddd; }
     width: 66px;
 }
 
+.help-btn kbd {
+    margin-left: 5px;
+    font-size: 10px;
+    line-height: 1;
+    opacity: 0.55;
+    font-family: inherit;
+}
+
 .help-btn:hover {
     border-color: var(--accent);
     color: #fff;

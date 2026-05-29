@@ -993,9 +993,9 @@ function inputOneHot(oneHot) {
 let _digitToOneHot = null;
 
 /**
- * @description: 输入数字到输出区，自动补充数号建立数字上下文
+ * @description: 构建数字盲文 oneHot 序列，自动补充数号。若已在数字上下文中先插入空方脱离。
  * @param {string|number} num 数字，如 "123.456" 或 42
- * @return {void}
+ * @return {string[]} oneHot 数组
  */
 function inputNumber(num) {
     if (!_digitToOneHot) {
@@ -1006,19 +1006,17 @@ function inputNumber(num) {
             }
         }
     }
-    // 若已在数字上下文中，先插入空方脱离当前上下文
+    const oneHotList = [];
     if (isInNumberContext()) {
-        inputSpace();
+        oneHotList.push('000000');
     }
+    oneHotList.push(NUMBER_SIGN);
     const str = String(num);
-    const oneHotList = [NUMBER_SIGN];
     for (const ch of str) {
         const oh = _digitToOneHot[ch];
         if (oh) oneHotList.push(oh);
     }
-    for (const oh of oneHotList) {
-        inputOneHot(oh);
-    }
+    return oneHotList;
 }
 
 // ── 英文输入 ──
@@ -1031,9 +1029,9 @@ const _EN_PUNCT_TO_ONEHOT = {
 };
 
 /**
- * @description: 输入英文文本到输出区，自动处理大小写符号和空格
+ * @description: 构建英文盲文 oneHot 序列，自动处理大小写符号和空格。若已在英文上下文中先脱离。
  * @param {string} text 英文文本，如 "Can you type without looking?"
- * @return {void}
+ * @return {string[]} oneHot 数组
  */
 function inputEnglish(text) {
     if (!_letterToOneHot) {
@@ -1044,36 +1042,52 @@ function inputEnglish(text) {
             }
         }
     }
-    // 若已在英文上下文中，先脱离
-    if (isInEnglishContext()) inputSpace();
+    const oneHotList = [];
+    let localInEng = false;
+    let prevIsSpace = (cursorIdx === 0 || outputItems[cursorIdx - 1].oneHot === '000000');
+    if (isInEnglishContext()) {
+        oneHotList.push('000000');
+        prevIsSpace = true;
+    }
 
     for (let i = 0; i < text.length; i++) {
         const ch = text[i];
-        if (ch === ' ') { inputSpace(); continue; }
+        if (ch === ' ') {
+            oneHotList.push('000000');
+            localInEng = false;
+            prevIsSpace = true;
+            continue;
+        }
 
         const punctOh = _EN_PUNCT_TO_ONEHOT[ch];
-        if (punctOh) { inputOneHot(punctOh); continue; }
+        if (punctOh) {
+            oneHotList.push(punctOh);
+            prevIsSpace = false;
+            continue;
+        }
 
         const lower = ch.toLowerCase();
         const oh = _letterToOneHot[lower];
         if (!oh) continue;
 
         const isUpper = ch >= 'A' && ch <= 'Z';
-        const inEng = isInEnglishContext();
 
-        if (!inEng) {
+        if (!localInEng) {
             if (isUpper) {
-                inputOneHot(CAPITAL_SIGN);
+                oneHotList.push(CAPITAL_SIGN);
             } else {
-                if (cursorIdx === 0 || outputItems[cursorIdx - 1].oneHot !== '000000') {
-                    inputSpace();
+                if (!prevIsSpace) {
+                    oneHotList.push('000000');
                 }
-                inputOneHot(LOWERCASE_SIGN);
+                oneHotList.push(LOWERCASE_SIGN);
             }
         } else if (isUpper) {
-            inputOneHot(CAPITAL_SIGN);
+            oneHotList.push(CAPITAL_SIGN);
         }
 
-        inputOneHot(oh);
+        oneHotList.push(oh);
+        localInEng = true;
+        prevIsSpace = false;
     }
+    return oneHotList;
 }

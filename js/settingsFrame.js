@@ -683,6 +683,9 @@ function renderToolbarKeyLabels() {
         'tkbd-clearOutput': 'clearOutput',
         'tkbd-openFile': 'openFile',
         'tkbd-save': 'save',
+        'tkbd-toggleMapping': 'toggleMapping',
+        'tkbd-toggleHelp': 'toggleHelp',
+        'tkbd-toggleSettings': 'toggleSettings',
     };
     for (const [id, action] of Object.entries(map)) {
         const el = document.getElementById(id);

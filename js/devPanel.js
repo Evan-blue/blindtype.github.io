@@ -157,9 +157,10 @@ function _pinyinToOneHot(py) {
 function chineseToBraille(chineseText) {
     _buildBrailleReverseMaps();
 
-    // 未开启分词时，直接按字符转换
+    // 先整体转拼音（保证多音字有完整上下文），再根据分词结果插入空方
+    const pinyinArr = pinyin(chineseText, { toneType: 'num', type: 'array' });
+
     if (!SETTINGS.wordSegmentation) {
-        const pinyinArr = pinyin(chineseText, { toneType: 'num', type: 'array' });
         const oneHotList = [];
         for (const py of pinyinArr) {
             oneHotList.push(..._pinyinToOneHot(py));
@@ -172,17 +173,18 @@ function chineseToBraille(chineseText) {
 
     const PUNCT_RE = /^[\s，。！？；：""''（）【】《》、…—～,\.!\?;:'"()\[\]{}]+$/;
 
+    let charIdx = 0;
     for (let i = 0; i < segments.length; i++) {
         const seg = segments[i];
+        const segLen = seg.length;
         const isPunct = PUNCT_RE.test(seg);
 
-        // 标点同样转盲文，不能跳过
-        const pinyinArr = pinyin(seg, { toneType: 'num', type: 'array' });
-        for (const py of pinyinArr) {
+        const segPinyin = pinyinArr.slice(charIdx, charIdx + segLen);
+        for (const py of segPinyin) {
             oneHotList.push(..._pinyinToOneHot(py));
         }
+        charIdx += segLen;
 
-        // 词与词之间（不与标点相邻）插入空方，避免连续空方
         if (i + 1 < segments.length) {
             const nextIsPunct = PUNCT_RE.test(segments[i + 1]);
             if (!isPunct && !nextIsPunct && oneHotList[oneHotList.length - 1] !== '000000') {
@@ -340,14 +342,14 @@ function initDevPanel() {
     document.getElementById('devNumberInput').addEventListener('click', () => {
         const input = prompt('请输入数字');
         if (!input || !input.trim()) return;
-        inputNumber(input.trim());
+        execMode(inputNumber(input.trim()));
     });
 
     // ── 输入英文 ──
     document.getElementById('devEnglishInput').addEventListener('click', () => {
         const input = prompt('请输入英文内容');
         if (!input || !input.trim()) return;
-        inputEnglish(input.trim());
+        execMode(inputEnglish(input.trim()));
     });
 
     // ── 我爱你 ──
@@ -372,12 +374,12 @@ function initDevPanel() {
 
     // ── 123.456 ──
     document.getElementById('devNumber').addEventListener('click', () => {
-        inputNumber('123.456');
+        execMode(inputNumber('123.456'));
     });
 
     // ── English sentence ──
     document.getElementById('devEnglish').addEventListener('click', () => {
-        inputEnglish('Can you type without looking?');
+        execMode(inputEnglish('Can you type without looking?'));
     });
 
     // ── 随机若干字符 ──
@@ -391,6 +393,27 @@ function initDevPanel() {
             list.push(allKeys[Math.floor(Math.random() * allKeys.length)]);
         }
         execMode(list);
+    });
+
+    // ── 加载测试文件 ──
+    document.getElementById('devLoadTestFile').addEventListener('click', async () => {
+        try {
+            const resp = await fetch('./test_files/test2.txt');
+            if (!resp.ok) { speakText('加载测试文件失败'); return; }
+            const rawText = await resp.text();
+            if (!rawText || !rawText.trim()) { speakText('测试文件内容为空'); return; }
+
+            const result = chineseToBraille(rawText.trim());
+            if (result && result.length > 0) {
+                clearOutput();
+                await _batchInputOneHot(result);
+                speakText('已加载测试文件');
+            } else {
+                speakText('测试文件中未检测到有效内容');
+            }
+        } catch (e) {
+            speakText('加载测试文件出错');
+        }
     });
 
     // 初始位于右上角，需要立即确定展开方向

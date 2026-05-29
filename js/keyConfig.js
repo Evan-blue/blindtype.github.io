@@ -77,10 +77,10 @@ const KEY_COMBOS = [
     { ctrl: true,  key: 'z', action: 'undo' },
     { ctrl: true,  key: 'y', action: 'redo' },
     { ctrl: true, shift: true, key: 'Z', action: 'redo' },
-    { ctrl: true, shift: true, key: 'S', action: 'toggleSettings' },
-    { ctrl: true, shift: true, key: 'Q', action: 'toggleHelp' },
     { ctrl: true, shift: true, key: 'K', action: 'resetKeyBindings' },
     { ctrl: true, key: 'o', action: 'openFile' },
     { ctrl: true, shift: true, key: 'H', action: 'tutorial' },
-    { ctrl: true, shift: true, key: 'W', action: 'toggleMapping' },
+    { key: 'q', action: 'toggleMapping' },
+    { key: 'w', action: 'toggleHelp' },
+    { key: 'e', action: 'toggleSettings' },
 ];
