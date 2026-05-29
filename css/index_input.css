@@ -8,7 +8,8 @@
     flex-direction: column;
     align-items: center;
     gap: 16px;
-    min-width: 220px;
+    min-width: 230px;
+    min-height: 490px;
 }
 
 .dot-grid {
@@ -227,5 +228,82 @@ body.light .dot-cell.active .dot-label { color: #ddd; }
     border-color: var(--accent);
     color: #fff;
     background: var(--accent-light);
+}
+
+/* 模式切换条 */
+.mode-toggle-bar {
+    display: flex;
+    width: 100%;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+
+.mode-toggle-tab {
+    flex: 1;
+    padding: 6px 0;
+    border: none;
+    background: var(--bg-toolbar);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+}
+
+.mode-toggle-tab:first-child {
+    border-right: 1px solid var(--border);
+}
+
+.mode-toggle-tab.active {
+    background: var(--accent);
+    color: #fff;
+}
+
+.mode-toggle-tab:hover:not(.active) {
+    background: var(--bg-hover);
+    color: var(--text);
+}
+
+/* 正常输入模式 */
+.normal-input-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    flex: 1;
+}
+
+.normal-input-textarea {
+    width: 100%;
+    flex: 1;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-input);
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    line-height: 1.5;
+    resize: none;
+    min-height: 0;
+    box-sizing: border-box;
+}
+
+.normal-input-textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+.normal-input-textarea::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+.input-panel.normal-mode .dot-grid,
+.input-panel.normal-mode .preview-box,
+.input-panel.normal-mode .action-bar {
+    display: none;
 }
 

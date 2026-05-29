@@ -22,6 +22,10 @@
     <main class="main-area">
         <!-- Input Panel -->
         <section class="input-panel" aria-label="输入区">
+            <div class="mode-toggle-bar" id="modeToggleBar">
+                <button class="mode-toggle-tab active" data-mode="braille">盲文输入</button>
+                <button class="mode-toggle-tab" data-mode="normal">打字输入</button>
+            </div>
             <div class="dot-grid" id="dotGrid">
                 <!-- 盲文点位按国标列序: dot1 dot4 / dot2 dot5 / dot3 dot6 -->
                 <button class="dot-cell" data-idx="1" aria-label="点位1" tabindex="-1">
@@ -63,6 +67,13 @@
                 <button class="action-btn confirm-btn" data-action="confirm">输入</button>
                 <button class="action-btn clear-btn" data-action="clearInput">清除</button>
                 <button class="action-btn delete-btn" data-action="delete">删</button>
+            </div>
+
+            <!-- Normal input mode -->
+            <div class="normal-input-wrap" id="normalInputWrap" style="display:none;">
+                <textarea class="normal-input-textarea" id="normalInputTextarea" rows="4"
+                    placeholder="在此输入中文内容，按 Ctrl+Enter 确认转盲文…" aria-label="打字输入区域"></textarea>
+                <button class="action-btn confirm-btn" id="normalInputConfirm">确 认</button>
             </div>
         </section>
 
@@ -231,8 +242,8 @@
                 <div class="help-row"><kbd id="helpDeleteForward"></kbd> 删除光标后的盲文</div>
                 <div class="help-row"><kbd id="helpClearOutput"></kbd> 清空输出区</div>
                 <div class="help-row"><kbd id="helpReadAloud"></kbd> 朗读</div>
-                <div class="help-row"><kbd id="helpPageUp"></kbd> / <kbd id="helpPageDown"></kbd> 翻页</div>
                 <div class="help-row"><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> 调整光标</div>
+                <div class="help-row"><kbd id="helpPageUp"></kbd> / <kbd id="helpPageDown"></kbd> 翻页</div>
                 <div class="help-row" id="helpRowShiftSelect"><kbd>Shift</kbd>+<kbd>←</kbd> /
                     <kbd>Shift</kbd>+<kbd>→</kbd> 范围选择</div>
             </div>

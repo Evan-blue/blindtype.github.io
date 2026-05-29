@@ -1091,3 +1091,73 @@ function inputEnglish(text) {
     }
     return oneHotList;
 }
+
+// ── 正常输入模式 ──
+
+let _normalInputMode = false;
+
+/**
+ * @description: 设置输入模式
+ * @param {string} mode 'braille' | 'normal'
+ * @return {void}
+ */
+function setInputMode(mode) {
+    _normalInputMode = (mode === 'normal');
+    const panel = document.querySelector('.input-panel');
+    const wrap = document.getElementById('normalInputWrap');
+    const textarea = document.getElementById('normalInputTextarea');
+    const tabs = document.querySelectorAll('.mode-toggle-tab');
+
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+
+    if (_normalInputMode) {
+        panel.classList.add('normal-mode');
+        wrap.style.display = '';
+        textarea.focus();
+        speakText('正常输入模式');
+    } else {
+        panel.classList.remove('normal-mode');
+        wrap.style.display = 'none';
+        textarea.value = '';
+        speakText('盲文输入模式');
+    }
+}
+
+/**
+ * @description: 正常输入模式下确认内容，转为盲文并渲染
+ * @return {void}
+ */
+async function normalInputConfirm() {
+    const textarea = document.getElementById('normalInputTextarea');
+    const text = textarea.value.trim();
+    if (!text) { speakText('内容为空'); return; }
+
+    const result = chineseToBraille(text);
+    if (result && result.length > 0) {
+        await _batchInputOneHot(result);
+        speakText('已输入');
+        textarea.value = '';
+    } else {
+        speakText('无法转换输入内容');
+    }
+}
+
+// ── 事件绑定（正常输入模式）──
+(function () {
+    document.querySelectorAll('.mode-toggle-tab').forEach(tab => {
+        tab.addEventListener('click', () => setInputMode(tab.dataset.mode));
+    });
+
+    const textarea = document.getElementById('normalInputTextarea');
+    if (textarea) {
+        textarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                normalInputConfirm();
+            }
+        });
+    }
+
+    const confirmBtn = document.getElementById('normalInputConfirm');
+    if (confirmBtn) confirmBtn.addEventListener('click', normalInputConfirm);
+})();

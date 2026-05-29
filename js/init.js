@@ -193,6 +193,8 @@ loadAllMappings().then(async () => {
 
     // ── Keyboard handler ──
     document.addEventListener('keydown', (e) => {
+        // 焦点在 textarea/input 上时不拦截按键（正常输入模式）
+        if (e.target.closest('textarea, input')) return;
         // 焦点在 button 上时不拦截 Enter/Space（让原生 button 处理）
         if (e.target.closest('button') && (e.key === 'Enter' || e.key === ' ')) return;
 
