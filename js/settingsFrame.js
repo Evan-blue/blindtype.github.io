@@ -686,6 +686,7 @@ function renderToolbarKeyLabels() {
         'tkbd-toggleMapping': 'toggleMapping',
         'tkbd-toggleHelp': 'toggleHelp',
         'tkbd-toggleSettings': 'toggleSettings',
+        'tkbd-resetKeyBindings': 'resetKeyBindings',
     };
     for (const [id, action] of Object.entries(map)) {
         const el = document.getElementById(id);
