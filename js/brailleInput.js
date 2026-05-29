@@ -1092,7 +1092,7 @@ function inputEnglish(text) {
     return oneHotList;
 }
 
-// ── 正常输入模式 ──
+// ── 打字输入模式 ──
 
 let _normalInputMode = false;
 
@@ -1114,7 +1114,7 @@ function setInputMode(mode) {
         panel.classList.add('normal-mode');
         wrap.style.display = '';
         textarea.focus();
-        speakText('正常输入模式');
+        speakText('打字输入模式');
     } else {
         panel.classList.remove('normal-mode');
         wrap.style.display = 'none';
@@ -1124,7 +1124,7 @@ function setInputMode(mode) {
 }
 
 /**
- * @description: 正常输入模式下确认内容，转为盲文并渲染
+ * @description: 打字输入模式下确认内容，转为盲文并渲染
  * @return {void}
  */
 async function normalInputConfirm() {
@@ -1132,7 +1132,19 @@ async function normalInputConfirm() {
     const text = textarea.value.trim();
     if (!text) { speakText('内容为空'); return; }
 
-    const result = chineseToBraille(text);
+    // 自动识别内容类型
+    const isDigits = /^[\d\s.]+$/.test(text);
+    const isEnglish = /^[a-zA-Z\s.,!?;:'"()\-]+$/.test(text);
+
+    let result;
+    if (isDigits) {
+        result = inputNumber(text.replace(/\s/g, ''));
+    } else if (isEnglish) {
+        result = inputEnglish(text);
+    } else {
+        result = chineseToBraille(text);
+    }
+
     if (result && result.length > 0) {
         await _batchInputOneHot(result);
         speakText('已输入');
@@ -1142,7 +1154,7 @@ async function normalInputConfirm() {
     }
 }
 
-// ── 事件绑定（正常输入模式）──
+// ── 事件绑定（打字输入模式）──
 (function () {
     document.querySelectorAll('.mode-toggle-tab').forEach(tab => {
         tab.addEventListener('click', () => setInputMode(tab.dataset.mode));
