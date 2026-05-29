@@ -375,7 +375,7 @@ loadAllMappings().then(async () => {
         const comboIds = {
             undo: 'helpComboUndo', redo: 'helpComboRedo', selectAll: 'helpComboSelectAll',
             save: 'helpComboSave', openFile: 'helpComboOpenFile', toggleSettings: 'helpComboToggleSettings',
-            toggleHelp: 'helpComboToggleHelp', tutorial: 'helpComboTutorial', resetKeyBindings: 'helpComboResetKeyBindings',
+            toggleHelp: 'helpComboToggleHelp', resetKeyBindings: 'helpComboResetKeyBindings',
             toggleMapping: 'helpComboToggleMapping',
         };
         for (const [action, id] of Object.entries(comboIds)) {

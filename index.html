@@ -200,7 +200,7 @@
         <div class="help-body" id="helpBody">
             <div class="help-section">
                 <button class="help-tutorial-btn" id="helpTutorialBtn"
-                    aria-label="播放新手教程，也可按 Control+Shift+H 触发">播放新手教程</button>
+                    aria-label="播放新手教程，也可按 Control+Shift+H 触发">播放新手教程<kbd id="tkbd-helpTutorial"></kbd></button>
             </div>
             <div class="help-section">
                 <h3>操作</h3>
@@ -247,7 +247,7 @@
                 <div class="help-row"><kbd id="helpComboToggleMapping"></kbd> 打开/关闭 盲文对照表</div>
                 <div class="help-row"><kbd id="helpComboToggleHelp"></kbd> 打开/关闭 帮助</div>
                 <div class="help-row"><kbd id="helpComboToggleSettings"></kbd> 打开/关闭 设置</div>
-                <div class="help-row"><kbd id="helpComboTutorial"></kbd> 新手教程</div>
+
             </div>
         </div>
     </div>
@@ -270,7 +270,7 @@
     <!-- Developer Panel -->
     <aside class="dev-panel collapsed" id="devPanel" aria-label="开发者工具">
         <div class="dev-sections-wrap">
-            <div class="dev-section dev-section-settings">
+            <div class="dev-section dev-section-settings" id="devSectionSettings">
                 <label class="dev-toggle-row">
                     <span>允许播报</span>
                     <input type="checkbox" id="allowSpeech" checked>
@@ -325,7 +325,7 @@
                             checked>句子</label>
                 </div>
             </div>
-            <div class="dev-section dev-section-main">
+            <div class="dev-section dev-section-main" id="devSectionMain">
                 <div class="dev-mode-row">
                     <span class="dev-mode-label">模式</span>
                     <button class="dev-mode-btn active" data-mode="input">输入</button>
@@ -347,6 +347,10 @@
             Dev
             <button class="dev-pin" id="devPin" title="固定面板" aria-label="固定面板" aria-pressed="false">📌</button>
             <button class="dev-close" id="devClose" title="关闭" aria-label="关闭">×</button>
+            <span class="dev-tabs">
+                <span class="dev-tab active" data-target="devSectionSettings" title="高级设置">高级设置</span>
+                <span class="dev-tab" data-target="devSectionMain" title="模拟输入">模拟输入</span>
+            </span>
         </div>
     </aside>
     <script src="https://unpkg.com/pinyin-pro"></script>

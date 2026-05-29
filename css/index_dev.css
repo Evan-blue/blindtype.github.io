@@ -132,6 +132,47 @@
     border-color: var(--danger);
 }
 
+.dev-tabs {
+    position: absolute;
+    left: -108px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 3px;
+    opacity: 0;
+    transition: opacity .15s;
+}
+
+.dev-header:hover .dev-tabs {
+    opacity: 1;
+}
+
+.dev-tab {
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: normal;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--text-muted);
+    background: var(--dev-bg);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color .15s, background .15s, border-color .15s;
+}
+
+.dev-tab.active {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--accent-light);
+}
+
+.dev-tab:hover:not(.active) {
+    border-color: var(--accent);
+    color: var(--text);
+}
+
 .dev-mode-row {
     display: flex;
     align-items: center;
@@ -177,6 +218,7 @@
     cursor: pointer;
     transition: .1s;
     text-align: left;
+    white-space: nowrap;
 }
 
 .dev-btn:hover {

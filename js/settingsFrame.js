@@ -679,6 +679,7 @@ function renderToolbarKeyLabels() {
     }
     const map = {
         'tkbd-tutorial': 'tutorial',
+        'tkbd-helpTutorial': 'tutorial',
         'tkbd-readAloud': 'readAloud',
         'tkbd-clearOutput': 'clearOutput',
         'tkbd-openFile': 'openFile',

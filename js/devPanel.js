@@ -254,7 +254,7 @@ function initDevPanel() {
 
     header.addEventListener('click', (e) => {
         if (dragMoved) return;
-        if (e.target.closest('#devClose') || e.target.closest('#devPin')) return;
+        if (e.target.closest('#devClose') || e.target.closest('#devPin') || e.target.closest('.dev-tab')) return;
         // 点击 header 等同于切换 pin
         pinBtn.click();
     });
@@ -414,6 +414,26 @@ function initDevPanel() {
         } catch (e) {
             speakText('加载测试文件出错');
         }
+    });
+
+    // ── Tab 切换：高级设置 / 模拟输入 ──
+    const devTabs = panel.querySelectorAll('.dev-tab');
+    const devSections = panel.querySelectorAll('.dev-section');
+    devTabs.forEach(tab => {
+        tab.addEventListener('mousedown', e => e.stopPropagation());
+        tab.addEventListener('click', () => {
+            const targetId = tab.dataset.target;
+            devTabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            devSections.forEach(s => {
+                s.style.display = s.id === targetId ? '' : 'none';
+            });
+        });
+    });
+    // 初始状态：只显示 active tab 对应的 section
+    devSections.forEach(s => {
+        const activeTab = panel.querySelector('.dev-tab.active');
+        s.style.display = activeTab && s.id === activeTab.dataset.target ? '' : 'none';
     });
 
     // 初始位于右上角，需要立即确定展开方向

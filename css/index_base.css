@@ -51,6 +51,7 @@ header {
 
 .header-btn kbd {
     font-size: 10px;
+    line-height: 1;
     opacity: 0.55;
     font-family: inherit;
     margin-left: 4px;
