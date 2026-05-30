@@ -23,6 +23,7 @@ const DEFAULT_SETTINGS = {
     punctAutoSpacing: true,
     multiSelect: false,
     forceWelcome: false,
+    mainKeyboardDigits: true,
 };
 
 const DOT_NAMES = ['1点', '2点', '3点', '4点', '5点', '6点'];
@@ -144,6 +145,7 @@ function loadSettings() {
     if (SETTINGS.multiSelect === undefined) SETTINGS.multiSelect = DEFAULT_SETTINGS.multiSelect;
     if (SETTINGS.allowSpeech === undefined) SETTINGS.allowSpeech = DEFAULT_SETTINGS.allowSpeech;
     if (SETTINGS.forceWelcome === undefined) SETTINGS.forceWelcome = DEFAULT_SETTINGS.forceWelcome;
+    if (SETTINGS.mainKeyboardDigits === undefined) SETTINGS.mainKeyboardDigits = DEFAULT_SETTINGS.mainKeyboardDigits;
     applyBrailleFontSize();
 
     // 清理旧版备选键组存储（已迁移至 SETTINGS.keyBindings）

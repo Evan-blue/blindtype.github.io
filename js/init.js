@@ -279,6 +279,15 @@ loadAllMappings().then(async () => {
             e.preventDefault();
             return;
         }
+
+        // 主键盘数字键1-6映射到盲文点位1-6（开发面板开关控制）
+        if (SETTINGS.mainKeyboardDigits && e.code >= 'Digit1' && e.code <= 'Digit6') {
+            const dotIdx = parseInt(e.code.slice(-1), 10);
+            toggleDot(dotIdx);
+            setActiveKeyGroup(e.code);
+            e.preventDefault();
+            return;
+        }
     });
 
     // ── Dot-cell clicks & keyboard ──
@@ -693,6 +702,16 @@ loadAllMappings().then(async () => {
 
     // 强制欢迎询问（dev panel）
     initForceWelcomeToggle();
+
+    // 主键盘数字1-6映射盲文点位（dev panel）
+    const mainKeyboardDigitsCheck = document.getElementById('mainKeyboardDigits');
+    if (mainKeyboardDigitsCheck) {
+        mainKeyboardDigitsCheck.checked = SETTINGS.mainKeyboardDigits;
+        mainKeyboardDigitsCheck.addEventListener('change', () => {
+            SETTINGS.mainKeyboardDigits = mainKeyboardDigitsCheck.checked;
+            saveSettings();
+        });
+    }
 
     const maxUndoInput = document.getElementById('maxUndoHistory');
     const maxUndoVal = document.getElementById('maxUndoHistoryVal');

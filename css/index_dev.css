@@ -134,7 +134,7 @@
 
 .dev-tabs {
     position: absolute;
-    left: -108px;
+    left: -120px;
     top: 50%;
     transform: translateY(-50%);
     display: flex;
@@ -143,12 +143,13 @@
     transition: opacity .15s;
 }
 
-.dev-header:hover .dev-tabs {
+.dev-header:hover .dev-tabs,
+.dev-panel.pinned .dev-tabs {
     opacity: 1;
 }
 
 .dev-tab {
-    padding: 2px 5px;
+    padding: 5px 8px;
     border-radius: 3px;
     font-size: 9px;
     font-weight: normal;
