@@ -235,8 +235,7 @@
 
 /* 空方：窄宽 + 背景色 + 虚线边框，可辨识但不占太多空间 */
 .braille-unit.empty-braille {
-    min-width: 0;
-    padding-left: calc(var(--braille-font-size, 22px) * 0.06);
+    min-width: calc(var(--braille-font-size, 22px) * 0.8);
     padding-right: calc(var(--braille-font-size, 22px) * 0.06);
     background: var(--bg-empty, rgba(128, 128, 128, 0.15));
     border: 1px dashed var(--text-muted, #999);

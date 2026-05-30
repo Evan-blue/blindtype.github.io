@@ -244,7 +244,11 @@ function renderPageRange(startIdx, endIdx, container) {
             if (selectedIndices.has(i)) { unit.classList.add('selected'); unit.setAttribute('aria-selected', 'true'); }
             if (item.oneHot === '000000') unit.classList.add('empty-braille');
             unit.dataset.idx = i;
-            unit.innerHTML = `<span class="bu-dots">${item.braille}</span><span class="bu-char">${item.char || ''}</span>`;
+            if (item.oneHot === '000000') {
+                unit.innerHTML = `<span class="bu-dots">&nbsp;</span><span class="bu-char">&nbsp;</span>`;
+            } else {
+                unit.innerHTML = `<span class="bu-dots">${item.braille}</span>${item.char ? `<span class="bu-char">${item.char}</span>` : ''}`;
+            }
             container.appendChild(unit);
             itemToChild[i] = childIdx;
             childIdx++;
