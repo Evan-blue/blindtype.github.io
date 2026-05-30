@@ -60,7 +60,7 @@ function toggleDot(idx) {
         if (dotState.some(d => d) && SETTINGS.debounceSpeech) {
             speakBraille(dotState.join(''));
         }
-    }, DEBOUNCE_MS || 500);
+    }, DEBOUNCE_MS);
 
     // Immediate partial preview (dimmed)
     const braille = dotsToBrailleChar(dotState);
@@ -309,38 +309,35 @@ function _applyPunctSpacing(oneHot, idx) {
 }
 
 /**
- * @description: 确认当前输入，将盲文字符插入输出区光标位置
- *   支持数字模式：输入数号(001111)后，后续点位按数字解读
+ * @description: 将 oneHot 编码提交到输出区——confirmInput 与 inputOneHot 的共享核心逻辑
+ *   支持数字模式、英文模式、拼音输入、标点空方等全部上下文
+ * @param {string} oneHot 6位二进制字符串如 "110000"
+ * @param {object} [opts] 选项
+ * @param {boolean} [opts.silent=false] 静默模式，跳过语音播报和按键音效
+ * @param {boolean} [opts.clearDots=false] 是否清除 dotState 并重置预览区
  * @return {void}
  */
-function confirmInput() {
-    if (!dotState.some(d => d)) return;
-    pushUndo();
-    invalidatePageCache();
-
-    clearTimeout(debounceTimer);
-
-    const braille = dotsToBrailleChar(dotState);
-    const key = dotState.join('');
+function _commitOneHot(oneHot, { silent = false, clearDots = false } = {}) {
+    const braille = oneHotToBrailleChar(oneHot);
 
     // ── 解析上一项延迟的标点空方 ──
-    _resolveDeferredPunct(key);
+    _resolveDeferredPunct(oneHot);
 
     // ── 解析 gkh/jqx 声母歧义（后续韵母决定读音）──
-    _resolveAmbigInitial(key);
+    _resolveAmbigInitial(oneHot);
 
     // ── 输入数号（001111同时也是韵母eng，前面有声母则为eng）──
-    if (key === NUMBER_SIGN) {
+    if (oneHot === NUMBER_SIGN) {
         const prevChar = _getPrevChar(cursorIdx);
         if (!prevChar || !_validInitials || !_validInitials.has(prevChar)) {
-            const signEntry = NUMBER_MAPPING[key];
+            const signEntry = NUMBER_MAPPING[oneHot];
             outputItems.splice(cursorIdx, 0, {
                 braille, pinyin: '', char: signEntry.char, audio: signEntry.audio,
-                oneHot: key, isNumber: true
+                oneHot, isNumber: true
             });
             cursorIdx++;
-            dotState.fill(0); renderDots(); resetPreview();
-            speakText(signEntry.audio);
+            if (clearDots) { dotState.fill(0); renderDots(); resetPreview(); }
+            if (!silent) speakText(signEntry.audio);
             renderOutput();
             return;
         }
@@ -349,15 +346,15 @@ function confirmInput() {
 
     // ── 数字模式下追加数字位 ──
     if (isInNumberContext()) {
-        const digit = NUMBER_MAPPING[key];
+        const digit = NUMBER_MAPPING[oneHot];
         if (digit) {
             const numItem = outputItems[getNumberStartIdx()];
-            numItem.oneHot += '+' + key;
+            numItem.oneHot += '+' + oneHot;
             numItem.braille += braille;
             numItem.char += digit.char;
             numItem.audio = numItem.char;
-            dotState.fill(0); renderDots(); resetPreview();
-            speakText(digit.audio);
+            if (clearDots) { dotState.fill(0); renderDots(); resetPreview(); }
+            if (!silent) speakText(digit.audio);
             renderOutput();
             return;
         }
@@ -365,50 +362,50 @@ function confirmInput() {
     }
 
     // ── 输入大写字母符号 ──
-    if (key === CAPITAL_SIGN) {
-        const signEntry = LETTER_MAPPING[key];
+    if (oneHot === CAPITAL_SIGN) {
+        const signEntry = LETTER_MAPPING[oneHot];
         if (isInEnglishContext()) {
             const engItem = outputItems[getEnglishStartIdx()];
             if (engItem.letterCase === 'upper') {
                 // 连续两个大写符号 → 全大写模式
                 engItem.allCaps = true;
-                engItem.oneHot += '+' + key;
+                engItem.oneHot += '+' + oneHot;
                 engItem.braille += braille;
-                dotState.fill(0); renderDots(); resetPreview();
-                speakText('全大写');
+                if (clearDots) { dotState.fill(0); renderDots(); resetPreview(); }
+                if (!silent) speakText('全大写');
                 renderOutput();
                 return;
             }
         }
         outputItems.splice(cursorIdx, 0, {
             braille, pinyin: '', char: '', audio: signEntry.audio,
-            oneHot: key, isEnglish: true, letterCase: 'upper', singleUpper: true
+            oneHot, isEnglish: true, letterCase: 'upper', singleUpper: true
         });
         cursorIdx++;
-        dotState.fill(0); renderDots(); resetPreview();
-        speakText(signEntry.audio);
+        if (clearDots) { dotState.fill(0); renderDots(); resetPreview(); }
+        if (!silent) speakText(signEntry.audio);
         renderOutput();
         return;
     }
 
     // ── 输入小写字母符号/分号（前方空方→小写符号；否则→分号）──
-    if (key === LOWERCASE_SIGN) {
-        const signEntry = LETTER_MAPPING[key];
-        if (cursorIdx > 0 && outputItems[cursorIdx - 1].oneHot === '000000') {
+    if (oneHot === LOWERCASE_SIGN) {
+        const signEntry = LETTER_MAPPING[oneHot];
+        if (cursorIdx === 0 || (cursorIdx > 0 && outputItems[cursorIdx - 1].oneHot === '000000')) {
             outputItems.splice(cursorIdx, 0, {
                 braille, pinyin: '', char: '', audio: signEntry.audio,
-                oneHot: key, isEnglish: true, letterCase: 'lower'
+                oneHot, isEnglish: true, letterCase: 'lower'
             });
             cursorIdx++;
-            dotState.fill(0); renderDots(); resetPreview();
-            speakText(signEntry.audio);
+            if (clearDots) { dotState.fill(0); renderDots(); resetPreview(); }
+            if (!silent) speakText(signEntry.audio);
             renderOutput();
             return;
         }
         // 否则为分号（000011），插入后空一方
         outputItems.splice(cursorIdx, 0, {
             braille, pinyin: '；(分号)', char: '；', audio: '分号',
-            oneHot: key
+            oneHot
         });
         cursorIdx++;
         if (SETTINGS.punctAutoSpacing && (cursorIdx >= outputItems.length || outputItems[cursorIdx].oneHot !== '000000')) {
@@ -417,15 +414,15 @@ function confirmInput() {
             });
             cursorIdx++;
         }
-        dotState.fill(0); renderDots(); resetPreview();
-        playBeep();
+        if (clearDots) { dotState.fill(0); renderDots(); resetPreview(); }
+        if (!silent) playBeep();
         renderOutput();
         return;
     }
 
     // ── 英文模式下追加字母 ──
     if (isInEnglishContext()) {
-        const letter = LETTER_MAPPING[key];
+        const letter = LETTER_MAPPING[oneHot];
         if (letter && letter.char) {
             const engItem = outputItems[getEnglishStartIdx()];
             const isUpper = engItem.letterCase === 'upper';
@@ -433,7 +430,7 @@ function confirmInput() {
             const audioParts = (letter.audio || '').split(' ');
             const letterChar = isUpper ? (ch[0] || '') : (ch[1] || '');
             const letterAudio = isUpper ? (audioParts[0] || letterChar) : (audioParts[1] || letterChar);
-            engItem.oneHot += '+' + key;
+            engItem.oneHot += '+' + oneHot;
             engItem.braille += braille;
             engItem.char += letterChar;
             engItem.audio = engItem.char;
@@ -441,8 +438,8 @@ function confirmInput() {
             if (engItem.singleUpper && !engItem.allCaps && engItem.char.length === 1) {
                 engItem.letterCase = 'lower';
             }
-            dotState.fill(0); renderDots(); resetPreview();
-            speakText(letterAudio);
+            if (clearDots) { dotState.fill(0); renderDots(); resetPreview(); }
+            if (!silent) speakText(letterAudio);
             renderOutput();
             return;
         }
@@ -450,13 +447,13 @@ function confirmInput() {
     }
 
     // ── 普通拼音输入 ──
-    const entry = _lookupBraille(key);
+    const entry = _lookupBraille(oneHot);
     const pinyin = entry ? entry.label : '';
     const audio = entry ? entry.audio : '';
-    const char = entry ? (_resolveEo(key, cursorIdx) || entry.char) : '';
+    const char = entry ? (_resolveEo(oneHot, cursorIdx) || entry.char) : '';
 
-    const item = { braille, pinyin, char, audio, oneHot: key };
-    if (AMBIG_INITIALS[key]) item._ambigInitial = true;
+    const item = { braille, pinyin, char, audio, oneHot };
+    if (AMBIG_INITIALS[oneHot]) item._ambigInitial = true;
     outputItems.splice(cursorIdx, 0, item);
     cursorIdx++;
 
@@ -487,14 +484,25 @@ function confirmInput() {
     // ── 标点空方处理 ──
     cursorIdx += _applyPunctSpacing(outputItems[cursorIdx - 1].oneHot, cursorIdx - 1);
 
-    dotState.fill(0); renderDots(); resetPreview();
+    if (clearDots) { dotState.fill(0); renderDots(); resetPreview(); }
 
-    if (merged) {
-        speakBraille(outputItems[cursorIdx - 1].oneHot);
-    } else {
-        speakBraille(key);
+    if (!silent) {
+        speakBraille(merged ? outputItems[cursorIdx - 1].oneHot : oneHot);
     }
     renderOutput();
+}
+
+/**
+ * @description: 确认当前输入（手动按键触发），将 dotState 对应的盲文字符插入输出区
+ *   调用 _commitOneHot 前处理 undo、缓存失效、debounce 取消和 dotState 重置
+ * @return {void}
+ */
+function confirmInput() {
+    if (!dotState.some(d => d)) return;
+    pushUndo();
+    invalidatePageCache();
+    clearTimeout(debounceTimer);
+    _commitOneHot(dotState.join(''), { silent: false, clearDots: true });
 }
 
 /**
@@ -837,156 +845,14 @@ function moveCursorDown() {
 
 /**
  * @description: 直接通过 oneHot 编码插入盲文字符（支持数字模式）
+ *   批量加载、dev panel、打字输入模式等路径调用此函数，委托 _commitOneHot 静默执行
  * @param {string} oneHot 6位二进制字符串如 "110000"
  * @return {void}
  */
 function inputOneHot(oneHot) {
     pushUndo();
     if (!_renderSuppressed) invalidatePageCache();
-
-    const braille = oneHotToBrailleChar(oneHot);
-
-    // ── 解析上一项延迟的标点空方 ──
-    _resolveDeferredPunct(oneHot);
-
-    // ── 解析 gkh/jqx 声母歧义 ──
-    _resolveAmbigInitial(oneHot);
-
-    // ── 输入数号（001111同时也是韵母eng，前面有声母则为eng）──
-    if (oneHot === NUMBER_SIGN) {
-        const prevChar = _getPrevChar(cursorIdx);
-        if (!prevChar || !_validInitials || !_validInitials.has(prevChar)) {
-            const signEntry = NUMBER_MAPPING[oneHot];
-            outputItems.splice(cursorIdx, 0, {
-                braille, pinyin: '', char: signEntry.char, audio: signEntry.audio,
-                oneHot, isNumber: true
-            });
-            cursorIdx++;
-            renderOutput();
-            return;
-        }
-        // 前面有声母，按韵母eng处理，继续往下
-    }
-
-    // ── 数字模式下追加数字位 ──
-    if (isInNumberContext()) {
-        const digit = NUMBER_MAPPING[oneHot];
-        if (digit) {
-            const numItem = outputItems[getNumberStartIdx()];
-            numItem.oneHot += '+' + oneHot;
-            numItem.braille += braille;
-            numItem.char += digit.char;
-            numItem.audio = numItem.char;
-            renderOutput();
-            return;
-        }
-    }
-
-    // ── 输入大写字母符号 ──
-    if (oneHot === CAPITAL_SIGN) {
-        const signEntry = LETTER_MAPPING[oneHot];
-        if (isInEnglishContext()) {
-            const engItem = outputItems[getEnglishStartIdx()];
-            if (engItem.letterCase === 'upper') {
-                engItem.allCaps = true;
-                engItem.oneHot += '+' + oneHot;
-                engItem.braille += braille;
-                renderOutput();
-                return;
-            }
-        }
-        outputItems.splice(cursorIdx, 0, {
-            braille, pinyin: '', char: '', audio: signEntry.audio,
-            oneHot, isEnglish: true, letterCase: 'upper', singleUpper: true
-        });
-        cursorIdx++;
-        renderOutput();
-        return;
-    }
-
-    // ── 输入小写字母符号/分号（前方空方→小写符号；否则→分号）──
-    if (oneHot === LOWERCASE_SIGN) {
-        const signEntry = LETTER_MAPPING[oneHot];
-        if (cursorIdx > 0 && outputItems[cursorIdx - 1].oneHot === '000000') {
-            outputItems.splice(cursorIdx, 0, {
-                braille, pinyin: '', char: '', audio: signEntry.audio,
-                oneHot, isEnglish: true, letterCase: 'lower'
-            });
-            cursorIdx++;
-            renderOutput();
-            return;
-        }
-        outputItems.splice(cursorIdx, 0, {
-            braille, pinyin: '；(分号)', char: '；', audio: '分号',
-            oneHot
-        });
-        cursorIdx++;
-        if (SETTINGS.punctAutoSpacing && (cursorIdx >= outputItems.length || outputItems[cursorIdx].oneHot !== '000000')) {
-            outputItems.splice(cursorIdx, 0, {
-                braille: '⠀', pinyin: ' ', char: '', audio: '空方', oneHot: '000000'
-            });
-            cursorIdx++;
-        }
-        renderOutput();
-        return;
-    }
-
-    // ── 英文模式下追加字母 ──
-    if (isInEnglishContext()) {
-        const letter = LETTER_MAPPING[oneHot];
-        if (letter && letter.char) {
-            const engItem = outputItems[getEnglishStartIdx()];
-            const isUpper = engItem.letterCase === 'upper';
-            const ch = letter.char;
-            const letterChar = isUpper ? (ch[0] || '') : (ch[1] || '');
-            engItem.oneHot += '+' + oneHot;
-            engItem.braille += braille;
-            engItem.char += letterChar;
-            engItem.audio = engItem.char;
-            if (engItem.singleUpper && !engItem.allCaps && engItem.char.length === 1) {
-                engItem.letterCase = 'lower';
-            }
-            renderOutput();
-            return;
-        }
-    }
-
-    // ── 普通拼音输入 ──
-    const entry = _lookupBraille(oneHot);
-    const pinyin = entry ? entry.label : '';
-    const audio = entry ? entry.audio : '';
-    const char = entry ? (_resolveEo(oneHot, cursorIdx) || entry.char) : '';
-
-    const item = { braille, pinyin, char, audio, oneHot };
-    if (AMBIG_INITIALS[oneHot]) item._ambigInitial = true;
-    outputItems.splice(cursorIdx, 0, item);
-    cursorIdx++;
-
-    // Auto-merge if last two items form a combined character
-    if (cursorIdx >= 2) {
-        const prev = outputItems[cursorIdx - 2];
-        const curr = outputItems[cursorIdx - 1];
-        if (!prev.isNumber && !prev.isEnglish && !curr.isNumber && !curr.isEnglish) {
-            const combinedKey = prev.oneHot + '+' + curr.oneHot;
-            const combinedEntry = _lookupBraille(combinedKey);
-            if (combinedEntry) {
-                const combinedBraille = oneHotToBrailleChar(combinedKey);
-                outputItems.splice(cursorIdx - 2, 2, {
-                    braille: combinedBraille,
-                    pinyin: combinedEntry.label,
-                    char: combinedEntry.char,
-                    audio: combinedEntry.audio,
-                    oneHot: combinedKey
-                });
-                cursorIdx--;
-            }
-        }
-    }
-
-    // ── 标点空方处理 ──
-    cursorIdx += _applyPunctSpacing(outputItems[cursorIdx - 1].oneHot, cursorIdx - 1);
-
-    renderOutput();
+    _commitOneHot(oneHot, { silent: true, clearDots: false });
 }
 
 // ── 数字输入 ──
@@ -1071,18 +937,21 @@ function inputEnglish(text) {
         if (!oh) continue;
 
         const isUpper = ch >= 'A' && ch <= 'Z';
+        const nextUpper = i + 1 < text.length && text[i + 1] >= 'A' && text[i + 1] <= 'Z';
 
         if (!localInEng) {
             if (isUpper) {
-                oneHotList.push(CAPITAL_SIGN);
-            } else {
-                if (!prevIsSpace) {
-                    oneHotList.push('000000');
+                if (nextUpper) {
+                    // 后续仍为大写 → 全大写模式（两个连续大写符号）
+                    oneHotList.push(CAPITAL_SIGN, CAPITAL_SIGN);
+                } else {
+                    // 仅当前字母大写 → 单大写符号
+                    oneHotList.push(CAPITAL_SIGN);
                 }
+            } else {
+                if (!prevIsSpace) oneHotList.push('000000');
                 oneHotList.push(LOWERCASE_SIGN);
             }
-        } else if (isUpper) {
-            oneHotList.push(CAPITAL_SIGN);
         }
 
         oneHotList.push(oh);

@@ -41,36 +41,6 @@ function sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
 }
 
-/**
- * @description: 批量随机插入盲文字符（走 inputOneHot，快速填充）
- * @param {number} n        数量
- * @param {number} interval 字符间隔(ms)，默认60
- * @return {void}
- */
-function generateRandomChars(n, interval = 60) {
-    const allKeys = [...Object.keys(PINYIN_MAPPING), ...Object.keys(PUNC_MAPPING)];
-    for (let i = 0; i < n; i++) {
-        setTimeout(() => {
-            const key = allKeys[Math.floor(Math.random() * allKeys.length)];
-            inputOneHot(key);
-        }, i * interval);
-    }
-}
-
-/**
- * @description: 随机模拟键盘键入盲文字符（走 simulateKeyInput，可视化逐键过程）
- * @param {number} n 数量
- * @return {Promise<void>}
- */
-async function typeRandomChars(n) {
-    const allKeys = [...Object.keys(PINYIN_MAPPING), ...Object.keys(PUNC_MAPPING)];
-    const list = [];
-    for (let i = 0; i < n; i++) {
-        list.push(allKeys[Math.floor(Math.random() * allKeys.length)]);
-    }
-    simulateKeyInput(list, 60);
-}
-
 // ── 汉字→盲文转换 ──
 
 let _charToOneHot = null;

@@ -195,8 +195,8 @@ loadAllMappings().then(async () => {
     document.addEventListener('keydown', (e) => {
         // 焦点在 textarea/input 上时不拦截按键（正常输入模式）
         if (e.target.closest('textarea, input')) return;
-        // 焦点在 button 上时不拦截 Enter/Space（让原生 button 处理）
-        if (e.target.closest('button') && (e.key === 'Enter' || e.key === ' ')) return;
+        // 焦点在 button 上时不拦截 Enter（让原生 button 处理）；Space 不在此列——空格键用于盲文输入
+        if (e.target.closest('button') && e.key === 'Enter') return;
 
         // 欢迎遮罩键盘选择：Escape 跳过，其他任意键确认
         if (_welcomeActive) {
