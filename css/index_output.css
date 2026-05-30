@@ -148,17 +148,17 @@
 }
 
 .output-text::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
 }
 
 .output-text::-webkit-scrollbar-track {
     background: transparent;
-    border-radius: 3px;
+    border-radius: 4px;
 }
 
 .output-text::-webkit-scrollbar-thumb {
     background: var(--scrollbar-thumb);
-    border-radius: 3px;
+    border-radius: 4px;
 }
 
 .output-text::-webkit-scrollbar-thumb:hover {
