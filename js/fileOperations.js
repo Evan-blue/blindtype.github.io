@@ -12,18 +12,21 @@ document.getElementById('btnOpenFile').addEventListener('click', handleOpenFile)
  */
 async function _batchInputOneHot(list, chunkSize = 20) {
     _renderSuppressed = true;
-    for (let i = 0; i < list.length; i += chunkSize) {
-        const chunk = list.slice(i, i + chunkSize);
-        for (const oh of chunk) {
-            inputOneHot(oh);
+    try {
+        for (let i = 0; i < list.length; i += chunkSize) {
+            const chunk = list.slice(i, i + chunkSize);
+            for (const oh of chunk) {
+                inputOneHot(oh);
+            }
+            _renderSuppressed = false;
+            invalidatePageCache();
+            renderOutput();
+            await new Promise(r => setTimeout(r, 0));
+            _renderSuppressed = true;
         }
+    } finally {
         _renderSuppressed = false;
-        invalidatePageCache();
-        renderOutput();
-        await new Promise(r => setTimeout(r, 0));
-        _renderSuppressed = true;
     }
-    _renderSuppressed = false;
     invalidatePageCache();
     renderOutput();
 }
