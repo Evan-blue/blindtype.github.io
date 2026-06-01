@@ -41,137 +41,6 @@ function sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
 }
 
-// ── 汉字→盲文转换 ──
-
-let _charToOneHot = null;
-let _reverseSoloMap = null;
-const _TONE_NUM_TO_SYM = { '1': '¯', '2': '´', '3': 'ˇ', '4': '`' };
-
-function _buildBrailleReverseMaps() {
-    if (_charToOneHot) return;
-    _charToOneHot = {};
-    for (const cat of MAPPING_CATEGORIES) {
-        for (const entry of cat.entries) {
-            for (const ch of entry.char.split('/')) {
-                _charToOneHot[ch] = entry.oneHot;
-            }
-        }
-    }
-    // 反向 solo final 映射: "yi"→"i", "wo"→"uo", ...
-    if (_soloFinalMap) {
-        _reverseSoloMap = {};
-        for (const [k, v] of Object.entries(_soloFinalMap)) {
-            _reverseSoloMap[v] = k;
-        }
-    }
-}
-
-/**
- * @description: 将单个拼音转为 oneHot 编码数组
- * @param {string} py 拼音字符串（可带声调数字）
- * @return {string[]} oneHot数组
- */
-function _pinyinToOneHot(py) {
-    const result = [];
-    let base = py;
-    let tone = '';
-    if (/\d$/.test(py)) { tone = py.slice(-1); base = py.slice(0, -1); }
-
-    // j/q/x 后紧接 u 时才是 ü（如 ju→jü, que→qüe）；jiu 中的 u 不是韵母开头，不替换
-    if (/^[jqx]/.test(base) && base.charAt(1) === 'u') {
-        base = base.charAt(0) + 'ü' + base.slice(2);
-    }
-
-    // 反向 solo final: "yi"→"i", "wo"→"uo" 等
-    const actualBase = (_reverseSoloMap && _reverseSoloMap[base]) ? _reverseSoloMap[base] : base;
-
-    // 拆分声母+韵母
-    let initial = '';
-    let fin = actualBase;
-    if (!_validFinals || !_validFinals.has(actualBase)) {
-        for (let split = 1; split < actualBase.length; split++) {
-            const init = actualBase.slice(0, split);
-            const f = actualBase.slice(split);
-            if (_validFinals && _validFinals.has(f) && _validInitials && _validInitials.has(init)) {
-                initial = init;
-                fin = f;
-                break;
-            }
-        }
-    }
-
-    if (initial) {
-        const oh = _charToOneHot[initial];
-        if (oh) result.push(oh);
-    }
-    if (fin) {
-        const oh = _charToOneHot[fin];
-        if (oh) result.push(oh);
-    }
-    if (tone) {
-        const sym = _TONE_NUM_TO_SYM[tone];
-        if (sym) {
-            const oh = _charToOneHot[sym];
-            if (oh) result.push(oh);
-        }
-    }
-    return result;
-}
-
-/**
- * @description: 将汉字文本转为盲文 oneHot 序列并渲染到输出区
- *   开启分词时：先分词，词与词之间（不与标点相邻处）插入空方(000000)
- * @param {string} chineseText 汉字文本
- * @return {string[]} oneHot数组
- */
-function chineseToBraille(chineseText) {
-    _buildBrailleReverseMaps();
-
-    // 先整体转拼音（保证多音字有完整上下文），再根据分词结果插入空方
-    const pinyinArr = pinyin(chineseText, { toneType: 'num', type: 'array' });
-
-    if (!SETTINGS.wordSegmentation) {
-        const oneHotList = [];
-        for (const py of pinyinArr) {
-            oneHotList.push(..._pinyinToOneHot(py));
-        }
-        return oneHotList;
-    }
-
-    const segments = splitText(chineseText, 'zh-CN', 'word');
-    const oneHotList = [];
-
-    const PUNCT_RE = /^[\s，。！？；：""''（）【】《》、…—～,\.!\?;:'"()\[\]{}]+$/;
-
-    let charIdx = 0;
-    for (let i = 0; i < segments.length; i++) {
-        const seg = segments[i];
-        const segLen = seg.length;
-        const isPunct = PUNCT_RE.test(seg);
-
-        const segPinyin = pinyinArr.slice(charIdx, charIdx + segLen);
-        for (const py of segPinyin) {
-            oneHotList.push(..._pinyinToOneHot(py));
-        }
-        charIdx += segLen;
-
-        if (i + 1 < segments.length) {
-            const nextIsPunct = PUNCT_RE.test(segments[i + 1]);
-            if (!isPunct && !nextIsPunct && oneHotList[oneHotList.length - 1] !== '000000') {
-                oneHotList.push('000000');
-            }
-        }
-    }
-
-    // 去重连续空方
-    const deduped = [];
-    for (const oh of oneHotList) {
-        if (oh === '000000' && deduped[deduped.length - 1] === '000000') continue;
-        deduped.push(oh);
-    }
-    return deduped;
-}
-
 /**
  * @description: 初始化开发者面板（绑定拖动逻辑和测试按钮事件）
  * @return {void}
@@ -300,6 +169,13 @@ function initDevPanel() {
             oneHotList.forEach(oh => inputOneHot(oh));
         }
     }
+
+    // ── 混合内容输入（中英数字）──
+    document.getElementById('devMixedInput').addEventListener('click', () => {
+        const input = prompt('请输入内容（支持中英数字混合）');
+        if (!input || !input.trim()) return;
+        execMode(mixedToBraille(input.trim()));
+    });
 
     // ── 汉字输入转盲文 ──
     document.getElementById('devChineseInput').addEventListener('click', () => {

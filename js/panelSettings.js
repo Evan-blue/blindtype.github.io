@@ -1,4 +1,4 @@
-// settings.js - 设置管理
+// panelSettings.js - 设置管理与设置面板
 
 // 从 CONFIGURABLE_ACTIONS 生成默认 actionKeyBindings
 const _defaultActionKeyBindings = {};
@@ -57,11 +57,6 @@ SETTINGS = {
     actionKeyBindings: { ..._defaultActionKeyBindings },
 };
 
-/**
- * @description: 将旧格式键位标识迁移为 e.code 格式
- * @param {string} keyId 旧格式键位标识
- * @return {string} e.code 格式键位标识
- */
 function _migrateKeyId(keyId) {
     if (/^[0-9]$/.test(keyId)) return 'Numpad' + keyId;
     if (/^[a-zA-Z]$/.test(keyId)) return 'Key' + keyId.toUpperCase();
@@ -92,10 +87,6 @@ function _migrateActionKeyIds(akb) {
     }
 }
 
-/**
- * @description: 从 localStorage 加载用户设置，缺失项用默认值填充
- * @return {void}
- */
 function loadSettings() {
     const saved = localStorage.getItem('braille-settings');
     if (saved) {
@@ -108,10 +99,8 @@ function loadSettings() {
         SETTINGS = {};
     }
 
-    // Ensure keyBindings exists
     if (!SETTINGS.keyBindings) SETTINGS.keyBindings = {};
 
-    // 检测旧版单组格式并迁移为双组格式
     if (SETTINGS.keyBindings['1'] && typeof SETTINGS.keyBindings['1'] === 'string') {
         const oldKb = SETTINGS.keyBindings;
         _migrateKeyIds(oldKb);
@@ -148,7 +137,6 @@ function loadSettings() {
     if (SETTINGS.mainKeyboardDigits === undefined) SETTINGS.mainKeyboardDigits = DEFAULT_SETTINGS.mainKeyboardDigits;
     applyBrailleFontSize();
 
-    // 清理旧版备选键组存储（已迁移至 SETTINGS.keyBindings）
     localStorage.removeItem('braille-alt-groups');
 }
 
@@ -203,20 +191,11 @@ function resetToDefaults() {
     speakText('已恢复默认设置');
 }
 
-function getSettings() {
-    return SETTINGS;
-}
-
-/**
- * @description: 根据设置重建 KEY_TO_DOT 和 DOT_TO_KEY 映射（合并两组键位）
- * @return {void}
- */
 function applyKeyBindings() {
     const kb = SETTINGS.keyBindings;
     for (const k of Object.keys(KEY_TO_DOT)) delete KEY_TO_DOT[k];
     for (const k of Object.keys(DOT_TO_KEY)) delete DOT_TO_KEY[k];
     for (const k of Object.keys(DOT_TO_KEY_NUMPAD)) delete DOT_TO_KEY_NUMPAD[k];
-    // 先合并 keyboard 组，再合并 numpad 组（同键不覆盖，keyboard 优先）
     for (const group of ['keyboard', 'numpad']) {
         for (const [dotStr, key] of Object.entries(kb[group] || {})) {
             if (key && !(key in KEY_TO_DOT)) {
@@ -224,11 +203,9 @@ function applyKeyBindings() {
             }
         }
     }
-    // DOT_TO_KEY 从 keyboard 组生成（用于点位上的键位标签显示）
     for (const [dotStr, key] of Object.entries(kb.keyboard || {})) {
         if (key) DOT_TO_KEY[parseInt(dotStr, 10)] = key;
     }
-    // DOT_TO_KEY_NUMPAD 从 numpad 组生成（用于点位上的键位标签显示）
     for (const [dotStr, key] of Object.entries(kb.numpad || {})) {
         if (key) DOT_TO_KEY_NUMPAD[parseInt(dotStr, 10)] = key;
     }
@@ -284,12 +261,6 @@ function _cancelAllListening() {
     if (akbContainer) renderActionKeyBindingsUI(akbContainer);
 }
 
-/**
- * @description: 渲染单个键位组的绑定 UI
- * @param {HTMLElement} container 容器
- * @param {string} group 'keyboard' | 'numpad'
- * @param {number[]} ORDER 渲染布局顺序
- */
 function _renderGroupBindings(container, group, ORDER) {
     container.innerHTML = '';
     const kb = SETTINGS.keyBindings[group] || {};
@@ -325,25 +296,17 @@ function _renderGroupBindings(container, group, ORDER) {
     }
 }
 
-/**
- * @description: 渲染键位设置 UI（两组并列，均可编辑）
- * @param {HTMLElement} container 主键盘键位绑定的容器元素
- * @return {void}
- */
 function renderKeyBindingsUI(container) {
     if (!container) return;
-    const ORDER = [1, 4, 2, 5, 3, 6]; // 渲染布局：匹配盲文输入区左右列
+    const ORDER = [1, 4, 2, 5, 3, 6];
 
-    // 渲染主键盘组
     _renderGroupBindings(container, 'keyboard', ORDER);
 
-    // 渲染小键盘组
     const altContainer = document.getElementById('keyBindingsAlt');
     if (altContainer) {
         _renderGroupBindings(altContainer, 'numpad', ORDER);
     }
 
-    // 一键重设按钮
     const resetBtn = document.getElementById('kbResetBtn');
     if (resetBtn) {
         const newBtn = resetBtn.cloneNode(true);
@@ -353,8 +316,8 @@ function renderKeyBindingsUI(container) {
 }
 
 function _startSeqBinding() {
-    if (!document.getElementById('settingsSlide').classList.contains('open')) {
-        if (typeof toggleSettings === 'function') toggleSettings();
+    if (!settingsPanel.slide.classList.contains('open')) {
+        settingsPanel.open();
     }
     if (_kbListening !== null || _akbListening !== null) {
         _cancelAllListening();
@@ -369,7 +332,6 @@ function _startSeqBinding() {
     speakText('请按下第1个按键，1号点');
 }
 
-// KEY_ACTIONS 中不可配置的键位（不在 CONFIGURABLE_ACTIONS 管理范围内）
 const _NON_CONFIGURABLE_KEYS = new Set([
     'Numpad0', 'NumpadDivide', 'NumpadMultiply',
     'Backspace', 'Delete', 'Space',
@@ -380,7 +342,6 @@ const _NON_CONFIGURABLE_KEYS = new Set([
 function applyActionKeyBindings() {
     const akb = SETTINGS.actionKeyBindings;
     const configurableActions = new Set(Object.keys(CONFIGURABLE_ACTIONS));
-    // 清理可配置动作的旧键位（保留不可配置键如 NumpadDivide、Backspace）
     for (const [key, act] of Object.entries(KEY_ACTIONS)) {
         if (configurableActions.has(act) && !_NON_CONFIGURABLE_KEYS.has(key)) {
             delete KEY_ACTIONS[key];
@@ -426,11 +387,6 @@ function renderActionKeyBindingsUI(container) {
     });
 }
 
-/**
- * @description: 应用键位预设方案（更新对应组）
- * @param {string} presetName 预设名称
- * @return {void}
- */
 function applyKeyPreset(presetName) {
     const preset = KEY_PRESETS[presetName];
     if (!preset) return;
@@ -464,11 +420,6 @@ function applyKeyPreset(presetName) {
     speakText(labels, 3);
 }
 
-/**
- * @description: 全局按键捕获 —— 当键位处于监听模式时拦截按键
- * @param {KeyboardEvent} e 键盘事件
- * @return {boolean} 是否已处理（消费）该按键
- */
 function handleKeyBindingCapture(e) {
     if (e.key === 'Escape') {
         if (_akbListening !== null) {
@@ -508,7 +459,6 @@ function handleKeyBindingCapture(e) {
 
     const keyId = _eventToKeyId(e);
 
-    // 一键重设模式
     if (_seqBinding !== null) {
         const ORDER = SEQ_ORDER;
         const dot = ORDER[_seqBinding.step];
@@ -522,7 +472,6 @@ function handleKeyBindingCapture(e) {
         _seqBinding.keys[dot] = keyId;
         _seqBinding.step++;
         if (_seqBinding.step >= 6) {
-            // 判断键位类型，更新对应组
             let numpadCount = 0;
             for (const key of Object.values(_seqBinding.keys)) {
                 if (_isNumpadKey(key)) numpadCount++;
@@ -538,9 +487,8 @@ function handleKeyBindingCapture(e) {
             speakText(groupLabel + '键位已全部更新');
             const container = document.getElementById('keyBindings');
             if (container) renderKeyBindingsUI(container);
-            const slide = document.getElementById('settingsSlide');
-            if (slide && slide.classList.contains('open') && typeof toggleSettings === 'function') {
-                toggleSettings();
+            if (settingsPanel.slide.classList.contains('open')) {
+                settingsPanel.close();
             }
         } else {
             const nextDot = ORDER[_seqBinding.step];
@@ -550,11 +498,9 @@ function handleKeyBindingCapture(e) {
         return true;
     }
 
-    // 单个点位键位监听
     if (_kbListening !== null) {
         const boundDot = _kbListening;
         const group = _kbListeningGroup;
-        // 检查该按键是否已映射到其他点位
         const existingDot = KEY_TO_DOT[keyId];
         if (existingDot !== undefined && existingDot !== boundDot) {
             _showBindMask('按键 ' + _keyIdToLabel(keyId) + ' 已被' + DOT_NAMES[existingDot - 1] + '使用，请换一个按键');
@@ -579,7 +525,6 @@ function handleKeyBindingCapture(e) {
         return true;
     }
 
-    // 动作键位监听
     if (_akbListening !== null) {
         const boundAction = _akbListening;
         SETTINGS.actionKeyBindings[boundAction] = keyId;
@@ -621,9 +566,6 @@ function updateKeyLabels() {
     applyActiveKeyGroup();
 }
 
-/**
- * @description: 根据 activeKeyGroup 全局变量，切换所有 .key-label 的活跃/非活跃样式
- */
 function applyActiveKeyGroup() {
     const grid = document.getElementById('dotGrid');
     if (!grid) return;
@@ -631,10 +573,6 @@ function applyActiveKeyGroup() {
     grid.classList.add('active-group-' + activeKeyGroup);
 }
 
-/**
- * @description: 点位输入时，根据实际按键切换全局活跃键组
- * @param {string} keyId 实际按下的按键标识
- */
 function setActiveKeyGroup(keyId) {
     const group = _isNumpadKey(keyId) ? 'numpad' : 'keyboard';
     if (group === activeKeyGroup) return;
@@ -656,13 +594,8 @@ function clearOutput() {
     renderOutput();
 }
 
-/**
- * @description: 渲染工具栏按钮中的快捷键标签
- * @return {void}
- */
 function renderToolbarKeyLabels() {
     function _labelForAction(action) {
-        // 优先查组合键
         for (const combo of KEY_COMBOS) {
             if (combo.action === action) {
                 const parts = [];
@@ -673,7 +606,6 @@ function renderToolbarKeyLabels() {
                 return parts.join('+');
             }
         }
-        // 再查单键
         for (const [key, act] of Object.entries(KEY_ACTIONS)) {
             if (act === action) return _keyIdToLabel(key);
         }
@@ -704,3 +636,161 @@ document.getElementById('bindMask')?.addEventListener('click', () => {
         speakText('已取消');
     }
 });
+
+// ── 设置面板 ──
+
+const settingsPanel = createSlidePanel({
+    slideId: 'settingsSlide',
+    overlayId: 'settingsOverlay',
+    btnId: 'btnSettings',
+    closeBtnId: 'settingsSlideClose',
+    onOpen: () => {
+        renderKeyBindingsUI(document.getElementById('keyBindings'));
+        renderActionKeyBindingsUI(document.getElementById('actionKeyBindings'));
+    },
+    onClose: () => {
+        _kbListening = null;
+        _akbListening = null;
+        _seqBinding = null;
+        _hideBindMask();
+        const kbContainer = document.getElementById('keyBindings');
+        if (kbContainer && typeof renderKeyBindingsUI === 'function') renderKeyBindingsUI(kbContainer);
+        const akbContainer = document.getElementById('actionKeyBindings');
+        if (akbContainer && typeof renderActionKeyBindingsUI === 'function') renderActionKeyBindingsUI(akbContainer);
+    },
+    openSpeak: '打开设置',
+    closeSpeak: '关闭设置',
+});
+
+toggleSettings = settingsPanel.toggle;
+
+// ── 设置控件初始化 ──
+
+function initSettingsPanel() {
+    const settingsForm = document.getElementById('settingsForm');
+    if (settingsForm) {
+        settingsForm.addEventListener('submit', (e) => e.preventDefault());
+    }
+
+    const btnResetDefaults = document.getElementById('btnResetDefaults');
+    if (btnResetDefaults) {
+        btnResetDefaults.addEventListener('click', () => {
+            speakText('确定要恢复所有设置为默认值吗？此操作不可撤销。');
+            if (confirm('确定要恢复所有设置为默认值吗？此操作不可撤销。')) {
+                resetToDefaults();
+            }
+        });
+    }
+
+    document.querySelectorAll('#kbPresets .kb-preset').forEach(btn => {
+        btn.addEventListener('click', () => {
+            applyKeyPreset(btn.dataset.preset);
+        });
+    });
+
+    const speechRateInput = document.getElementById('speechRate');
+    const speechRateVal = document.getElementById('speechRateVal');
+    if (speechRateInput) {
+        speechRateInput.value = SETTINGS.speechRate;
+        speechRateVal.textContent = SETTINGS.speechRate;
+        speechRateInput.addEventListener('input', () => {
+            SETTINGS.speechRate = parseFloat(speechRateInput.value);
+            speechRateVal.textContent = SETTINGS.speechRate;
+            saveSettings();
+        });
+    }
+
+    const debounceSpeechCheck = document.getElementById('debounceSpeech');
+    if (debounceSpeechCheck) {
+        debounceSpeechCheck.checked = SETTINGS.debounceSpeech;
+        debounceSpeechCheck.addEventListener('change', () => {
+            SETTINGS.debounceSpeech = debounceSpeechCheck.checked;
+            saveSettings();
+        });
+    }
+
+    const allowSpeechCheck = document.getElementById('allowSpeech');
+    if (allowSpeechCheck) {
+        allowSpeechCheck.checked = SETTINGS.allowSpeech;
+        allowSpeechCheck.addEventListener('change', () => {
+            SETTINGS.allowSpeech = allowSpeechCheck.checked;
+            if (!SETTINGS.allowSpeech) cancelAllSpeech();
+            saveSettings();
+        });
+    }
+
+    const announceEmptyCellCheck = document.getElementById('announceEmptyCell');
+    if (announceEmptyCellCheck) {
+        announceEmptyCellCheck.checked = SETTINGS.announceEmptyCell;
+        announceEmptyCellCheck.addEventListener('change', () => {
+            SETTINGS.announceEmptyCell = announceEmptyCellCheck.checked;
+            saveSettings();
+        });
+    }
+
+    const wordSegCheck = document.getElementById('wordSegmentation');
+    if (wordSegCheck) {
+        wordSegCheck.checked = SETTINGS.wordSegmentation;
+        wordSegCheck.addEventListener('change', () => {
+            SETTINGS.wordSegmentation = wordSegCheck.checked;
+            saveSettings();
+        });
+    }
+
+    document.querySelectorAll('input[name="cursorJumpMode"]').forEach(radio => {
+        if (radio.value === SETTINGS.cursorJumpMode) radio.checked = true;
+        radio.addEventListener('change', () => {
+            SETTINGS.cursorJumpMode = radio.value;
+            saveSettings();
+        });
+    });
+
+    const punctAutoSpacingCheck = document.getElementById('punctAutoSpacing');
+    if (punctAutoSpacingCheck) {
+        punctAutoSpacingCheck.checked = SETTINGS.punctAutoSpacing;
+        punctAutoSpacingCheck.addEventListener('change', () => {
+            SETTINGS.punctAutoSpacing = punctAutoSpacingCheck.checked;
+            saveSettings();
+        });
+    }
+
+    const multiSelectCheck = document.getElementById('multiSelect');
+    if (multiSelectCheck) {
+        multiSelectCheck.checked = SETTINGS.multiSelect;
+        multiSelectCheck.addEventListener('change', () => {
+            SETTINGS.multiSelect = multiSelectCheck.checked;
+            if (!SETTINGS.multiSelect) {
+                selectedIndices.clear();
+                _selAnchor = -1;
+                renderOutput();
+            }
+            saveSettings();
+            if (helpPanel.slide.classList.contains('open')) renderHelpPanel();
+        });
+    }
+
+    const maxUndoInput = document.getElementById('maxUndoHistory');
+    const maxUndoVal = document.getElementById('maxUndoHistoryVal');
+    if (maxUndoInput) {
+        maxUndoInput.value = SETTINGS.maxUndoHistory;
+        maxUndoVal.textContent = SETTINGS.maxUndoHistory;
+        maxUndoInput.addEventListener('input', () => {
+            SETTINGS.maxUndoHistory = parseInt(maxUndoInput.value, 10);
+            maxUndoVal.textContent = SETTINGS.maxUndoHistory;
+            saveSettings();
+        });
+    }
+
+    const brailleFsInput = document.getElementById('brailleFontSize');
+    const brailleFsVal = document.getElementById('brailleFontSizeVal');
+    if (brailleFsInput) {
+        brailleFsInput.value = SETTINGS.brailleFontSize;
+        brailleFsVal.textContent = SETTINGS.brailleFontSize;
+        brailleFsInput.addEventListener('input', () => {
+            SETTINGS.brailleFontSize = parseInt(brailleFsInput.value, 10);
+            brailleFsVal.textContent = SETTINGS.brailleFontSize;
+            applyBrailleFontSize();
+            saveSettings();
+        });
+    }
+}

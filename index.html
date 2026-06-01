@@ -195,7 +195,7 @@
         </div>
     </div>
 
-    <!-- 键位绑定遮罩（body层级，避免受 settings-slide 的 transform 影响 fixed 定位） -->
+<!-- 键位绑定遮罩（body层级，避免受 settings-slide 的 transform 影响 fixed 定位） -->
     <div class="bind-mask" id="bindMask">
         <div class="bind-mask-text" id="bindMaskText"></div>
         <div class="bind-mask-hint">按 Esc 取消</div>
@@ -346,6 +346,7 @@
                     <button class="dev-mode-btn active" data-mode="input">输入</button>
                     <button class="dev-mode-btn" data-mode="type">键入</button>
                 </div>
+                <button class="dev-btn" id="devMixedInput">输入内容</button>
                 <button class="dev-btn" id="devChineseInput">输入汉字</button>
                 <button class="dev-btn" id="devNumberInput">输入数字</button>
                 <button class="dev-btn" id="devEnglishInput">输入英文</button>
@@ -373,17 +374,18 @@
     <script src="./js/brailleUtils.js"></script>
     <script src="./js/loadMappings.js"></script>
     <script src="./js/textSplitting.js"></script>
-    <script src="./js/brailleState.js"></script>
-    <script src="./js/pages.js"></script>
     <script src="./js/keyConfig.js"></script>
-    <script src="./js/brailleRender.js"></script>
-    <script src="./js/settingsFrame.js"></script>
+    <script src="./js/brailleOutput.js"></script>
+    <script src="./js/panelManager.js"></script>
+    <script src="./js/panelSettings.js"></script>
+    <script src="./js/panelHelp.js"></script>
+    <script src="./js/panelMapping.js"></script>
     <script src="./js/brailleInput.js"></script>
     <script src="./js/brailleSpeech.js"></script>
     <script src="./js/tutorial.js"></script>
     <script src="./js/fileOperations.js"></script>
     <script src="./js/history.js"></script>
-    <script src="./js/welcome.js"></script>
+
     <script src="./js/devPanel.js"></script>
     <script src="./js/init.js"></script>
 </body>

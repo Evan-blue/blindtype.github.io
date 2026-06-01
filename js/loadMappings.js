@@ -49,19 +49,22 @@ async function loadBrailleCharMapping(jsonPath) {
     MAPPING_CATEGORIES = data.categories;
     data.categories.forEach(cat => {
         cat.entries.forEach(e => {
+            const oneHot = e.oneHot;
+            const obj = { char: e.char, label: e.label, audio: e.audio || '' };
+            let targetMap;
             if (cat.name === '数字') {
-                NUMBER_MAPPING[e.oneHot] = { char: e.char, label: e.label, audio: e.audio || '' };
+                NUMBER_MAPPING[oneHot] = obj;
                 return; // 数字分类不加入PINYIN_MAPPING，避免数号覆盖韵母eng
             }
             if (cat.name === '英文字母') {
-                LETTER_MAPPING[e.oneHot] = { char: e.char, label: e.label, audio: e.audio || '' };
+                LETTER_MAPPING[oneHot] = obj;
                 return; // 英文字母分类同理，避免大小写符号覆盖其他映射
             }
             if (cat.name === '标点') {
-                PUNC_MAPPING[e.oneHot] = { char: e.char, label: e.label, audio: e.audio || '' };
-            } else {
-                PINYIN_MAPPING[e.oneHot] = { char: e.char, label: e.label, audio: e.audio || '' };
+                PUNC_MAPPING[oneHot] = obj;
+                return;
             }
+            PINYIN_MAPPING[oneHot] = obj;
         });
     });
     // 加载完盲文映射后立即构建拼音组件集合

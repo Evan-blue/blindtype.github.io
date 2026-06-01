@@ -1,4 +1,102 @@
-// brailleInput.js - 输入逻辑函数
+// brailleInput.js - 输入逻辑、点位状态与输入面板渲染
+
+// dotState按国标列序: [dot1, dot2, dot3, dot4, dot5, dot6]
+const dotState = [0, 0, 0, 0, 0, 0]; // 6 dots
+let debounceTimer = null;
+let cursorDebounceTimer = null;
+const DEBOUNCE_MS = 500;
+const CURSOR_DEBOUNCE_MS = 300;
+
+const dotCells = document.querySelectorAll('.dot-cell');
+const previewBox = document.getElementById('previewBox');
+const previewChar = document.getElementById('previewChar');
+const previewDots = document.getElementById('previewDots');
+const previewPinyin = document.getElementById('previewPinyin');
+
+/**
+ * @description: 判断光标左侧是否处于数字上下文（前一项是数号或数字）
+ * @return {boolean}
+ */
+function isInNumberContext() {
+    if (cursorIdx === 0) return false;
+    const prev = outputItems[cursorIdx - 1];
+    return !!(prev && prev.isNumber);
+}
+
+/**
+ * @description: 获取数字上下文的起始索引（数号所在位置），不在数字上下文中返回 -1
+ * @return {number}
+ */
+function getNumberStartIdx() {
+    if (!isInNumberContext()) return -1;
+    let idx = cursorIdx - 1;
+    while (idx >= 0 && outputItems[idx].isNumber) idx--;
+    return idx + 1;
+}
+
+/**
+ * @description: 判断光标左侧是否处于英文上下文（前一项有英文字母符号）
+ * @return {boolean}
+ */
+function isInEnglishContext() {
+    if (cursorIdx === 0) return false;
+    const prev = outputItems[cursorIdx - 1];
+    return !!(prev && prev.isEnglish);
+}
+
+/**
+ * @description: 获取英文上下文的起始索引（英文字母符号所在位置），不在英文上下文中返回 -1
+ * @return {number}
+ */
+function getEnglishStartIdx() {
+    if (!isInEnglishContext()) return -1;
+    let idx = cursorIdx - 1;
+    while (idx >= 0 && outputItems[idx].isEnglish) idx--;
+    return idx + 1;
+}
+
+/**
+ * @description: 获取当前英文上下文的字母大小写状态（'upper' | 'lower' | null）
+ * @return {string|null}
+ */
+function getEnglishCase() {
+    if (!isInEnglishContext()) return null;
+    const item = outputItems[getEnglishStartIdx()];
+    return item.letterCase || null;
+}
+
+/**
+ * @description: 根据dotState更新点位DOM的高亮状态
+ * @return {void}
+ */
+function renderDots() {
+    dotCells.forEach(cell => {
+        const idx = +cell.dataset.idx;
+        cell.classList.toggle('active', !!dotState[idx - 1]);
+    });
+}
+
+/**
+ * @description: 渲染预览区域，显示当前点位对应的盲文字符和拼音
+ * @return {void}
+ */
+function renderPreview() {
+    const braille = dotsToBrailleChar(dotState);
+    const key = dotState.join('');
+    const entry = _lookupBraille(key);
+
+    if (dotState.some(d => d)) {
+        previewBox.classList.remove('empty');
+        previewChar.textContent = braille;
+        previewDots.textContent = activeDotsLabel(dotState);
+        const ctx = _getContextPreview(key);
+        previewPinyin.textContent = ctx ? ctx.label : (entry ? entry.label : '');
+    } else {
+        resetPreview();
+    }
+}
+
+
 
 /**
  * @description: 将激活的点位索引格式化为空格分隔的编号字符串
@@ -961,6 +1059,192 @@ function inputEnglish(text) {
     return oneHotList;
 }
 
+// ── 汉字→盲文转换 ──
+
+let _charToOneHot = null;
+let _reverseSoloMap = null;
+const _TONE_NUM_TO_SYM = { '1': '¯', '2': '´', '3': 'ˇ', '4': '`' };
+
+function _buildBrailleReverseMaps() {
+    if (_charToOneHot) return;
+    _charToOneHot = {};
+    for (const cat of MAPPING_CATEGORIES) {
+        for (const entry of cat.entries) {
+            for (const ch of entry.char.split('/')) {
+                _charToOneHot[ch] = entry.oneHot;
+            }
+        }
+    }
+    if (_soloFinalMap) {
+        _reverseSoloMap = {};
+        for (const [k, v] of Object.entries(_soloFinalMap)) {
+            _reverseSoloMap[v] = k;
+        }
+    }
+}
+
+/**
+ * @description: 将单个拼音转为 oneHot 编码数组
+ * @param {string} py 拼音字符串（可带声调数字）
+ * @return {string[]} oneHot数组
+ */
+function _pinyinToOneHot(py) {
+    const result = [];
+    let base = py;
+    let tone = '';
+    if (/\d$/.test(py)) { tone = py.slice(-1); base = py.slice(0, -1); }
+
+    // j/q/x 后紧接 u 时才是 ü（如 ju→jü, que→qüe）；jiu 中的 u 不是韵母开头，不替换
+    if (/^[jqx]/.test(base) && base.charAt(1) === 'u') {
+        base = base.charAt(0) + 'ü' + base.slice(2);
+    }
+
+    // 反向 solo final: "yi"→"i", "wo"→"uo" 等
+    const actualBase = (_reverseSoloMap && _reverseSoloMap[base]) ? _reverseSoloMap[base] : base;
+
+    let initial = '';
+    let fin = actualBase;
+    if (!_validFinals || !_validFinals.has(actualBase)) {
+        for (let split = 1; split < actualBase.length; split++) {
+            const init = actualBase.slice(0, split);
+            const f = actualBase.slice(split);
+            if (_validFinals && _validFinals.has(f) && _validInitials && _validInitials.has(init)) {
+                initial = init;
+                fin = f;
+                break;
+            }
+        }
+    }
+
+    if (initial) {
+        const oh = _charToOneHot[initial];
+        if (oh) result.push(oh);
+    }
+    if (fin) {
+        const oh = _charToOneHot[fin];
+        if (oh) result.push(oh);
+    }
+    if (tone) {
+        const sym = _TONE_NUM_TO_SYM[tone];
+        if (sym) {
+            const oh = _charToOneHot[sym];
+            if (oh) result.push(oh);
+        }
+    }
+    return result;
+}
+
+/**
+ * @description: 将混合中英数字的文本转为盲文 oneHot 序列
+ *   按字符类型分段：中文→拼音转盲文，英文→字母盲文，数字→数字盲文
+ * @param {string} text 混合文本
+ * @return {string[]} oneHot数组
+ */
+function mixedToBraille(text) {
+    _buildBrailleReverseMaps();
+
+    const oneHotList = [];
+    let i = 0;
+    while (i < text.length) {
+        const ch = text[i];
+
+        // 空白字符 → 空方
+        if (/\s/.test(ch)) {
+            oneHotList.push('000000');
+            i++;
+            continue;
+        }
+
+        // 数字段：连续数字+小数点
+        if (/[\d.]/.test(ch)) {
+            let numStr = '';
+            while (i < text.length && /[\d.]/.test(text[i])) {
+                numStr += text[i];
+                i++;
+            }
+            oneHotList.push(...inputNumber(numStr));
+            continue;
+        }
+
+        // 英文段：连续字母
+        if (/[a-zA-Z]/.test(ch)) {
+            let engStr = '';
+            while (i < text.length && /[a-zA-Z]/.test(text[i])) {
+                engStr += text[i];
+                i++;
+            }
+            oneHotList.push(...inputEnglish(engStr));
+            continue;
+        }
+
+        // 中文及标点 → 累积到下一个非中文/标点字符，整段走 chineseToBraille
+        let cnStr = '';
+        while (i < text.length && !/[\s\d.a-zA-Z]/.test(text[i])) {
+            cnStr += text[i];
+            i++;
+        }
+        if (cnStr) {
+            oneHotList.push(...chineseToBraille(cnStr));
+        }
+    }
+
+    return oneHotList;
+}
+
+/**
+ * @description: 将汉字文本转为盲文 oneHot 序列
+ *   开启分词时：先分词，词与词之间（不与标点相邻处）插入空方(000000)
+ * @param {string} chineseText 汉字文本
+ * @return {string[]} oneHot数组
+ */
+function chineseToBraille(chineseText) {
+    _buildBrailleReverseMaps();
+
+    // 先整体转拼音（保证多音字有完整上下文），再根据分词结果插入空方
+    const pinyinArr = pinyin(chineseText, { toneType: 'num', type: 'array' });
+
+    if (!SETTINGS.wordSegmentation) {
+        const oneHotList = [];
+        for (const py of pinyinArr) {
+            oneHotList.push(..._pinyinToOneHot(py));
+        }
+        return oneHotList;
+    }
+
+    const segments = splitText(chineseText, 'zh-CN', 'word');
+    const oneHotList = [];
+
+    const PUNCT_RE = /^[\s，。！？；：""''（）【】《》、…—～,\.!\?;:'"()\[\]{}]+$/;
+
+    let charIdx = 0;
+    for (let i = 0; i < segments.length; i++) {
+        const seg = segments[i];
+        const segLen = seg.length;
+        const isPunct = PUNCT_RE.test(seg);
+
+        const segPinyin = pinyinArr.slice(charIdx, charIdx + segLen);
+        for (const py of segPinyin) {
+            oneHotList.push(..._pinyinToOneHot(py));
+        }
+        charIdx += segLen;
+
+        if (i + 1 < segments.length) {
+            const nextIsPunct = PUNCT_RE.test(segments[i + 1]);
+            if (!isPunct && !nextIsPunct && oneHotList[oneHotList.length - 1] !== '000000') {
+                oneHotList.push('000000');
+            }
+        }
+    }
+
+    // 去重连续空方
+    const deduped = [];
+    for (const oh of oneHotList) {
+        if (oh === '000000' && deduped[deduped.length - 1] === '000000') continue;
+        deduped.push(oh);
+    }
+    return deduped;
+}
+
 // ── 打字输入模式 ──
 
 let _normalInputMode = false;
@@ -1001,19 +1285,7 @@ async function normalInputConfirm() {
     const text = textarea.value.trim();
     if (!text) { speakText('内容为空'); return; }
 
-    // 自动识别内容类型
-    const isDigits = /^[\d\s.]+$/.test(text);
-    const isEnglish = /^[a-zA-Z\s.,!?;:'"()\-]+$/.test(text);
-
-    let result;
-    if (isDigits) {
-        result = inputNumber(text.replace(/\s/g, ''));
-    } else if (isEnglish) {
-        result = inputEnglish(text);
-    } else {
-        result = chineseToBraille(text);
-    }
-
+    const result = mixedToBraille(text);
     if (result && result.length > 0) {
         await _batchInputOneHot(result);
         speakText('已输入');
@@ -1022,23 +1294,3 @@ async function normalInputConfirm() {
         speakText('无法转换输入内容');
     }
 }
-
-// ── 事件绑定（打字输入模式）──
-(function () {
-    document.querySelectorAll('.mode-toggle-tab').forEach(tab => {
-        tab.addEventListener('click', () => setInputMode(tab.dataset.mode));
-    });
-
-    const textarea = document.getElementById('normalInputTextarea');
-    if (textarea) {
-        textarea.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault();
-                normalInputConfirm();
-            }
-        });
-    }
-
-    const confirmBtn = document.getElementById('normalInputConfirm');
-    if (confirmBtn) confirmBtn.addEventListener('click', normalInputConfirm);
-})();

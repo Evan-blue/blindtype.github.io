@@ -64,16 +64,6 @@ function resolveSoloFinal(str) {
     return corrected ? corrected + tone : str;
 }
 
-/**
- * @description: 将拼音字符串数组转换为对应汉字（无映射时返回原拼音）
- * @param {string[]} pinyinList 拼音数组
- * @return {string[]} 汉字数组
- */
-function pinyinToChar(pinyinList) {
-    if (!_pinyinCharMap || !Array.isArray(pinyinList)) return pinyinList || [];
-    return pinyinList.map(py => _pinyinCharMap[py] || py);
-}
-
 // ── 拼音组件集合（从盲文映射分类中提取）──
 let _validInitials = null;
 let _validFinals = null;

@@ -64,32 +64,23 @@ function _loadFileContent(file) {
         if (!rawText.trim()) { speakText('文件内容为空'); return; }
 
         if (hasNewlines) {
-            const lines = rawText.replace(/\r\n/g, '\n').replace(/\n+/g, '\n').split('\n');
-            const allOneHot = ['000000', '000000'];
-            const lineResults = [];
-            for (const line of lines) {
-                if (line.trim()) {
-                    const result = chineseToBraille(line.trim());
-                    if (result && result.length > 0) lineResults.push(result);
-                }
-            }
-            for (let i = 0; i < lineResults.length; i++) {
-                allOneHot.push(...lineResults[i]);
-                if (i < lineResults.length - 1) {
-                    allOneHot.push('000000', '000000');
-                }
-            }
-            clearOutput();
-            await _batchInputOneHot(allOneHot);
-            speakText('已加载中文文本');
-        } else {
-            const result = chineseToBraille(rawText.trim());
+            const text = rawText.replace(/\r\n/g, '\n').replace(/\n+/g, '\n').replace(/\n/g, '  ');
+            const result = mixedToBraille(text);
             if (result && result.length > 0) {
                 clearOutput();
                 await _batchInputOneHot(result);
-                speakText('已加载中文文本');
+                speakText('已加载文本');
             } else {
-                speakText('文件中未检测到有效的盲文编码或中文内容');
+                speakText('文件中未检测到有效内容');
+            }
+        } else {
+            const result = mixedToBraille(rawText.trim());
+            if (result && result.length > 0) {
+                clearOutput();
+                await _batchInputOneHot(result);
+                speakText('已加载文本');
+            } else {
+                speakText('文件中未检测到有效内容');
             }
         }
     };
