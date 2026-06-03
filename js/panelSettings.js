@@ -24,6 +24,7 @@ const DEFAULT_SETTINGS = {
     multiSelect: false,
     forceWelcome: false,
     mainKeyboardDigits: true,
+    mergeNewlines: true,
 };
 
 const DOT_NAMES = ['1点', '2点', '3点', '4点', '5点', '6点'];
@@ -135,6 +136,7 @@ function loadSettings() {
     if (SETTINGS.allowSpeech === undefined) SETTINGS.allowSpeech = DEFAULT_SETTINGS.allowSpeech;
     if (SETTINGS.forceWelcome === undefined) SETTINGS.forceWelcome = DEFAULT_SETTINGS.forceWelcome;
     if (SETTINGS.mainKeyboardDigits === undefined) SETTINGS.mainKeyboardDigits = DEFAULT_SETTINGS.mainKeyboardDigits;
+    if (SETTINGS.mergeNewlines === undefined) SETTINGS.mergeNewlines = DEFAULT_SETTINGS.mergeNewlines;
     applyBrailleFontSize();
 
     localStorage.removeItem('braille-alt-groups');
@@ -180,6 +182,8 @@ function resetToDefaults() {
     if (punct) punct.checked = DEFAULT_SETTINGS.punctAutoSpacing;
     const multiSel = document.getElementById('multiSelect');
     if (multiSel) multiSel.checked = DEFAULT_SETTINGS.multiSelect;
+    const mergeNL = document.getElementById('mergeNewlines');
+    if (mergeNL) mergeNL.checked = DEFAULT_SETTINGS.mergeNewlines;
     const maxUndo = document.getElementById('maxUndoHistory');
     const maxUndoVal = document.getElementById('maxUndoHistoryVal');
     if (maxUndo) { maxUndo.value = DEFAULT_SETTINGS.maxUndoHistory; maxUndoVal.textContent = DEFAULT_SETTINGS.maxUndoHistory; }
@@ -766,6 +770,15 @@ function initSettingsPanel() {
             }
             saveSettings();
             if (helpPanel.slide.classList.contains('open')) renderHelpPanel();
+        });
+    }
+
+    const mergeNewlinesCheck = document.getElementById('mergeNewlines');
+    if (mergeNewlinesCheck) {
+        mergeNewlinesCheck.checked = SETTINGS.mergeNewlines;
+        mergeNewlinesCheck.addEventListener('change', () => {
+            SETTINGS.mergeNewlines = mergeNewlinesCheck.checked;
+            saveSettings();
         });
     }
 

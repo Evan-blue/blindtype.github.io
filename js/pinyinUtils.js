@@ -9,7 +9,7 @@
  * @param {string} [opts.separator=' '] type为'string'时的分隔符
  * @return {string[]|string} 拼音数组或字符串
  */
-function pinyin(text, opts = {}) {
+function chineseToPinyin(text, opts = {}) {
     if (!text || typeof text !== 'string') return opts.type === 'string' ? '' : [];
     return window.pinyinPro.pinyin(text, {
         toneType: opts.toneType || 'num',
@@ -92,6 +92,23 @@ function _buildValidComponents(categories) {
 // ── 拼音音节拆分 ──
 
 /**
+ * @description: 贪心拆分拼音基串为声母+韵母（不含声调数字）
+ * @param {string} base 拼音基串，如 'zhong'、'an'、'n'
+ * @return {{ initial: string, fin: string } | null} 拆分结果；无法拆分时返回 null
+ */
+function _splitPinyinBase(base) {
+    if (!_validInitials || !_validFinals || !base) return null;
+    for (let split = 1; split < base.length; split++) {
+        const init = base.slice(0, split);
+        const fin = base.slice(split);
+        if (_validInitials.has(init) && _validFinals.has(fin)) {
+            return { initial: init, fin };
+        }
+    }
+    return null;
+}
+
+/**
  * @description: 检查字符串是否为合法拼音音节
  *   支持五种组合：声母+韵母+声调、韵母+声调、声母+声调、声母单独、声母+韵母
  * @param {string} str 拼音字符串，如 'ni3'、'hao'、'n'、'zhong1'
@@ -126,11 +143,7 @@ function isPinyinSyllable(str) {
     if (_validInitials.has(base)) return true;
 
     // 声母+韵母 + 可选声调（贪心：先试最长声母）
-    for (let split = 1; split < base.length; split++) {
-        const init = base.slice(0, split);
-        const fin = base.slice(split);
-        if (_validInitials.has(init) && _validFinals.has(fin)) return true;
-    }
+    if (_splitPinyinBase(base)) return true;
 
     return false;
 }

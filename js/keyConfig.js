@@ -6,7 +6,7 @@
 //   - 字母键：KeyA, KeyB, ...
 //   - 其他：Backspace, Space, ArrowLeft, ...
 
-// 默认点位键组（两组并列，始终同时生效）
+// 默认盲文点位键组（两组并列，始终同时生效）
 const DOT_KEY_DEFAULTS = {
     keyboard: { 
         '1': 'KeyU', '4': 'KeyI', 

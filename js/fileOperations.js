@@ -49,7 +49,9 @@ function _loadFileContent(file) {
         if (isOneHotFile) {
             let text = rawText;
             if (hasNewlines) {
-                text = text.replace(/\r\n/g, '\n').replace(/\n+/g, '\n').replace(/\n/g, ' 000000 000000 ');
+                text = text.replace(/\r\n/g, '\n');
+                if (SETTINGS.mergeNewlines) text = text.replace(/(\s*\n)+\s*/g, '\n');
+                text = text.replace(/\n/g, ' 000000 000000 ');
                 text = '000000 000000 ' + text;
             }
             const oneHotList = text.match(/\b[01]{6}\b/g);
@@ -64,7 +66,9 @@ function _loadFileContent(file) {
         if (!rawText.trim()) { speakText('文件内容为空'); return; }
 
         if (hasNewlines) {
-            const text = rawText.replace(/\r\n/g, '\n').replace(/\n+/g, '\n').replace(/\n/g, '  ');
+            let text = rawText.replace(/\r\n/g, '\n');
+            if (SETTINGS.mergeNewlines) text = text.replace(/(\s*\n)+\s*/g, '\n');
+            text = text.replace(/\n/g, '  ');
             const result = mixedToBraille(text);
             if (result && result.length > 0) {
                 clearOutput();

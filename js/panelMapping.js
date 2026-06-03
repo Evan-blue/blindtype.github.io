@@ -62,6 +62,8 @@ const mappingPanel = createSlidePanel({
     btnId: 'btnMapping',
     closeBtnId: 'mappingSlideClose',
     pinId: 'pinToggle',
+    openSpeak: '打开盲文对照表',
+    closeSpeak: '关闭盲文对照表',
 });
 
 toggleMapping = mappingPanel.toggle;

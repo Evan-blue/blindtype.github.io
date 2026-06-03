@@ -223,12 +223,25 @@ function readAloud() {
     const meta = typeof computeItemMeta === 'function' ? computeItemMeta() : null;
     const TONE_SYM_TO_NUM = { '¯': '1', '´': '2', 'ˇ': '3', '`': '4' };
     const pinyinList = [];
+    let emptyRun = 0;
+
+    function flushEmptyRun() {
+        if (emptyRun >= 2) {
+            pinyinList.push('，'); // 连续空方 → 插入逗号制造停顿
+        } else if (emptyRun === 1) {
+            if (SETTINGS.announceEmptyCell) pinyinList.push('空方');
+        }
+        emptyRun = 0;
+    }
+
     for (let i = 0; i < outputItems.length; i++) {
         const item = outputItems[i];
         if (item.oneHot === '000000') {
-            if (SETTINGS.announceEmptyCell) pinyinList.push('空方');
+            emptyRun++;
             continue;
         }
+        flushEmptyRun();
+
         if (item.isNumber) { pinyinList.push((item.audio || item.char || '').replace('数号', '')); continue; }
         if (item.isEnglish) { pinyinList.push(item.audio || item.char || ''); continue; }
         if (PUNC_MAPPING[item.oneHot]) { pinyinList.push(item.char || ''); continue; }
@@ -257,6 +270,7 @@ function readAloud() {
         if (typeof resolveSoloFinal === 'function') py = resolveSoloFinal(py);
         pinyinList.push(py || (SETTINGS.announceEmptyCell ? '空方' : ''));
     }
+    flushEmptyRun(); // 尾部的连续空方
 
     let text = '';
     for (let py of pinyinList) {

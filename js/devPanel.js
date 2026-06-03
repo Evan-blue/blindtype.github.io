@@ -188,14 +188,14 @@ function initDevPanel() {
     document.getElementById('devNumberInput').addEventListener('click', () => {
         const input = prompt('请输入数字');
         if (!input || !input.trim()) return;
-        execMode(inputNumber(input.trim()));
+        execMode(numberToBraille(input.trim()));
     });
 
     // ── 输入英文 ──
     document.getElementById('devEnglishInput').addEventListener('click', () => {
         const input = prompt('请输入英文内容');
         if (!input || !input.trim()) return;
-        execMode(inputEnglish(input.trim()));
+        execMode(englishToBraille(input.trim()));
     });
 
     // ── 我爱你 ──
@@ -220,12 +220,12 @@ function initDevPanel() {
 
     // ── 123.456 ──
     document.getElementById('devNumber').addEventListener('click', () => {
-        execMode(inputNumber('123.456'));
+        execMode(numberToBraille('123.456'));
     });
 
     // ── English sentence ──
     document.getElementById('devEnglish').addEventListener('click', () => {
-        execMode(inputEnglish('Can you type without looking?'));
+        execMode(englishToBraille('Can you type without looking?'));
     });
 
     // ── 随机若干字符 ──

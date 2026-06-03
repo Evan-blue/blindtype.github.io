@@ -429,6 +429,13 @@ function _commitOneHot(oneHot, { silent = false, clearDots = false } = {}) {
         const prevChar = _getPrevChar(cursorIdx);
         if (!prevChar || !_validInitials || !_validInitials.has(prevChar)) {
             const signEntry = NUMBER_MAPPING[oneHot];
+            // 数号只能位于开头或空方后，不能与其他盲文相邻
+            if (cursorIdx > 0 && outputItems[cursorIdx - 1].oneHot !== '000000') {
+                outputItems.splice(cursorIdx, 0, {
+                    braille: '⠀', pinyin: ' ', char: '', audio: '空方', oneHot: '000000'
+                });
+                cursorIdx++;
+            }
             outputItems.splice(cursorIdx, 0, {
                 braille, pinyin: '', char: signEntry.char, audio: signEntry.audio,
                 oneHot, isNumber: true
@@ -456,7 +463,11 @@ function _commitOneHot(oneHot, { silent = false, clearDots = false } = {}) {
             renderOutput();
             return;
         }
-        // 非数字点位 → 退出数字模式，按普通字符处理
+        // 非数字点位 → 退出数字模式，插入空方后再处理
+        outputItems.splice(cursorIdx, 0, {
+            braille: '⠀', pinyin: ' ', char: '', audio: '空方', oneHot: '000000'
+        });
+        cursorIdx++;
     }
 
     // ── 输入大写字母符号 ──
@@ -541,7 +552,11 @@ function _commitOneHot(oneHot, { silent = false, clearDots = false } = {}) {
             renderOutput();
             return;
         }
-        // 非字母点位 → 退出英文模式
+        // 非字母点位 → 退出英文模式，插入空方后再处理
+        outputItems.splice(cursorIdx, 0, {
+            braille: '⠀', pinyin: ' ', char: '', audio: '空方', oneHot: '000000'
+        });
+        cursorIdx++;
     }
 
     // ── 普通拼音输入 ──
@@ -961,7 +976,7 @@ let _digitToOneHot = null;
  * @param {string|number} num 数字，如 "123.456" 或 42
  * @return {string[]} oneHot 数组
  */
-function inputNumber(num) {
+function numberToBraille(num) {
     if (!_digitToOneHot) {
         _digitToOneHot = {};
         for (const [oh, entry] of Object.entries(NUMBER_MAPPING)) {
@@ -972,6 +987,9 @@ function inputNumber(num) {
     }
     const oneHotList = [];
     if (isInNumberContext()) {
+        oneHotList.push('000000');
+    } else if (cursorIdx > 0 && outputItems[cursorIdx - 1].oneHot !== '000000') {
+        // 不在数字上下文且不在开头/空方后，强制插入空方再进入数字上下文
         oneHotList.push('000000');
     }
     oneHotList.push(NUMBER_SIGN);
@@ -997,7 +1015,7 @@ const _EN_PUNCT_TO_ONEHOT = {
  * @param {string} text 英文文本，如 "Can you type without looking?"
  * @return {string[]} oneHot 数组
  */
-function inputEnglish(text) {
+function englishToBraille(text) {
     if (!_letterToOneHot) {
         _letterToOneHot = {};
         for (const [oh, entry] of Object.entries(LETTER_MAPPING)) {
@@ -1105,15 +1123,8 @@ function _pinyinToOneHot(py) {
     let initial = '';
     let fin = actualBase;
     if (!_validFinals || !_validFinals.has(actualBase)) {
-        for (let split = 1; split < actualBase.length; split++) {
-            const init = actualBase.slice(0, split);
-            const f = actualBase.slice(split);
-            if (_validFinals && _validFinals.has(f) && _validInitials && _validInitials.has(init)) {
-                initial = init;
-                fin = f;
-                break;
-            }
-        }
+        const split = _splitPinyinBase(actualBase);
+        if (split) { initial = split.initial; fin = split.fin; }
     }
 
     if (initial) {
@@ -1162,7 +1173,7 @@ function mixedToBraille(text) {
                 numStr += text[i];
                 i++;
             }
-            oneHotList.push(...inputNumber(numStr));
+            oneHotList.push(...numberToBraille(numStr));
             continue;
         }
 
@@ -1173,7 +1184,7 @@ function mixedToBraille(text) {
                 engStr += text[i];
                 i++;
             }
-            oneHotList.push(...inputEnglish(engStr));
+            oneHotList.push(...englishToBraille(engStr));
             continue;
         }
 
@@ -1201,7 +1212,14 @@ function chineseToBraille(chineseText) {
     _buildBrailleReverseMaps();
 
     // 先整体转拼音（保证多音字有完整上下文），再根据分词结果插入空方
-    const pinyinArr = pinyin(chineseText, { toneType: 'num', type: 'array' });
+    const pinyinArr = chineseToPinyin(chineseText, { toneType: 'num', type: 'array' });
+
+    // 合并连续破折号 — → ——（pinyin-pro 会将每个 — 单独返回，但盲文映射中 —— 是组合码）
+    for (let i = 0; i < pinyinArr.length - 1; i++) {
+        if (pinyinArr[i] === '—' && pinyinArr[i + 1] === '—') {
+            pinyinArr.splice(i, 2, '——');
+        }
+    }
 
     if (!SETTINGS.wordSegmentation) {
         const oneHotList = [];
