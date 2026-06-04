@@ -89,22 +89,3 @@ header {
     width: 100%;
     max-width: 900px;
 }
-
-.site-footer {
-    display: none;
-    width: 100%;
-    text-align: center;
-    margin-top: 32px;
-    font-size: 12px;
-    color: var(--text-muted);
-    opacity: 0.5;
-}
-
-.site-footer a {
-    color: var(--text-muted);
-    text-decoration: none;
-}
-
-.site-footer a:hover {
-    color: var(--accent);
-}

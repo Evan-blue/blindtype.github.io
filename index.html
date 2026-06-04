@@ -20,6 +20,7 @@
     </header>
 
     <main class="main-area">
+
         <!-- Input Panel -->
         <section class="input-panel" aria-label="输入区">
             <div class="mode-toggle-bar" id="modeToggleBar">
@@ -53,13 +54,13 @@
                 <span class="pinyin-label" id="previewPinyin">—</span>
             </button>
             <div class="help-settings-row">
-                <button class="help-btn" id="btnMapping" title="盲文对照表" aria-label="盲文对照表"
-                    aria-expanded="false">📄<kbd id="tkbd-toggleMapping"></kbd></button>
+                <button class="help-btn" id="btnMapping" title="盲文对照表" aria-label="盲文对照表" aria-expanded="false">📄<kbd
+                        id="tkbd-toggleMapping"></kbd></button>
                 <span class="help-right-group">
-                    <button class="help-btn" id="helpBtn" title="键位帮助" aria-label="键位帮助"
-                        aria-expanded="false">?<kbd id="tkbd-toggleHelp"></kbd></button>
-                    <button class="help-btn" id="btnSettings" title="设置" aria-label="设置"
-                        aria-expanded="false">⚙<kbd id="tkbd-toggleSettings"></kbd></button>
+                    <button class="help-btn" id="helpBtn" title="键位帮助" aria-label="键位帮助" aria-expanded="false">?<kbd
+                            id="tkbd-toggleHelp"></kbd></button>
+                    <button class="help-btn" id="btnSettings" title="设置" aria-label="设置" aria-expanded="false">⚙<kbd
+                            id="tkbd-toggleSettings"></kbd></button>
                 </span>
             </div>
             <!-- Action buttons -->
@@ -98,11 +99,18 @@
                 <button class="page-btn page-btn-next" id="btnNextPage" title="下一页" aria-label="下一页">&#9654;</button>
             </div>
         </section>
+
+        <footer class="site-footer" style="display:block;">
+            <a href="https://evan-blue.github.io/blindtype.github.io/" target="_blank" rel="noopener">Github仓库</a>
+            <a href="http://120.26.147.223/" target="_blank" rel="noopener">国内网址</a>
+            <a href="https://www.zcse.edu.cn/info/1696/47121.htm" target="_blank" rel="noopener">盲文教程</a>
+            <a href="https://www.zgmx.org.cn/updatenews.html" target="_blank" rel="noopener">中国盲人协会</a>
+            <a href="https://www.blc.org.cn/" target="_blank" rel="noopener">中国盲文图书馆</a>
+            <span>Q群-659256567</span>
+        </footer>
     </main>
 
-    <footer class="site-footer">
-        <a href="https://evan-blue.github.io/blindtype.github.io/" target="_blank" rel="noopener">evan-blue.github.io/blindtype.github.io</a>
-    </footer>
+
 
     <!-- Settings Slide Panel -->
     <div class="settings-overlay" id="settingsOverlay"></div>
@@ -119,7 +127,7 @@
                 <span class="kb-preset-label">单击按钮以设置对应键位</span>
                 <div class="kb-dual-bindings">
                     <div class="kb-binding-group">
-                        <span class="kb-group-label">主键盘</span>  
+                        <span class="kb-group-label">主键盘</span>
                         <div class="key-bindings" id="keyBindings"></div>
                     </div>
                     <div class="kb-binding-group">
@@ -127,7 +135,8 @@
                         <div class="key-bindings" id="keyBindingsAlt"></div>
                     </div>
                 </div>
-                <button type="button" class="kb-reset-btn" id="kbResetBtn">自定义键位<kbd id="tkbd-resetKeyBindings"></kbd></button>
+                <button type="button" class="kb-reset-btn" id="kbResetBtn">自定义键位<kbd
+                        id="tkbd-resetKeyBindings"></kbd></button>
                 <div class="kb-presets" id="kbPresets">
                     <span class="kb-preset-label">常用键位预设</span>
                     <div class="kb-preset-row">
@@ -195,7 +204,7 @@
         </div>
     </div>
 
-<!-- 键位绑定遮罩（body层级，避免受 settings-slide 的 transform 影响 fixed 定位） -->
+    <!-- 键位绑定遮罩（body层级，避免受 settings-slide 的 transform 影响 fixed 定位） -->
     <div class="bind-mask" id="bindMask">
         <div class="bind-mask-text" id="bindMaskText"></div>
         <div class="bind-mask-hint">按 Esc 取消</div>
@@ -245,7 +254,8 @@
                 <div class="help-row"><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> 调整光标</div>
                 <div class="help-row"><kbd id="helpPageUp"></kbd> / <kbd id="helpPageDown"></kbd> 翻页</div>
                 <div class="help-row" id="helpRowShiftSelect"><kbd>Shift</kbd>+<kbd>←</kbd> /
-                    <kbd>Shift</kbd>+<kbd>→</kbd> 范围选择</div>
+                    <kbd>Shift</kbd>+<kbd>→</kbd> 范围选择
+                </div>
             </div>
             <div class="help-section">
                 <h3>组合键</h3>
@@ -393,7 +403,6 @@
     <script src="./js/tutorial.js"></script>
     <script src="./js/fileOperations.js"></script>
     <script src="./js/history.js"></script>
-
     <script src="./js/devPanel.js"></script>
     <script src="./js/init.js"></script>
 </body>
