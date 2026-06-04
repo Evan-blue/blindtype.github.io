@@ -60,7 +60,9 @@ function resolveSoloFinal(str) {
     const m = str.match(/^(.+?)(\d)$/);
     const base = m ? m[1] : str;
     const tone = m ? m[2] : '';
-    const corrected = _soloFinalMap[base];
+    // 先查韵母自成音节，再查声母自成音节
+    const corrected = (_soloFinalMap.solo_finals && _soloFinalMap.solo_finals[base])
+        || (_soloFinalMap.solo_initials && _soloFinalMap.solo_initials[base]);
     return corrected ? corrected + tone : str;
 }
 
@@ -105,6 +107,43 @@ function _splitPinyinBase(base) {
             return { initial: init, fin };
         }
     }
+    return null;
+}
+
+/**
+ * @description: 根据标调省写规则，推断省写声调数字
+ *   若 merged 已有声调则直接返回 null；否则按声母→韵母自成音节两层规则查找
+ * @param {string} merged 拼音音节（可带声调），如 'ba'、'zhi'、'yi'、'an'
+ * @return {string|null} 省写的声调数字 '1'~'4'；无法推断返回 null
+ */
+function _resolveOmittedTone(merged) {
+    if (!_toneOmitRule || /\d$/.test(merged)) return null;
+
+    // 1. 声母+韵母 → 查 initials 表
+    const split = _splitPinyinBase(merged);
+    if (split) {
+        return _toneOmitRule.initials[split.initial] || null;
+    }
+
+    // 2. 韵母自成音节 → 查 solo 表
+    const solo = _toneOmitRule.solo;
+    if (!solo) return null;
+
+    // 反向解析：如 "yi" → "i", "wo" → "uo"
+    const base = (typeof _reverseSoloMap !== 'undefined' && _reverseSoloMap && _reverseSoloMap[merged])
+        || merged;
+
+    // 查例外表
+    if (solo.exceptions && base in solo.exceptions) {
+        const val = solo.exceptions[base];
+        return val === 'none' ? null : val;
+    }
+
+    // 确认为有效韵母则返回默认值
+    if (_validFinals && _validFinals.has(base)) {
+        return solo.default;
+    }
+
     return null;
 }
 

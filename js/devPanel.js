@@ -282,6 +282,14 @@ function initDevPanel() {
         s.style.display = activeTab && s.id === activeTab.dataset.target ? '' : 'none';
     });
 
+    // ── 操作完成后释放焦点，确保主界面可直接进行点位输入 ──
+    panel.addEventListener('click', (e) => {
+        const focusable = e.target.closest('button, input, .dev-mode-btn, .dev-tab');
+        if (focusable) {
+            setTimeout(() => focusable.blur(), 0);
+        }
+    });
+
     // 初始位于右上角，需要立即确定展开方向
     updateDevFlip();
 }

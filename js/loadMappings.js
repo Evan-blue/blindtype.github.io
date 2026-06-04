@@ -13,17 +13,30 @@ const LOWERCASE_SIGN = '000011';
 // ── 拼音→汉字映射 ──
 let _pinyinCharMap = null;
 
-// ── 单独韵母映射（自成音节时修正拼写，如 i→yi, u→wu, ü→yu）──
+// ── 自成音节映射（韵母 → 标准拼音，声母 → 标准拼音）──
 let _soloFinalMap = null;
 
+// ── 标调省写规则 ──
+let _toneOmitRule = null;
+
 /**
- * @description: 加载单独韵母→完整拼音的映射数据
+ * @description: 加载自成音节→标准拼音的映射数据（韵母+声母）
  * @param {string} jsonPath JSON文件路径
  * @return {Promise<void>}
  */
 async function loadSoloPinyinMapping(jsonPath) {
     const resp = await fetch(jsonPath);
     _soloFinalMap = await resp.json();
+}
+
+/**
+ * @description: 加载标调省写规则
+ * @param {string} jsonPath JSON文件路径
+ * @return {Promise<void>}
+ */
+async function loadToneOmitRule(jsonPath) {
+    const resp = await fetch(jsonPath);
+    _toneOmitRule = await resp.json();
 }
 
 /**
@@ -88,4 +101,5 @@ async function loadAllMappings() {
     await loadBrailleCharMapping('./data/braille_character_mapping.json');
     await loadPinyinCharMapping('./data/pinyin_char_mapping.json');
     await loadSoloPinyinMapping('./data/braille_solo_pinyin_mapping.json');
+    await loadToneOmitRule('./data/pinyin_omit_rule.json');
 }

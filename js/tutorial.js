@@ -3,11 +3,11 @@
 const TUTORIAL_SECTIONS = [
     {
         title: '欢迎',
-        text: '欢迎使用盲文输入工具。接下来，我将用约两分钟带你熟悉核心操作。教程播放期间，你可以按 G 键回到上一节，按 H 键跳到下一节。随时按 右上角Escape 键退出。按 Control+Shift+H 可以随时虫听本教程。',
+        text: '欢迎使用盲文输入工具。接下来，我将用约两分钟带你熟悉核心操作。教程播放期间，你可以按 G 键回到上一节，按 H 键跳到下一节。随时按 左上角Escape 键暂停或继续，shift + escape退出教程。按 Control+Shift+H 可以随时虫听本教程。',
     },
     {
         title: '1、手的位置',
-        text: '把双手放在键盘上，像打字一样，两手食指找放在键盘上有突出点位的按键上。如果有小键盘，也可以右手放在小键盘，把食指指放在小键盘上有突出点位的按键（数字5）上。',
+        text: '把双手放在键盘上，像打字一样，两手食指找放在键盘上有突出点位的按键上。如果有小键盘，也可以右手放在小键盘，把中指放在小键盘上有突出点位的按键（数字5）上，此时右手食指在数字4上。',
     },
     {
         title: '2、盲文点位',
@@ -15,7 +15,7 @@ const TUTORIAL_SECTIONS = [
     },
     {
         title: '3、输入流程',
-        text: '你的右手是输入的主力，食指从上到下是1、2、3号点位，中指从上到下是4、5、6号点位。不论右手是摆在主键盘还是小键盘，输入操作是一样的。输入一个盲文字符分两步。第一步，按下对应点位的键，点亮需要的点。每按一次，对应点位在亮和灭之间切换，你会听到高音表示点亮、低音表示关闭。第二步，按空格键确认，小键盘的数字0也可以确认，当前盲文就会输入到界面上。系统会自动识别你输入的声母或韵母，并通过语音播报出来。如果想在确认前放弃当前的点位输入，按 左手食指的F 键清除所有激活点位，重新开始输入。例如，"你"由"呢"、"一"、和"第三声"三个盲文组合而成，所以输入流程是 1 3 4 5、空格、2 4、空格、2 3、空格，另外当输入区没有内容的时候，按空格键或小键盘数字0会输入一个空格（也叫空方）用于盲文的分割。',
+        text: '你的右手是输入的主力，食指从上到下是1、2、3号点位，中指从上到下是4、5、6号点位。不论右手是摆在主键盘还是小键盘，输入操作是一样的。输入一个盲文字符分两步。第一步，按下对应点位的键，点亮需要的点。每按一次，对应点位在亮和灭之间切换，你会听到高音表示点亮、低音表示关闭。第二步，按空格键确认，小键盘的数字0也可以确认，当前盲文就会输入到界面上。系统会自动识别你输入的声母或韵母，并通过语音播报出来。如果想在确认前放弃当前的点位输入，按 左手食指的F 键清除所有激活点位，重新开始输入。例如，"你"由"呢"、"一"、和"第三声"三个盲文组合而成，所以输入流程是 1 3 4 5、空格、2 4、空格、3、空格，另外当输入区没有内容的时候，按空格键或小键盘数字0会输入一个空格（也叫空方）用于盲文的分割。',
     },
     {
         title: '4、键位设置',
@@ -27,7 +27,7 @@ const TUTORIAL_SECTIONS = [
     },
     {
         title: '6、数字与英文',
-        text: '输入数字前，先输入数号，然后依次输入数字点位，系统会自动将它们组合。输入英文字母前，先输入大写符号或小写符号，然后输入字母点位。退出数字或英文模式时，输入空方即可回到拼音模式。',
+        text: '输入数字前，先输入数号，然后依次输入数字点位，系统会自动将它们组合。输入英文字母前，先输入大写符号或小写符号，然后输入字母。输入空方即可退出数字或英文模式回到拼音模式。',
     },
     {
         title: '7、朗读内容',
@@ -39,21 +39,25 @@ const TUTORIAL_SECTIONS = [
     },
     {
         title: '设置面板',
-        text: '按 E 打开或关闭设置面板，在这里可以自定义键位、调节语速和字体大小。键位自定义可以用 Control+Shift+K 快捷键直接激活。',
+        text: '按 左手中指上方的 E 打开或关闭设置面板，在这里可以自定义键位、调节语速和字体大小。键位自定义可以用 Control+Shift+K 快捷键直接激活。',
     },
     {
         title: '键位帮助面板',
-        text: '按 W 打开或关闭键位帮助面板。在这里可以查看当前设置的键位对应关系。',
+        text: '按 左手无名指上方的  W 打开或关闭键位帮助面板。在这里可以查看当前设置的键位对应关系。',
     },
     {
         title: '对照表面板',
-        text: ' Q 可以打开或关闭盲文对照表按钮，可以查看所有声母、韵母、标点、数字和英文字母的盲文编码。点击任意条目，系统会播报该字符的读音和对应键位。',
+        text: ' Q 左手小拇指上方的  可以打开或关闭盲文对照表按钮，可以查看所有声母、韵母、标点、数字和英文字母的盲文编码。点击任意条目，系统会播报该字符的读音和对应键位。',
     },
     {
         title: '结束语',
         text: '教程到此结束。日常使用中，记住三个最关键的操作：用点位键输入，用空格确认，用方向键移动光标。遇到问题时，按 W 查看键位帮助，或按 Control+Shift+H 虫听本教程。祝你使用愉快，欢迎issue提建议！',
     },
 ];
+
+const welcomeText = '欢迎使用盲文输入工具。这是一个面向视障人士的盲文输入工具，支持拼音、数字、英文的盲文输入，并提供语音播报反馈。是否需要开始新手教程？';
+const welcomeSkipText = '祝你使用愉快！快捷键 ctrl + shift + H 随时打开新手教程。';
+const tutorialEndText = '教程已结束';
 
 let _tutorialActive = false;
 let _tutorialPaused = false;
@@ -66,7 +70,7 @@ let _tutorialIdx = 0;
 function playTutorial() {
     if (_tutorialActive && !_tutorialPaused) {
         _tutorialPaused = true;
-        stopTutorialSpeech();
+        stopTutorialSpeech(true);
         return;
     }
     if (_tutorialPaused) {
@@ -112,7 +116,7 @@ function handleTutorialNavigation(keyId) {
     if (keyId === 'KeyH') {
         if (_tutorialIdx < TUTORIAL_SECTIONS.length - 1) {
             _tutorialIdx++;
-            stopTutorialSpeech();
+            stopTutorialSpeech(true);
             if (_tutorialPaused) _tutorialPaused = false;
             _speakTutorialSection();
             return true;
@@ -123,7 +127,7 @@ function handleTutorialNavigation(keyId) {
     if (keyId === 'KeyG') {
         if (_tutorialIdx > 0) {
             _tutorialIdx--;
-            stopTutorialSpeech();
+            stopTutorialSpeech(true);
             if (_tutorialPaused) _tutorialPaused = false;
             _speakTutorialSection();
             return true;
@@ -145,8 +149,22 @@ function handleTutorialEscape() {
         _speakTutorialSection();
     } else {
         _tutorialPaused = true;
-        stopTutorialSpeech();
+        stopTutorialSpeech(true);
     }
+    return true;
+}
+
+/**
+ * @description: Ctrl+Escape 直接结束教程
+ * @return {boolean} 是否已消费该按键
+ */
+function stopTutorial() {
+    if (!_tutorialActive) return false;
+    _tutorialActive = false;
+    _tutorialPaused = false;
+    _tutorialIdx = 0;
+    stopTutorialSpeech(true);
+    speakText(tutorialEndText);
     return true;
 }
 
@@ -203,7 +221,7 @@ function welcomeSkip() {
     _markWelcomed();
     _stopWelcomeLoop();
     stopSpeech();
-    speakText('祝你使用愉快！快捷键 ctrl + shift + H 随时打开新手教程。');
+    speakText(welcomeSkipText);
 }
 
 function initWelcome() {
@@ -214,7 +232,6 @@ function initWelcome() {
     welcomeMask.classList.add('active');
     welcomeBtnYes.focus();
 
-    const welcomeText = '欢迎使用盲文输入工具。这是一个面向视障人士的盲文输入工具，支持拼音、数字、英文的盲文输入，并提供语音播报反馈。是否需要开始新手教程？';
     speakText(welcomeText);
     _welcomeInterval = setInterval(() => {
         if (isMainSpeechActive()) return;

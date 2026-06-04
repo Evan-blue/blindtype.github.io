@@ -67,8 +67,14 @@ function computeItemMeta() {
             if (syllables) {
                 let pos = start;
                 for (const syl of syllables) {
+                    let merged = syl.merged;
+                    // 若省写了声调（merged 无尾部数字），根据省写规则补充声调
+                    if (!/\d$/.test(merged) && typeof _resolveOmittedTone === 'function') {
+                        const tone = _resolveOmittedTone(merged);
+                        if (tone) merged += tone;
+                    }
                     for (let k = 0; k < syl.count; k++) {
-                        meta[pos + k] = { merged: syl.merged, isFirst: k === 0, isLast: k === syl.count - 1 };
+                        meta[pos + k] = { merged, isFirst: k === 0, isLast: k === syl.count - 1 };
                     }
                     pos += syl.count;
                 }

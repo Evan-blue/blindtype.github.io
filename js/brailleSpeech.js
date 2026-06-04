@@ -1,14 +1,23 @@
 // brailleSpeech.js - 语音播报功能
 
 // ── 双通道语音调度器 ──
-// 统一队列，按 channel 标记区分「主通道」（操作反馈）和「教程通道」。
-// 任意时刻只有一条语音在 speechSynthesis 中播放，其余在本队列排队。
-// 这样 cancel() 只会影响当前正在播放的语音，不会误杀另一通道的排队语音。
+// 主通道（操作反馈/朗读）与教程通道各自维护独立队列，互不阻塞。
+// speechSynthesis 底层仍有串行限制，但两通道在 JS 层面完全解耦：
+// - 主通道 stopSpeech() 不影响教程队列
+// - 教程通道 stopTutorialSpeech() 默认不调 cancel()；forceStop=true 时立即打断
 
-const _speechQueue = []; // { text, rate, channel:'main'|'tutorial', onend? }
+// ── 主通道队列 ──
+const _speechQueue = []; // { text, rate, onend? }
 let _speechPlaying = false;
-let _speechGen = 0;           // 代计数器，忽略已取消语音的过期 onend
-let _speechCurrentChannel = null;
+let _speechGen = 0;
+
+// ── 教程通道队列（独立，不与主通道互斥）──
+const _tutorialQueue = []; // { text, rate, onend? }
+let _tutorialPlaying = false;
+let _tutorialGen = 0;
+
+// 记录当前 speechSynthesis 中正在播放的是哪个通道，用于 cancel() 前检查避免误伤
+let _activeChannel = null; // 'main' | 'tutorial' | null
 
 function _setReadAloudLabel(text) {
     const btn = document.getElementById('btnReadAloud');
@@ -19,17 +28,12 @@ function _setReadAloudLabel(text) {
 
 function _playNext() {
     if (_speechPlaying || _speechQueue.length === 0) {
-        if (!_speechPlaying) {
-            const hasMain = _speechQueue.some(i => i.channel === 'main');
-            if (!hasMain) _setReadAloudLabel('朗读');
-        }
+        if (!_speechPlaying && _speechQueue.length === 0) _setReadAloudLabel('朗读');
         return;
     }
     _speechPlaying = true;
     const gen = ++_speechGen;
     const item = _speechQueue.shift();
-    _speechCurrentChannel = item.channel;
-    // iOS 移动端 speechSynthesis 可能被暂停，每次播放前恢复
     if (window.speechSynthesis.paused && typeof window.speechSynthesis.resume === 'function') {
         window.speechSynthesis.resume();
     }
@@ -37,18 +41,44 @@ function _playNext() {
     u.lang = 'zh-CN';
     u.rate = item.rate;
     u.onend = () => {
-        if (gen !== _speechGen) return; // 过期回调，忽略
+        if (gen !== _speechGen) return;
         _speechPlaying = false;
-        _speechCurrentChannel = null;
+        _activeChannel = null;
         if (item.onend) item.onend();
         _playNext();
     };
     u.onerror = () => {
         if (gen !== _speechGen) return;
         _speechPlaying = false;
-        _speechCurrentChannel = null;
+        _activeChannel = null;
         _playNext();
     };
+    _activeChannel = 'main';
+    window.speechSynthesis.speak(u);
+}
+
+function _playTutorialNext() {
+    if (_tutorialPlaying || _tutorialQueue.length === 0) return;
+    _tutorialPlaying = true;
+    const gen = ++_tutorialGen;
+    const item = _tutorialQueue.shift();
+    const u = new SpeechSynthesisUtterance(item.text);
+    u.lang = 'zh-CN';
+    u.rate = item.rate;
+    u.onend = () => {
+        if (gen !== _tutorialGen) return;
+        _tutorialPlaying = false;
+        _activeChannel = null;
+        if (item.onend) item.onend();
+        _playTutorialNext();
+    };
+    u.onerror = () => {
+        if (gen !== _tutorialGen) return;
+        _tutorialPlaying = false;
+        _activeChannel = null;
+        _playTutorialNext();
+    };
+    _activeChannel = 'tutorial';
     window.speechSynthesis.speak(u);
 }
 
@@ -62,11 +92,8 @@ function speakText(text, rate) {
     if (!SETTINGS.allowSpeech) return false;
     if (rate === undefined) rate = SETTINGS.speechRate || 0.9;
     if (!window.speechSynthesis) return false;
-    // 移除队列中旧的主通道项（保留教程通道项）
-    for (let i = _speechQueue.length - 1; i >= 0; i--) {
-        if (_speechQueue[i].channel === 'main') _speechQueue.splice(i, 1);
-    }
-    _speechQueue.push({ text, rate, channel: 'main' });
+    _speechQueue.length = 0; // 新主通道请求替换旧请求
+    _speechQueue.push({ text, rate });
     _playNext();
     return true;
 }
@@ -76,13 +103,13 @@ function speakText(text, rate) {
  * @return {void}
  */
 function stopSpeech() {
-    for (let i = _speechQueue.length - 1; i >= 0; i--) {
-        if (_speechQueue[i].channel === 'main') _speechQueue.splice(i, 1);
-    }
-    if (_speechPlaying && _speechCurrentChannel === 'main') {
+    _speechQueue.length = 0;
+    if (_speechPlaying) {
         _speechPlaying = false;
-        _speechCurrentChannel = null;
-        window.speechSynthesis.cancel();
+        // 仅当当前播放的是主通道时才 cancel，避免误杀教程语音
+        if (_activeChannel === 'main' || !_activeChannel) {
+            window.speechSynthesis.cancel();
+        }
         _playNext();
     }
 }
@@ -97,8 +124,8 @@ function stopSpeech() {
 function speakTutorialText(text, rate, onend) {
     if (!SETTINGS.allowSpeech) { if (onend) onend(); return false; }
     if (!window.speechSynthesis) return false;
-    _speechQueue.push({ text, rate, channel: 'tutorial', onend });
-    _playNext();
+    _tutorialQueue.push({ text, rate, onend });
+    _playTutorialNext();
     return true;
 }
 
@@ -106,15 +133,20 @@ function speakTutorialText(text, rate, onend) {
  * @description: 停止教程通道语音（不影响主通道）
  * @return {void}
  */
-function stopTutorialSpeech() {
-    for (let i = _speechQueue.length - 1; i >= 0; i--) {
-        if (_speechQueue[i].channel === 'tutorial') _speechQueue.splice(i, 1);
-    }
-    if (_speechPlaying && _speechCurrentChannel === 'tutorial') {
-        _speechPlaying = false;
-        _speechCurrentChannel = null;
-        window.speechSynthesis.cancel();
-        _playNext();
+/**
+ * @description: 停止教程通道语音（不影响主通道）
+ * @param {boolean} [forceStop=false] 传 true 时调用 speechSynthesis.cancel() 立即打断当前语音
+ * @return {void}
+ */
+function stopTutorialSpeech(forceStop = false) {
+    _tutorialQueue.length = 0;
+    _tutorialGen++;
+    _tutorialPlaying = false;
+    if (forceStop) {
+        // 仅当当前播放的是教程通道时才 cancel，避免误杀主通道语音
+        if (_activeChannel === 'tutorial' || !_activeChannel) {
+            window.speechSynthesis.cancel();
+        }
     }
 }
 
@@ -124,8 +156,12 @@ function stopTutorialSpeech() {
  */
 function cancelAllSpeech() {
     _speechQueue.length = 0;
+    _tutorialQueue.length = 0;
     _speechPlaying = false;
-    _speechCurrentChannel = null;
+    _tutorialPlaying = false;
+    _speechGen++;
+    _tutorialGen++;
+    _activeChannel = null;
     window.speechSynthesis.cancel();
 }
 
@@ -134,8 +170,7 @@ function cancelAllSpeech() {
  * @return {boolean}
  */
 function isMainSpeechActive() {
-    return (_speechPlaying && _speechCurrentChannel === 'main') ||
-           _speechQueue.some(i => i.channel === 'main');
+    return _speechPlaying || _speechQueue.length > 0;
 }
 
 // ── 盲文字符播报 ──

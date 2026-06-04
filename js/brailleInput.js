@@ -1095,7 +1095,11 @@ function _buildBrailleReverseMaps() {
     }
     if (_soloFinalMap) {
         _reverseSoloMap = {};
-        for (const [k, v] of Object.entries(_soloFinalMap)) {
+        const allSolo = {
+            ...(_soloFinalMap.solo_finals || {}),
+            ...(_soloFinalMap.solo_initials || {})
+        };
+        for (const [k, v] of Object.entries(allSolo)) {
             _reverseSoloMap[v] = k;
         }
     }

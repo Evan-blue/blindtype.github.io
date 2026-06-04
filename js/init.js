@@ -157,6 +157,11 @@ loadAllMappings().then(async () => {
             }
         }
 
+        // Shift+Esc 直接结束教程
+        if (e.shiftKey && e.key === 'Escape') {
+            if (stopTutorial()) { e.preventDefault(); return; }
+        }
+
         // Esc 关闭面板 / 暂停教程
         if (e.key === 'Escape') {
             if (handleTutorialEscape()) { e.preventDefault(); return; }
