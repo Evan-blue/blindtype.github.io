@@ -266,6 +266,17 @@ loadAllMappings().then(async () => {
 
     initForceWelcomeToggle();
 
+    // 省写映射开关（dev panel）
+    const omitToneMappingCheck = document.getElementById('omitToneMapping');
+    if (omitToneMappingCheck) {
+        omitToneMappingCheck.checked = SETTINGS.omitToneMapping !== false;
+        omitToneMappingCheck.addEventListener('change', () => {
+            SETTINGS.omitToneMapping = omitToneMappingCheck.checked;
+            saveSettings();
+            renderOutput();
+        });
+    }
+
     // 主键盘数字1-6映射盲文点位（dev panel）
     const mainKeyboardDigitsCheck = document.getElementById('mainKeyboardDigits');
     if (mainKeyboardDigitsCheck) {

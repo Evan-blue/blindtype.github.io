@@ -25,6 +25,7 @@ const DEFAULT_SETTINGS = {
     forceWelcome: false,
     mainKeyboardDigits: true,
     mergeNewlines: true,
+    omitToneMapping: true,
 };
 
 const DOT_NAMES = ['1点', '2点', '3点', '4点', '5点', '6点'];

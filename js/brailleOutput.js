@@ -68,8 +68,8 @@ function computeItemMeta() {
                 let pos = start;
                 for (const syl of syllables) {
                     let merged = syl.merged;
-                    // 若省写了声调（merged 无尾部数字），根据省写规则补充声调
-                    if (!/\d$/.test(merged) && typeof _resolveOmittedTone === 'function') {
+                    // 若省写了声调（merged 无尾部数字），根据省写规则补充声调（受省写映射开关控制）
+                    if (SETTINGS.omitToneMapping !== false && !/\d$/.test(merged) && typeof _resolveOmittedTone === 'function') {
                         const tone = _resolveOmittedTone(merged);
                         if (tone) merged += tone;
                     }
