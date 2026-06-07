@@ -1,8 +1,6 @@
 // utils-pinyin.js - 拼音转换工具（封装 pinyin-pro）
 
-import { pinyin, segment, addDict } from '../node_modules/pinyin-pro/dist/index.mjs';
-import CompleteDict from '../node_modules/@pinyin-pro/data/dist/complete.mjs';
-addDict(CompleteDict);
+import { getPinyinPro } from './loadModule.js';
 import {
     ONEHOT_MAPPINGS,
     REVERSE_ONEHOT_MAPPINGS,
@@ -23,7 +21,9 @@ import {
  */
 export function chineseToPinyin(text, opts = {}) {
     if (!text || typeof text !== 'string') return opts.type === 'string' ? '' : [];
-    return pinyin(text, {
+    const mod = getPinyinPro();
+    if (!mod) throw new Error('pinyin-pro 尚未加载，请先调用 loadPinyinPro()');
+    return mod.pinyin(text, {
         toneType: opts.toneType || 'num',
         type: opts.type || 'array',
         separator: opts.separator || ' ',

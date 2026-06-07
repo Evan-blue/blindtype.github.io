@@ -3,3 +3,4 @@ docs
 data/test*.txt
 test_files
 test_codes
+node_modules

@@ -2,6 +2,7 @@
 
 
 import { loadAllMappings } from './loadMappings.js';
+import { loadPinyinPro } from './loadModule.js';
 import {
     outputItems,
     cursor,
@@ -169,7 +170,9 @@ function matchCombo(e) {
 
 
 document.addEventListener('DOMContentLoaded', () => {
-    loadAllMappings().then(() => {
+    loadAllMappings()
+        .then(() => loadPinyinPro())
+        .then(() => {
 
         // ── Load settings & apply ──
         loadSettings();
