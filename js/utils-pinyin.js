@@ -1,7 +1,8 @@
 // utils-pinyin.js - 拼音转换工具（封装 pinyin-pro）
 
-import { pinyin } from '../node_modules/pinyin-pro/dist/index.mjs';
-import CompleteDict from '@pinyin-pro/data/complete';
+import { pinyin, segment, addDict } from '../node_modules/pinyin-pro/dist/index.mjs';
+import CompleteDict from '../node_modules/@pinyin-pro/data/dist/complete.mjs';
+addDict(CompleteDict);
 import {
     ONEHOT_MAPPINGS,
     REVERSE_ONEHOT_MAPPINGS,
