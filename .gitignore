@@ -1,5 +1,5 @@
 .claude
-node_modules
 docs
 data/test*.txt
+test_files
 test_codes

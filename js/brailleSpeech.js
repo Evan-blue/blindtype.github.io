@@ -1,5 +1,21 @@
 // brailleSpeech.js - 语音播报功能
 
+import {
+    isInNumberContext,
+    isInEnglishContext,
+    getEnglishStartIdx,
+    outputItems,
+} from './brailleState.js';
+import {
+    ONEHOT_MAPPINGS,
+    NUMBER_SIGN,
+    _lookupBraille,
+} from './loadMappings.js';
+import { pinyinToSpokenChar, resolveSoloFinal } from './utils-pinyin.js';
+import { indexToOnehot } from './utils-braille.js';
+import { SETTINGS } from './config.js';
+import { computeItemMeta } from './brailleOutput.js';
+
 // ── 双通道语音调度器 ──
 // 主通道（操作反馈/朗读）与教程通道各自维护独立队列，互不阻塞。
 // speechSynthesis 底层仍有串行限制，但两通道在 JS 层面完全解耦：
@@ -7,40 +23,66 @@
 // - 教程通道 stopTutorialSpeech() 默认不调 cancel()；forceStop=true 时立即打断
 
 class SpeechQueue {
-    constructor(stateobj) {
+    static _activeChannel = null; // 'main' | 'tutorial' | null
+    constructor(name, recordState = false) {
+        this.name = name; // 'main' | 'tutorial'
         this._queue = []; // { text, rate, onend? }
-        this.playing = false;
+        this.isPlaying = false;
         this.gen = 0; // 生成器，用于取消时使过期的回调失效
-        stateobj ? (this.stateobj = stateobj) : void 0;
+        if (recordState) {
+            this.state = {
+                interruptState: null, // 教程中断状态 { text, rate, onend, charIndex }
+                currentItem: null,    // 当前教程项 { text, rate, onend }
+                charIndex: 0,         // 当前教程项的字符位置
+                resume_back: 5,          // 恢复时倒退的字符数
+
+            }
+            // 中断/恢复 操作（暂时仅教程通道使用）
+            this.interrupt = function () {
+                if (!this.state.currentItem) return;
+                this.state.interruptState = {
+                    ...this.state.currentItem,
+                    charIndex: Math.max(0, this.state.charIndex - this.state.resume_back),
+                };
+                this.state.currentItem = null;
+                window.speechSynthesis.cancel();
+                this.gen++;
+                this.play(false);
+                SpeechQueue._activeChannel = null;
+            }
+            this.resumeIfNeeded = function () {
+                if (!this.state.interruptState) return;
+
+                // 确保主通道确实空闲(教程恢复时优先级低于主通道)
+                if (queues.main.isPlaying || queues.main.length > 0) return;
+
+                const state = this.state.interruptState;
+                this.state.interruptState = null;
+                const resumeText = state.text.substring(state.charIndex);
+                if (!resumeText) { if (state.onend) state.onend(); return; }
+                this.push({ text: resumeText, rate: state.rate, onend: state.onend });
+                _playNext(this.name);
+            }
+            this.clearInterruptState = function () {
+                this.state.interruptState = null; this.state.currentItem = null; this.state.charIndex = 0;
+            }
+        }
     }
+    // 基本操作
     get length() { return this._queue.length; }
     set length(num) { this._queue.length = num; }
     shift() { return this._queue.shift(); }
     push(textObject) { this._queue.push(textObject); }
-    play(boolVal) { this.playing = boolVal; }
-    clear() {
-        this._queue.length = 0;
-        this.playing = false;
-        this.gen++;
-    }
-
+    play(boolVal) { this.isPlaying = boolVal; }
+    clear() { this._queue.length = 0; this.isPlaying = false; this.gen++; }
+    isActive() { return this.isPlaying || this.length > 0; }
 }
 
 const queues = {
-    main: new SpeechQueue(),  // 主通道
-    tutorial: new SpeechQueue()  // 教程通道
+    main: new SpeechQueue('main'),  // 主通道
+    tutorial: new SpeechQueue('tutorial', true)  // 教程通道
 }
 
-
-// 记录当前 speechSynthesis 中正在播放的是哪个通道，用于 cancel() 前检查避免误伤
-let _activeChannel = null; // 'main' | 'tutorial' | null
-
-// ── 教程中断/恢复状态 ──
-// 当主通道在教程播放期间发起播报时，暂停教程并在主通道播完后自动恢复
-let _tutorialInterruptState = null; // { text, rate, onend, charIndex } | null
-let _currentTutorialItem = null;    // 当前正在播放的教程 utterance 信息
-let _tutorialCharIndex = 0;
-const TUTORIAL_RESUME_BACK = 5;     // 恢复时倒退的字符数
 
 function _setReadAloudLabel(text) {
     const btn = document.getElementById('btnReadAloud');
@@ -51,23 +93,23 @@ function _setReadAloudLabel(text) {
 
 function _playNext(queueName = 'main') {
     const q = queues[queueName];
-    if (q.playing || q.length === 0) {
-        if (!q.playing && q.length === 0) {
+    if (q.isPlaying || q.length === 0) {
+        if (!q.isPlaying && q.length === 0) {
             if (queueName === 'main') {
                 _setReadAloudLabel('朗读');
-                _resumeTutorialIfNeeded();
+                queues.tutorial.resumeIfNeeded();
             }
         }
         return;
     }
-    q.playing = true;
+    q.isPlaying = true;
     const gen = ++q.gen;
     const item = q.shift();
 
     // 记录当前教程 utterance，供中断时保存状态
     if (queueName === 'tutorial') {
-        _currentTutorialItem = item;
-        _tutorialCharIndex = 0;
+        q.state.currentItem = item;
+        q.state.charIndex = 0;
     }
 
     if (window.speechSynthesis.paused && typeof window.speechSynthesis.resume === 'function') {
@@ -81,77 +123,27 @@ function _playNext(queueName = 'main') {
     // 跟踪教程播报的字符位置，用于中断后恢复
     if (queueName === 'tutorial') {
         u.onboundary = (e) => {
-            if (e.charIndex !== undefined) {
-                _tutorialCharIndex = e.charIndex;
-            }
+            if (e.charIndex !== undefined) q.state.charIndex = e.charIndex;
         };
     }
 
     u.onend = () => {
         if (gen !== q.gen) return;
-        q.playing = false;
-        _activeChannel = null;
-        if (queueName === 'tutorial') _currentTutorialItem = null;
+        q.isPlaying = false;
+        SpeechQueue._activeChannel = null;
+        if (queueName === 'tutorial') q.state.currentItem = null;
         if (item.onend) item.onend();
         _playNext(queueName);
     };
     u.onerror = () => {
         if (gen !== q.gen) return;
-        q.playing = false;
-        _activeChannel = null;
-        if (queueName === 'tutorial') _currentTutorialItem = null;
+        q.isPlaying = false;
+        SpeechQueue._activeChannel = null;
+        if (queueName === 'tutorial') q.state.currentItem = null;
         _playNext(queueName);
     };
-    _activeChannel = queueName;
+    SpeechQueue._activeChannel = queueName;
     window.speechSynthesis.speak(u);
-}
-
-/**
- * @description: 打断当前教程播报，保存进度供后续恢复
- * @return {void}
- */
-function _interruptTutorial() {
-    if (!_currentTutorialItem) return;
-    _tutorialInterruptState = {
-        text: _currentTutorialItem.text,
-        charIndex: Math.max(0, _tutorialCharIndex - TUTORIAL_RESUME_BACK),
-        rate: _currentTutorialItem.rate,
-        onend: _currentTutorialItem.onend
-    };
-    _currentTutorialItem = null;
-    window.speechSynthesis.cancel();
-    queues.tutorial.gen++;
-    queues.tutorial.playing = false;
-    _activeChannel = null;
-}
-
-/**
- * @description: 主通道队列空闲时，检查是否需要恢复被中断的教程
- * @return {void}
- */
-function _resumeTutorialIfNeeded() {
-    if (!_tutorialInterruptState) return;
-    // 确保主通道确实空闲
-    if (queues.main.playing || queues.main.length > 0) return;
-    const state = _tutorialInterruptState;
-    _tutorialInterruptState = null;
-    const resumeText = state.text.substring(state.charIndex);
-    if (!resumeText) {
-        if (state.onend) state.onend();
-        return;
-    }
-    queues.tutorial.push({ text: resumeText, rate: state.rate, onend: state.onend });
-    _playNext('tutorial');
-}
-
-/**
- * @description: 清除教程中断状态（外部主动停止教程时调用）
- * @return {void}
- */
-function _clearTutorialInterruptState() {
-    _tutorialInterruptState = null;
-    _currentTutorialItem = null;
-    _tutorialCharIndex = 0;
 }
 
 /**
@@ -161,14 +153,17 @@ function _clearTutorialInterruptState() {
  * @param {number} rate  播报速度
  * @return {boolean}
  */
-function speakText(text, rate) {
+export function speakText(text, rate) {
+    // 基础检查：用户设置和浏览器支持
     if (!SETTINGS.allowSpeech) return false;
     if (!window.speechSynthesis) return false;
-    rate ??= SETTINGS.speechRate;
+    // TODO 参数归一化：把其他类型输入（index, oneHot）转为text
+    rate = rate || SETTINGS.speechRate;
+
 
     // 教程正在播放时，打断教程并保存恢复点
-    if (_activeChannel === 'tutorial' && !_tutorialInterruptState) {
-        _interruptTutorial();
+    if (SpeechQueue._activeChannel === 'tutorial' && !queues.tutorial.state.interruptState) {
+        queues.tutorial.interrupt();
     }
 
     queues.main.length = 0; // 新主通道请求替换旧请求
@@ -181,13 +176,13 @@ function speakText(text, rate) {
  * @description: 停止主通道语音（不影响教程通道）
  * @return {void}
  */
-function stopSpeech() {
+export function stopSpeech() {
     // 清除教程中断恢复状态——用户主动停止主通道意味着不需要恢复
-    _clearTutorialInterruptState();
+    queues.tutorial.clearInterruptState();
     queues.main.length = 0;
-    if (queues.main.playing) {
-        queues.main.playing = false;
-        if (_activeChannel === 'main' || !_activeChannel) {
+    if (queues.main.isPlaying) {
+        queues.main.isPlaying = false;
+        if (SpeechQueue._activeChannel === 'main' || !SpeechQueue._activeChannel) {
             window.speechSynthesis.cancel();
         }
         _playNext();
@@ -201,7 +196,7 @@ function stopSpeech() {
  * @param {function} onend 播报自然结束时回调（被取消时不回调）
  * @return {boolean}
  */
-function speakTutorialText(text, rate, onend) {
+export function speakTutorialText(text, rate, onend) {
     if (!SETTINGS.allowSpeech) { if (onend) onend(); return false; }
     if (!window.speechSynthesis) return false;
     queues.tutorial.push({ text, rate, onend });
@@ -214,11 +209,11 @@ function speakTutorialText(text, rate, onend) {
  * @param {boolean} [forceStop=false] 传 true 时调用 speechSynthesis.cancel() 立即打断当前语音
  * @return {void}
  */
-function stopTutorialSpeech(forceStop = false) {
+export function stopTutorialSpeech(forceStop = false) {
     queues.tutorial.clear();
-    _clearTutorialInterruptState();
+    queues.tutorial.clearInterruptState();
     if (forceStop) {
-        if (_activeChannel === 'tutorial' || !_activeChannel) {
+        if (SpeechQueue._activeChannel === 'tutorial' || !SpeechQueue._activeChannel) {
             window.speechSynthesis.cancel();
         }
     }
@@ -228,11 +223,12 @@ function stopTutorialSpeech(forceStop = false) {
  * @description: 停止全部语音（双通道）
  * @return {void}
  */
-function cancelAllSpeech() {
-    _clearTutorialInterruptState();
-    queues.main.clear();
-    queues.tutorial.clear();
-    _activeChannel = null;
+export function cancelAllSpeech() {
+    for (const q of Object.values(queues)) {
+        q.clearInterruptState?.();
+        q.clear?.();
+    }
+    SpeechQueue._activeChannel = null;
     window.speechSynthesis.cancel();
 }
 
@@ -240,9 +236,10 @@ function cancelAllSpeech() {
  * @description: 判断主通道是否有活跃语音
  * @return {boolean}
  */
-function isMainSpeechActive() {
-    return queues.main.playing || queues.main.length > 0;
+export function isMainSpeechActive() {
+    return queues.main.isActive();
 }
+
 
 // ── 盲文字符播报 ──
 
@@ -254,7 +251,7 @@ function isMainSpeechActive() {
  * @param {boolean} [opts.forceNumber] 强制按数字映射播报
  * @return {boolean}
  */
-function speakBraille(input, rate, opts = {}) {
+export function speakBraille(input, rate, opts = {}) {
     let oneHot;
     if (typeof input === 'string' && input.includes('+')) {
         oneHot = input;
@@ -263,13 +260,13 @@ function speakBraille(input, rate, opts = {}) {
     }
 
     if (isInNumberContext() || opts.forceNumber) {
-        const digit = NUMBER_MAPPING[oneHot];
+        const digit = ONEHOT_MAPPINGS.number[oneHot];
         if (digit) {
             return speakText(digit.audio || digit.label, rate);
         }
     }
     if (isInEnglishContext()) {
-        const letter = LETTER_MAPPING[oneHot];
+        const letter = ONEHOT_MAPPINGS.letter[oneHot];
         if (letter && letter.char) {
             const engItem = outputItems[getEnglishStartIdx()];
             const isUpper = engItem.letterCase === 'upper';
@@ -277,8 +274,8 @@ function speakBraille(input, rate, opts = {}) {
             return speakText(isUpper ? (audioParts[0] || letter.char[0]) : (audioParts[1] || letter.char[1]), rate);
         }
     }
-    if (oneHot === NUMBER_SIGN && NUMBER_MAPPING[oneHot]) {
-        return speakText(NUMBER_MAPPING[oneHot].audio, rate);
+    if (oneHot === NUMBER_SIGN && ONEHOT_MAPPINGS.number[oneHot]) {
+        return speakText(ONEHOT_MAPPINGS.number[oneHot].audio, rate);
     }
 
     const entry = _lookupBraille(oneHot);
@@ -287,7 +284,7 @@ function speakBraille(input, rate, opts = {}) {
     const raw = entry.audio || entry.label;
     if (!raw || !window.speechSynthesis) return false;
 
-    return speakText(pinyinToHanzi(raw), rate);
+    return speakText(pinyinToSpokenChar(raw), rate);
 }
 
 
@@ -295,7 +292,7 @@ function speakBraille(input, rate, opts = {}) {
 
 let _audioCtx = null;
 
-function playBeep(freq = 880, duration = 50) {
+export function playBeep(freq = 880, duration = 50) {
     try {
         if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = _audioCtx.createOscillator();
@@ -313,7 +310,7 @@ function playBeep(freq = 880, duration = 50) {
 
 // ── 全文朗读 ──
 
-function readAloud() {
+export function readAloud() {
     if (isMainSpeechActive()) {
         stopSpeech();
         _setReadAloudLabel('朗读');
@@ -324,7 +321,7 @@ function readAloud() {
         return;
     }
 
-    const meta = typeof computeItemMeta === 'function' ? computeItemMeta() : null;
+    const meta = computeItemMeta();
     const TONE_SYM_TO_NUM = { '¯': '1', '´': '2', 'ˇ': '3', '`': '4' };
     const pinyinList = [];
     let emptyRun = 0;
@@ -332,8 +329,8 @@ function readAloud() {
     function flushEmptyRun() {
         if (emptyRun >= 2) {
             pinyinList.push('，'); // 连续空方 → 插入逗号制造停顿
-        } else if (emptyRun === 1) {
-            if (SETTINGS.announceEmptyCell) pinyinList.push('空方');
+        } else if (emptyRun === 1 && SETTINGS.announceEmptyCell) {
+            pinyinList.push('空方');
         }
         emptyRun = 0;
     }
@@ -350,7 +347,7 @@ function readAloud() {
         // 处理数字、英文和标点
         if (item.isNumber) { pinyinList.push((item.audio || item.char || '').replace('数号', '')); continue; }
         if (item.isEnglish) { pinyinList.push(item.audio || item.char || ''); continue; }
-        if (PUNC_MAPPING[item.oneHot]) { pinyinList.push(item.char || ''); continue; }
+        if (ONEHOT_MAPPINGS.punc[item.oneHot]) { pinyinList.push(item.char || ''); continue; }
         // 处理拼音
         const m = meta && meta[i];
         if (m && m.isFirst) {
@@ -373,7 +370,7 @@ function readAloud() {
         }
 
         let py = (item.audio || item.pinyin || '').trim();
-        if (typeof resolveSoloFinal === 'function') py = resolveSoloFinal(py);
+        py = resolveSoloFinal(py);
         pinyinList.push(py || (SETTINGS.announceEmptyCell ? '空方' : ''));
     }
     flushEmptyRun(); // 尾部的连续空方
@@ -384,7 +381,7 @@ function readAloud() {
     for (let py of pinyinList) {
         if (!py) continue;
         if (py === '空方') { text += '空方'; continue; }
-        text += pinyinToHanzi(py) || py;
+        text += pinyinToSpokenChar(py) || py;
         text += ' ';
     }
     speakText(text, SETTINGS.speechRate);

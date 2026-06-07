@@ -1,18 +1,19 @@
 // brailleOutput.js - 输出区渲染与状态
 
-const outputItems = []; // { braille, pinyin, char, audio, oneHot }
-let cursorIdx = 0; // position in outputItems
-let selectedIndices = new Set(); // 被选中的输出项索引集合
+import {
+    outputItems,
+    cursor,
+    getRenderSuppressed,
+    pages,
+} from './brailleState.js';
+import { SETTINGS } from './config.js';
+import { splitPinyinChars } from './utils-pinyin.js';
+import { _resolveOmittedTone } from './utils-pinyin.js';
+import { speakText } from './brailleSpeech.js';
 
-const outputArea = document.getElementById('outputArea');
-const cursorEl = document.getElementById('cursor');
+export const outputArea = document.getElementById('outputArea');
+cursor.dom = document.getElementById('cursor');
 
-// ── 分页状态 ──
-let _currentPage = 0;
-let _pageBreaks = [];           // [{ startIdx, endIdx }, ...]
-let _isPaginationActive = false;
-let _renderSuppressed = false;  // 批量加载期间抑制逐项渲染
-let _preRenderedPages = new Map(); // pageNum -> DocumentFragment
 const PRE_RENDER_ADJACENT = 1;
 
 // ── 选择拖拽状态 ──
@@ -20,15 +21,13 @@ let _selStart = -1;
 let _selLastIdx = -1;
 let _selActive = false;
 let _wasDragging = false;
-let _selAnchor = -1;  // Shift+方向键选择的锚点
 
 /**
  * @description: 清除所有选中状态
  * @return {void}
  */
-function clearSelection() {
-    selectedIndices.clear();
-    _selAnchor = -1;
+export function clearSelection() {
+    cursor.clearSelection();
     outputArea.querySelectorAll('.braille-unit.selected').forEach(u => {
         u.classList.remove('selected');
         u.removeAttribute('aria-selected');
@@ -41,7 +40,7 @@ function clearSelection() {
  *   返回值: itemMeta 数组，每项为 null（非分组项）或 { merged, isFirst, isLast }
  * @return {object[]}
  */
-function computeItemMeta() {
+export function computeItemMeta() {
     const emptyIndices = [];
     outputItems.forEach((item, i) => {
         if (item.oneHot === '000000') emptyIndices.push(i);
@@ -69,7 +68,7 @@ function computeItemMeta() {
                 for (const syl of syllables) {
                     let merged = syl.merged;
                     // 若省写了声调（merged 无尾部数字），根据省写规则补充声调（受省写映射开关控制）
-                    if (SETTINGS.omitToneMapping !== false && !/\d$/.test(merged) && typeof _resolveOmittedTone === 'function') {
+                    if (SETTINGS.omitToneMapping !== false && !/\d$/.test(merged)) {
                         const tone = _resolveOmittedTone(merged);
                         if (tone) merged += tone;
                     }
@@ -85,51 +84,19 @@ function computeItemMeta() {
 }
 
 /**
- * @description: 判断光标位置 idx 是否在 braille-group 内部（非合法停靠点）
- * @param {number} idx 光标位置（0..outputItems.length）
- * @param {object[]} meta computeItemMeta() 的返回值
- * @return {boolean}
- */
-function isInsideGroup(idx, meta) {
-    if (idx <= 0 || idx >= outputItems.length) return false;
-    const left = meta[idx - 1];
-    const right = meta[idx];
-    return !!(left && right && !left.isLast);
-}
-
-/**
- * @description: 将光标位置吸附到最近的 braille-group 边界
- * @param {number} idx 原始光标位置
- * @param {object[]} meta computeItemMeta() 的返回值
- * @param {number} direction 移动方向：-1 左移到组起点，+1 右移到组终点
- * @return {number} 吸附后的合法光标位置
- */
-function snapToGroupBoundary(idx, meta, direction) {
-    if (idx <= 0) return 0;
-    if (idx >= outputItems.length) return outputItems.length;
-    let result = idx;
-    if (direction < 0) {
-        while (isInsideGroup(result, meta)) result--;
-    } else {
-        while (isInsideGroup(result, meta)) result++;
-    }
-    return result;
-}
-
-/**
  * @description: 重新渲染输出区域，生成所有已确认的盲文字符单元
  *   支持分页：内容溢出时自动激活分页，只渲染当前页
  * @return {void}
  */
-function renderOutput() {
-    if (_renderSuppressed) return;
+export function renderOutput() {
+    if (getRenderSuppressed()) return;
 
     const wasAtBottom = outputArea.scrollTop + outputArea.clientHeight >= outputArea.scrollHeight - 4;
     outputArea.innerHTML = '';
 
     if (outputItems.length === 0) {
         outputArea.classList.add('is-empty');
-        outputArea.appendChild(cursorEl);
+        outputArea.appendChild(cursor.dom);
         updatePageNav();
         return;
     }
@@ -142,11 +109,11 @@ function renderOutput() {
 
     // 光标定位
     const children = outputArea.children;
-    const target = cursorIdx < outputItems.length ? itemToChild[cursorIdx] : childCount;
+    const target = cursor.idx < outputItems.length ? itemToChild[cursor.idx] : childCount;
     if (target !== undefined && target >= 0 && target < children.length) {
-        outputArea.insertBefore(cursorEl, children[target]);
+        outputArea.insertBefore(cursor.dom, children[target]);
     } else {
-        outputArea.appendChild(cursorEl);
+        outputArea.appendChild(cursor.dom);
     }
     if (wasAtBottom) {
         outputArea.scrollTop = outputArea.scrollHeight;
@@ -155,8 +122,8 @@ function renderOutput() {
     // 分页检测（批量加载期间跳过）
     if (outputArea.scrollHeight > outputArea.clientHeight + 2) {
         detectPageBreaks();
-        if (_isPaginationActive) {
-            _currentPage = getPageForCursor(cursorIdx);
+        if (pages.isActive) {
+            pages.idx = getPageForCursor(cursor.idx);
             renderCurrentPage();
             schedulePreRender();
             return;
@@ -166,73 +133,24 @@ function renderOutput() {
     updatePageNav();
 }
 
-// ── 鼠标拖拽选择 ──
-outputArea.addEventListener('mousedown', (e) => {
-    const unit = e.target.closest('.braille-unit');
-    if (!unit) { clearSelection(); renderOutput(); return; }
-    _selStart = +unit.dataset.idx;
-    if (SETTINGS.multiSelect) {
-        _selAnchor = _selStart;
-        _selLastIdx = _selStart;
-        _selActive = true;
-        _wasDragging = false;
-    }
-    e.preventDefault();
-});
-
-document.addEventListener('mousemove', (e) => {
-    if (!_selActive || !SETTINGS.multiSelect) return;
-    const el = document.elementFromPoint(e.clientX, e.clientY);
-    const braUnit = el?.closest?.('.braille-unit');
-    if (!braUnit || !outputArea.contains(braUnit)) return;
-    const idx = +braUnit.dataset.idx;
-    if (idx === _selLastIdx) return;
-    _selLastIdx = idx;
-    _wasDragging = true;
-    const from = Math.min(_selAnchor, idx);
-    const to = Math.max(_selAnchor, idx);
-    selectedIndices.clear();
-    for (let i = from; i <= to; i++) selectedIndices.add(i);
-    const units = outputArea.querySelectorAll('.braille-unit');
-    units.forEach(u => {
-        const i = +u.dataset.idx;
-        const inRange = i >= from && i <= to;
-        u.classList.toggle('selected', inRange);
-        u.setAttribute('aria-selected', inRange ? 'true' : 'false');
-    });
-});
-
-document.addEventListener('mouseup', () => {
-    if (!_selActive && _selStart < 0) return;
-    _selActive = false;
-    if (_selStart >= 0 && (!_wasDragging || !SETTINGS.multiSelect)) {
-        clearSelection();
-        cursorIdx = _selStart + 1;
-        const meta = computeItemMeta();
-        cursorIdx = snapToGroupBoundary(cursorIdx, meta, 1);
-        renderOutput();
-    }
-    _selStart = -1;
-});
-
 // ── 分页渲染 ──
 
 /**
  * @description: 分页是否处于激活状态
  * @return {boolean}
  */
-function isPaginationActive() {
-    return _isPaginationActive;
+export function isPaginationActive() {
+    return pages.isActive;
 }
 
 /**
  * @description: 使分页缓存失效，下次 renderOutput 时重新检测
  * @return {void}
  */
-function invalidatePageCache() {
-    _pageBreaks = [];
-    _isPaginationActive = false;
-    _preRenderedPages.clear();
+export function invalidatePageCache() {
+    pages.breaks.length = 0;
+    pages.setActive(false);
+    pages.preRendered.clear();
 }
 
 /**
@@ -240,11 +158,11 @@ function invalidatePageCache() {
  * @param {number} idx 光标位置（0..outputItems.length）
  * @return {number} 页码（0-based）
  */
-function getPageForCursor(idx) {
-    for (let p = 0; p < _pageBreaks.length; p++) {
-        if (idx < _pageBreaks[p].endIdx) return p;
+export function getPageForCursor(idx) {
+    for (let p = 0; p < pages.breaks.length; p++) {
+        if (idx < pages.breaks[p].endIdx) return p;
     }
-    return _pageBreaks.length - 1;
+    return pages.breaks.length - 1;
 }
 
 /**
@@ -253,9 +171,9 @@ function getPageForCursor(idx) {
  * @return {void}
  */
 function detectPageBreaks() {
-    _pageBreaks = [];
-    _isPaginationActive = false;
-    _preRenderedPages.clear();
+    pages.breaks.length = 0;
+    pages.setActive(false);
+    pages.preRendered.clear();
 
     const containerHeight = outputArea.clientHeight;
     if (containerHeight <= 0) return;
@@ -263,7 +181,7 @@ function detectPageBreaks() {
     // 收集所有顶级子元素（braille-unit 或 braille-group），跳过 cursor
     const children = [];
     for (const child of outputArea.children) {
-        if (child === cursorEl) continue;
+        if (child === cursor.dom) continue;
         children.push(child);
     }
     if (children.length === 0) return;
@@ -290,16 +208,16 @@ function detectPageBreaks() {
         const rowBottom = rows[r].top + rows[r].items[0].offsetHeight;
         if (rowBottom - pageTop > containerHeight && r > pageStart) {
             // 当前行超出当前页，在此切页
-            _pageBreaks.push(_buildPageRange(rows, pageStart, r));
+            pages.breaks.push(_buildPageRange(rows, pageStart, r));
             pageStart = r;
             pageTop = rows[r].top;
         }
     }
     // 最后一页
-    _pageBreaks.push(_buildPageRange(rows, pageStart, rows.length));
+    pages.breaks.push(_buildPageRange(rows, pageStart, rows.length));
 
-    _isPaginationActive = _pageBreaks.length > 1;
-    _currentPage = Math.min(_currentPage, _pageBreaks.length - 1);
+    pages.setActive(pages.breaks.length > 1);
+    pages.idx = Math.min(pages.idx, pages.breaks.length - 1);
 }
 
 /**
@@ -337,7 +255,7 @@ function _buildPageRange(rows, startRow, endRow) {
  * @param {HTMLElement|DocumentFragment} container 目标容器
  * @return {{ itemToChild: number[], childCount: number }} 渲染映射信息
  */
-function renderPageRange(startIdx, endIdx, container) {
+export function renderPageRange(startIdx, endIdx, container) {
     const itemMeta = computeItemMeta();
     const itemToChild = new Array(outputItems.length).fill(-1);
     let childIdx = 0;
@@ -355,7 +273,7 @@ function renderPageRange(startIdx, endIdx, container) {
             for (let k = 0; k < brailleChars.length; k++) {
                 const unit = document.createElement('span');
                 unit.className = 'braille-unit';
-                if (selectedIndices.has(i)) { unit.classList.add('selected'); unit.setAttribute('aria-selected', 'true'); }
+                if (cursor.selectedIndices.has(i)) { unit.classList.add('selected'); unit.setAttribute('aria-selected', 'true'); }
                 if (k === 0) unit.classList.add('merged-first');
                 if (k === brailleChars.length - 1) unit.classList.add('merged-last');
                 unit.dataset.idx = i;
@@ -383,7 +301,7 @@ function renderPageRange(startIdx, endIdx, container) {
             for (let k = 0; k < brailleChars.length; k++) {
                 const unit = document.createElement('span');
                 unit.className = 'braille-unit';
-                if (selectedIndices.has(i)) { unit.classList.add('selected'); unit.setAttribute('aria-selected', 'true'); }
+                if (cursor.selectedIndices.has(i)) { unit.classList.add('selected'); unit.setAttribute('aria-selected', 'true'); }
                 if (k === 0) unit.classList.add('merged-first');
                 if (k === brailleChars.length - 1) unit.classList.add('merged-last');
                 unit.dataset.idx = i;
@@ -413,7 +331,7 @@ function renderPageRange(startIdx, endIdx, container) {
                 if (j > i && itemMeta[j].isFirst) break;
                 const unit = document.createElement('span');
                 unit.className = 'braille-unit';
-                if (selectedIndices.has(j)) { unit.classList.add('selected'); unit.setAttribute('aria-selected', 'true'); }
+                if (cursor.selectedIndices.has(j)) { unit.classList.add('selected'); unit.setAttribute('aria-selected', 'true'); }
                 if (itemMeta[j].isFirst) unit.classList.add('merged-first');
                 if (itemMeta[j].isLast) unit.classList.add('merged-last');
                 unit.dataset.idx = j;
@@ -434,7 +352,7 @@ function renderPageRange(startIdx, endIdx, container) {
         } else if (!meta) {
             const unit = document.createElement('span');
             unit.className = 'braille-unit';
-            if (selectedIndices.has(i)) { unit.classList.add('selected'); unit.setAttribute('aria-selected', 'true'); }
+            if (cursor.selectedIndices.has(i)) { unit.classList.add('selected'); unit.setAttribute('aria-selected', 'true'); }
             if (item.oneHot === '000000') unit.classList.add('empty-braille');
             unit.dataset.idx = i;
             if (item.oneHot === '000000') {
@@ -455,19 +373,19 @@ function renderPageRange(startIdx, endIdx, container) {
  * @description: 渲染当前页到 outputArea
  * @return {void}
  */
-function renderCurrentPage() {
-    if (!_isPaginationActive || _pageBreaks.length === 0) return;
+export function renderCurrentPage() {
+    if (!pages.isActive || pages.breaks.length === 0) return;
 
     outputArea.innerHTML = '';
     outputArea.classList.remove('is-empty');
     if (outputItems.length === 0) {
         outputArea.classList.add('is-empty');
-        outputArea.appendChild(cursorEl);
+        outputArea.appendChild(cursor.dom);
         updatePageNav();
         return;
     }
 
-    const page = _pageBreaks[_currentPage];
+    const page = pages.breaks[pages.idx];
     const fragment = document.createDocumentFragment();
     const { itemToChild, childCount } = renderPageRange(page.startIdx, page.endIdx, fragment);
 
@@ -475,18 +393,18 @@ function renderCurrentPage() {
 
     // 光标定位
     const children = outputArea.children;
-    const isLastPage = _currentPage === _pageBreaks.length - 1;
-    const cursorOnThisPage = cursorIdx >= page.startIdx &&
-        (cursorIdx < page.endIdx || (isLastPage && cursorIdx === page.endIdx));
+    const isLastPage = pages.idx === pages.breaks.length - 1;
+    const cursorOnThisPage = cursor.idx >= page.startIdx &&
+        (cursor.idx < page.endIdx || (isLastPage && cursor.idx === page.endIdx));
     if (cursorOnThisPage) {
-        const target = cursorIdx < page.endIdx ? itemToChild[cursorIdx] : childCount;
+        const target = cursor.idx < page.endIdx ? itemToChild[cursor.idx] : childCount;
         if (target !== undefined && target >= 0 && target < children.length) {
-            outputArea.insertBefore(cursorEl, children[target]);
+            outputArea.insertBefore(cursor.dom, children[target]);
         } else {
-            outputArea.appendChild(cursorEl);
+            outputArea.appendChild(cursor.dom);
         }
     } else {
-        outputArea.appendChild(cursorEl);
+        outputArea.appendChild(cursor.dom);
     }
 
     updatePageNav();
@@ -497,37 +415,37 @@ function renderCurrentPage() {
  * @param {number} pageNum 目标页码（0-based）
  * @return {void}
  */
-function switchToPage(pageNum) {
-    if (pageNum < 0 || pageNum >= _pageBreaks.length) return;
-    if (pageNum === _currentPage) return;
+export function switchToPage(pageNum) {
+    if (pageNum < 0 || pageNum >= pages.breaks.length) return;
+    if (pageNum === pages.idx) return;
 
-    const oldPage = _currentPage;
-    _currentPage = pageNum;
-    const page = _pageBreaks[_currentPage];
+    const oldPage = pages.idx;
+    pages.idx = pageNum;
+    const page = pages.breaks[pages.idx];
 
     // 重定位光标到目标页（endIdx 是半开区间，endIdx-1 才是本页最后一项）
     if (pageNum > oldPage) {
-        cursorIdx = page.startIdx;
+        cursor.idx = page.startIdx;
     } else {
-        cursorIdx = Math.max(page.startIdx, page.endIdx - 1);
+        cursor.idx = Math.max(page.startIdx, page.endIdx - 1);
     }
     const meta = computeItemMeta();
-    cursorIdx = snapToGroupBoundary(cursorIdx, meta, pageNum > oldPage ? 1 : -1);
+    cursor.idx = cursor.snapToBoundary(cursor.idx, outputItems.length, meta, pageNum > oldPage ? 1 : -1);
 
     renderCurrentPage();
     schedulePreRender();
-    speakText(`第${_currentPage + 1}页，共${_pageBreaks.length}页`);
+    speakText(`第${pages.idx + 1}页，共${pages.breaks.length}页`);
 }
 
 /**
  * @description: 确保光标在当前页可见，不在则自动翻页
  * @return {void}
  */
-function ensureCursorVisible() {
-    if (!_isPaginationActive || _renderSuppressed) return;
-    const targetPage = getPageForCursor(cursorIdx);
-    if (targetPage !== _currentPage) {
-        _currentPage = targetPage;
+export function ensureCursorVisible() {
+    if (!pages.isActive || getRenderSuppressed()) return;
+    const targetPage = getPageForCursor(cursor.idx);
+    if (targetPage !== pages.idx) {
+        pages.idx = targetPage;
         renderCurrentPage();
         schedulePreRender();
     }
@@ -540,8 +458,8 @@ function ensureCursorVisible() {
 function schedulePreRender() {
     const pagesToRender = [];
     for (let delta = -PRE_RENDER_ADJACENT; delta <= PRE_RENDER_ADJACENT; delta++) {
-        const p = _currentPage + delta;
-        if (p >= 0 && p < _pageBreaks.length && !_preRenderedPages.has(p)) {
+        const p = pages.idx + delta;
+        if (p >= 0 && p < pages.breaks.length && !pages.preRendered.has(p)) {
             pagesToRender.push(p);
         }
     }
@@ -549,12 +467,12 @@ function schedulePreRender() {
 
     requestIdleCallback(() => {
         for (const p of pagesToRender) {
-            if (_preRenderedPages.has(p)) continue;
-            const page = _pageBreaks[p];
+            if (pages.preRendered.has(p)) continue;
+            const page = pages.breaks[p];
             if (!page) continue;
             const fragment = document.createDocumentFragment();
             renderPageRange(page.startIdx, page.endIdx, fragment);
-            _preRenderedPages.set(p, fragment);
+            pages.preRendered.set(p, fragment);
         }
     });
 }
@@ -563,26 +481,78 @@ function schedulePreRender() {
  * @description: 更新分页导航 UI
  * @return {void}
  */
-function updatePageNav() {
+export function updatePageNav() {
     const nav = document.getElementById('pageNav');
     if (!nav) return;
-    if (!_isPaginationActive || _pageBreaks.length <= 1) {
+    if (!pages.isActive || pages.breaks.length <= 1) {
         nav.style.display = 'none';
         outputArea.setAttribute('aria-label', '输出内容区');
         return;
     }
     nav.style.display = 'flex';
     const indicator = document.getElementById('pageIndicator');
-    if (indicator) indicator.textContent = `${_currentPage + 1}/${_pageBreaks.length}`;
+    if (indicator) indicator.textContent = `${pages.idx + 1}/${pages.breaks.length}`;
     const prevBtn = document.getElementById('btnPrevPage');
     const nextBtn = document.getElementById('btnNextPage');
     if (prevBtn) {
-        prevBtn.disabled = _currentPage === 0;
-        prevBtn.setAttribute('aria-label', `上一页，当前第${_currentPage + 1}页，共${_pageBreaks.length}页`);
+        prevBtn.disabled = pages.idx === 0;
+        prevBtn.setAttribute('aria-label', `上一页，当前第${pages.idx + 1}页，共${pages.breaks.length}页`);
     }
     if (nextBtn) {
-        nextBtn.disabled = _currentPage >= _pageBreaks.length - 1;
-        nextBtn.setAttribute('aria-label', `下一页，当前第${_currentPage + 1}页，共${_pageBreaks.length}页`);
+        nextBtn.disabled = pages.idx >= pages.breaks.length - 1;
+        nextBtn.setAttribute('aria-label', `下一页，当前第${pages.idx + 1}页，共${pages.breaks.length}页`);
     }
-    outputArea.setAttribute('aria-label', `输出内容区，第${_currentPage + 1}页，共${_pageBreaks.length}页`);
+    outputArea.setAttribute('aria-label', `输出内容区，第${pages.idx + 1}页，共${pages.breaks.length}页`);
+}
+
+// ── 鼠标拖拽选择（init 函数绑定）──
+
+export function initBrailleOutput() {
+    outputArea.addEventListener('mousedown', (e) => {
+        const unit = e.target.closest('.braille-unit');
+        if (!unit) { clearSelection(); renderOutput(); return; }
+        _selStart = +unit.dataset.idx;
+        if (SETTINGS.multiSelect) {
+            cursor.selAnchor = _selStart;
+            _selLastIdx = _selStart;
+            _selActive = true;
+            _wasDragging = false;
+        }
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!_selActive || !SETTINGS.multiSelect) return;
+        const el = document.elementFromPoint(e.clientX, e.clientY);
+        const braUnit = el?.closest?.('.braille-unit');
+        if (!braUnit || !outputArea.contains(braUnit)) return;
+        const idx = +braUnit.dataset.idx;
+        if (idx === _selLastIdx) return;
+        _selLastIdx = idx;
+        _wasDragging = true;
+        const from = Math.min(cursor.selAnchor, idx);
+        const to = Math.max(cursor.selAnchor, idx);
+        cursor.selectedIndices.clear();
+        for (let i = from; i <= to; i++) cursor.selectedIndices.add(i);
+        const units = outputArea.querySelectorAll('.braille-unit');
+        units.forEach(u => {
+            const i = +u.dataset.idx;
+            const inRange = i >= from && i <= to;
+            u.classList.toggle('selected', inRange);
+            u.setAttribute('aria-selected', inRange ? 'true' : 'false');
+        });
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (!_selActive && _selStart < 0) return;
+        _selActive = false;
+        if (_selStart >= 0 && (!_wasDragging || !SETTINGS.multiSelect)) {
+            clearSelection();
+            cursor.idx = _selStart + 1;
+            const meta = computeItemMeta();
+            cursor.idx = cursor.snapToBoundary(cursor.idx, outputItems.length, meta, 1);
+            renderOutput();
+        }
+        _selStart = -1;
+    });
 }

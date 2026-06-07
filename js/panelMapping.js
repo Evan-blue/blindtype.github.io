@@ -1,5 +1,10 @@
 // panelMapping.js - 盲文对照表面板
 
+import { createSlidePanel } from './panelManager.js';
+import { speakText, speakBraille } from './brailleSpeech.js';
+import { oneHotToBrailleChar, onehotToIndex } from './utils-braille.js';
+import { ONEHOT_MAPPINGS } from './loadMappings.js';
+
 function _oneHotToDots(oneHot) {
     if (oneHot.includes('+')) {
         return oneHot.split('+').map(part => part.split('').map(Number));
@@ -11,25 +16,46 @@ function _dotsLabel(dots) {
     return dots.map((d, i) => d ? (i + 1) : '').filter(Boolean).join(' ');
 }
 
-function renderMappingTable() {
-    const container = document.getElementById('mappingContainer');
-    if (!container) return;
-    container.innerHTML = '';
+let _readingMode = true;
 
-    MAPPING_CATEGORIES.forEach(cat => {
-        const section = document.createElement('section');
-        section.className = 'category';
+function _mirrorOneHot(oneHot) {
+    const mirrorSegment = (seg) => {
+        const arr = seg.split('');
+        [arr[0], arr[3]] = [arr[3], arr[0]];
+        [arr[1], arr[4]] = [arr[4], arr[1]];
+        [arr[2], arr[5]] = [arr[5], arr[2]];
+        return arr.join('');
+    };
+    if (oneHot.includes('+')) {
+        return oneHot.split('+').map(mirrorSegment).join('+');
+    }
+    return mirrorSegment(oneHot);
+}
 
-        const title = document.createElement('h2');
-        title.textContent = cat.name;
-        section.appendChild(title);
+export function renderMappingTable() {
+    const sections = document.querySelectorAll('.mapping-body .category[data-cat]');
+    if (!sections.length) return;
 
-        const grid = document.createElement('div');
-        grid.className = 'mapping-grid';
+    const catMap = {};
+    for (const cat of ONEHOT_MAPPINGS.categories) catMap[cat.name] = cat;
+
+    sections.forEach(section => {
+        const catName = section.dataset.cat;
+        const cat = catMap[catName];
+        const grid = section.querySelector('.mapping-grid');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        if (!cat) {
+            section.style.display = 'none';
+            return;
+        }
+        section.style.display = '';
 
         cat.entries.forEach(entry => {
             if (entry.hidden) return;
-            const braille = oneHotToBrailleChar(entry.oneHot);
+            const displayOneHot = _readingMode ? entry.oneHot : _mirrorOneHot(entry.oneHot);
+            const braille = oneHotToBrailleChar(displayOneHot);
             const dotsData = _oneHotToDots(entry.oneHot);
             const isCombined = Array.isArray(dotsData[0]);
             const dotsStr = isCombined
@@ -43,20 +69,21 @@ function renderMappingTable() {
                 '<span class="mc-braille">' + braille + '</span>' +
                 '<span class="mc-dots">' + dotsStr + '</span>' +
                 '<span class="mc-label">' + entry.label + '</span>';
-            const forceNum = cat.name === '数字';
+            const forceNum = catName === '数字';
             card.addEventListener('click', () => {
-                speakBraille(entry.oneHot, 1, { forceNumber: forceNum });
-                speakText('键位' + onehotToIndex(entry.oneHot), 2);
+                if (entry.audio) {
+                    speakText(entry.audio + ', 键位' + onehotToIndex(entry.oneHot));
+                } else {
+                    speakBraille(entry.oneHot, 1, { forceNumber: forceNum });
+                    speakText('键位' + onehotToIndex(entry.oneHot));
+                }
             });
             grid.appendChild(card);
         });
-
-        section.appendChild(grid);
-        container.appendChild(section);
     });
 }
 
-const mappingPanel = createSlidePanel({
+export const mappingPanel = createSlidePanel({
     slideId: 'mappingSlide',
     overlayId: 'mappingOverlay',
     btnId: 'btnMapping',
@@ -66,4 +93,18 @@ const mappingPanel = createSlidePanel({
     closeSpeak: '关闭盲文对照表',
 });
 
-toggleMapping = mappingPanel.toggle;
+export let toggleMapping = mappingPanel.toggle;
+
+(function _setupMappingToggle() {
+    const container = document.getElementById('mappingModeToggle');
+    if (!container) return;
+    container.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-mode]');
+        if (!btn) return;
+        const mode = btn.dataset.mode;
+        _readingMode = (mode === 'reading');
+        container.querySelectorAll('.mode-toggle-btn').forEach(b => b.classList.toggle('active', b === btn));
+        renderMappingTable();
+        speakText(_readingMode ? '阅读时' : '书写时');
+    });
+})();

@@ -1,6 +1,17 @@
 // panelHelp.js - 键位帮助面板
 
-function renderHelpPanel() {
+import { createSlidePanel } from './panelManager.js';
+import {
+    DOT_TO_KEY,
+    DOT_TO_KEY_NUMPAD,
+    KEY_ACTIONS,
+    KEY_COMBOS,
+    _isNumpadKey,
+    SETTINGS,
+} from './config.js';
+import { playTutorial } from './tutorial.js';
+
+export function renderHelpPanel() {
     const tutorialBtn = document.getElementById('helpTutorialBtn');
     if (tutorialBtn && !tutorialBtn._bound) {
         tutorialBtn._bound = true;
@@ -79,7 +90,26 @@ function renderHelpPanel() {
     if (shiftSelectRow) shiftSelectRow.style.display = SETTINGS.multiSelect ? '' : 'none';
 }
 
-const helpPanel = createSlidePanel({
+function _keyIdToLabel(keyId) {
+    if (!keyId) return '?';
+    if (/^Numpad\d$/.test(keyId)) return keyId.slice(6);
+    const numpadLabels = { NumpadAdd: '+', NumpadSubtract: '-', NumpadMultiply: '*', NumpadDivide: '/', NumpadDecimal: '.', NumpadEnter: 'Enter' };
+    if (numpadLabels[keyId]) return numpadLabels[keyId];
+    if (/^Digit\d$/.test(keyId)) return keyId.slice(5);
+    if (/^Key[A-Z]$/.test(keyId)) return keyId.slice(3);
+    const punctLabels = { Comma: ',', Period: '.', Semicolon: ';', Quote: "'", Slash: '/', Backslash: '\\', BracketLeft: '[', BracketRight: ']', Minus: '-', Equal: '=', Backquote: '`' };
+    if (punctLabels[keyId]) return punctLabels[keyId];
+    if (keyId === 'Space') return 'Space';
+    if (keyId === 'ArrowLeft') return '←';
+    if (keyId === 'ArrowRight') return '→';
+    if (keyId === 'ArrowUp') return '↑';
+    if (keyId === 'ArrowDown') return '↓';
+    if (keyId === 'Backspace') return '⌫';
+    if (keyId === 'Delete') return 'DEL';
+    return keyId;
+}
+
+export const helpPanel = createSlidePanel({
     slideId: 'helpSlide',
     overlayId: 'helpOverlay',
     btnId: 'helpBtn',
@@ -89,4 +119,4 @@ const helpPanel = createSlidePanel({
     closeSpeak: '关闭键位帮助',
 });
 
-toggleHelp = helpPanel.toggle;
+export let toggleHelp = helpPanel.toggle;

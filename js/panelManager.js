@@ -1,6 +1,8 @@
 // panelManager.js - 滑动面板工厂
 
-function createSlidePanel(cfg) {
+import { speakText } from './brailleSpeech.js';
+
+export function createSlidePanel(cfg) {
     const slide = document.getElementById(cfg.slideId);
     const overlay = document.getElementById(cfg.overlayId);
     const btn = document.getElementById(cfg.btnId);

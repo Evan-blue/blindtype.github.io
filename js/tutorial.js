@@ -1,5 +1,14 @@
 // tutorial.js - 新手教程文案（面向视障用户，用于语音播报）
 
+import {
+    speakText,
+    speakTutorialText,
+    stopTutorialSpeech,
+    stopSpeech,
+    isMainSpeechActive,
+} from './brailleSpeech.js';
+import { SETTINGS, saveSettings } from './config.js';
+
 const TUTORIAL_SECTIONS = [
     {
         title: '欢迎',
@@ -63,11 +72,7 @@ let _tutorialActive = false;
 let _tutorialPaused = false;
 let _tutorialIdx = 0;
 
-/**
- * @description: 播报教程（可暂停/恢复/停止）
- * @return {void}
- */
-function playTutorial() {
+export function playTutorial() {
     if (_tutorialActive && !_tutorialPaused) {
         _tutorialPaused = true;
         stopTutorialSpeech(true);
@@ -84,10 +89,6 @@ function playTutorial() {
     _speakTutorialSection();
 }
 
-/**
- * @description: 播报当前小节，播完后自动进入下一节
- * @return {void}
- */
 function _speakTutorialSection() {
     if (!_tutorialActive || _tutorialPaused) return;
     if (_tutorialIdx >= TUTORIAL_SECTIONS.length) {
@@ -106,12 +107,7 @@ function _speakTutorialSection() {
     });
 }
 
-/**
- * @description: 教程播放期间按 G/H 切换章节
- * @param {string} keyId 按键标识 (e.code)
- * @return {boolean} 是否已消费该按键
- */
-function handleTutorialNavigation(keyId) {
+export function handleTutorialNavigation(keyId) {
     if (!_tutorialActive) return false;
     if (keyId === 'KeyH') {
         if (_tutorialIdx < TUTORIAL_SECTIONS.length - 1) {
@@ -138,11 +134,7 @@ function handleTutorialNavigation(keyId) {
     return false;
 }
 
-/**
- * @description: 处理教程播放期间的 Escape 键
- * @return {boolean} 是否已消费该按键
- */
-function handleTutorialEscape() {
+export function handleTutorialEscape() {
     if (!_tutorialActive) return false;
     if (_tutorialPaused) {
         _tutorialPaused = false;
@@ -154,11 +146,7 @@ function handleTutorialEscape() {
     return true;
 }
 
-/**
- * @description: Ctrl+Escape 直接结束教程
- * @return {boolean} 是否已消费该按键
- */
-function stopTutorial() {
+export function stopTutorial() {
     if (!_tutorialActive) return false;
     _tutorialActive = false;
     _tutorialPaused = false;
@@ -178,7 +166,7 @@ const welcomeBtnYes = document.getElementById('welcomeBtnYes');
 const welcomeBtnNo = document.getElementById('welcomeBtnNo');
 
 let _welcomeInterval = null;
-let _welcomeActive = false;
+export let _welcomeActive = false;
 
 function _isForceWelcomeActive() {
     return SETTINGS.forceWelcome === true;
@@ -206,7 +194,7 @@ function _shouldShowWelcome() {
     return false;
 }
 
-function welcomeConfirm() {
+export function welcomeConfirm() {
     _welcomeActive = false;
     welcomeMask.classList.remove('active');
     _markWelcomed();
@@ -215,7 +203,7 @@ function welcomeConfirm() {
     playTutorial();
 }
 
-function welcomeSkip() {
+export function welcomeSkip() {
     _welcomeActive = false;
     welcomeMask.classList.remove('active');
     _markWelcomed();
@@ -224,7 +212,7 @@ function welcomeSkip() {
     speakText(welcomeSkipText);
 }
 
-function initWelcome() {
+export function initWelcome() {
     if (!_shouldShowWelcome()) return;
     if (!welcomeMask) return;
 
@@ -242,7 +230,7 @@ function initWelcome() {
     welcomeBtnNo.addEventListener('click', welcomeSkip);
 }
 
-function initForceWelcomeToggle() {
+export function initForceWelcomeToggle() {
     const checkbox = document.getElementById('forceWelcome');
     if (!checkbox) return;
     checkbox.checked = SETTINGS.forceWelcome;

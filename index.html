@@ -27,7 +27,7 @@
                 <button class="mode-toggle-tab active" data-mode="braille">盲文输入</button>
                 <button class="mode-toggle-tab" data-mode="normal">打字输入</button>
             </div>
-            <div class="dot-grid" id="dotGrid">
+            <div class="dot-grid rtl" id="dotGrid">
                 <!-- 盲文点位按国标列序: dot1 dot4 / dot2 dot5 / dot3 dot6 -->
                 <button class="dot-cell" data-idx="1" aria-label="点位1" tabindex="-1">
                     <span class="dot-label">1</span><span class="key-label"></span>
@@ -49,9 +49,16 @@
                 </button>
             </div>
             <button class="preview-box empty" id="previewBox" aria-label="预览区，点击朗读当前点位">
-                <span class="braille-char" id="previewChar">⠀</span>
+                <span class="braille-char" id="previewChar">
+                    <span class="braille-col">
+                        <span class="braille-label">写</span><span class="braille-writing">⠀</span>
+                    </span>
+                    <span class="braille-sep">|</span>
+                    <span class="braille-col">
+                        <span class="braille-label">读</span><span class="braille-reading">⠀</span></span>
+                    </span>
                 <span class="preview-dots" id="previewDots"></span>
-                <span class="pinyin-label" id="previewPinyin">—</span>
+                <span class="pinyin-label" id="previewPinyin">&nbsp;</span>
             </button>
             <div class="help-settings-row">
                 <button class="help-btn" id="btnMapping" title="盲文对照表" aria-label="盲文对照表" aria-expanded="false">📄<kbd
@@ -101,13 +108,13 @@
         </section>
 
         <footer class="site-footer" style="display:block;">
-            <a href="https://evan-blue.github.io/blindtype.github.io/" target="_blank" rel="noopener">Github仓库</a>
-            <a href="http://120.26.147.223/" target="_blank" rel="noopener">国内网址</a>
-            <a href="https://evan-blue.github.io/blindtype.github.io/" target="_blank" rel="noopener">github page网址</a>
-            <a href="https://www.zcse.edu.cn/info/1696/47121.htm" target="_blank" rel="noopener">盲文教程资料</a>
-            <a href="https://www.zgmx.org.cn/updatenews.html" target="_blank" rel="noopener">中国盲人协会</a>
-            <a href="https://www.blc.org.cn/" target="_blank" rel="noopener">中国盲文图书馆</a>
-            <span>Q群-659256567</span>
+            <a tabindex="-1" onfocus="this.blur()" href="https://evan-blue.github.io/blindtype.github.io/" target="_blank" rel="noopener">Github仓库</a>
+            <a tabindex="-1" onfocus="this.blur()" href="http://120.26.147.223/" target="_blank" rel="noopener">国内网址</a>
+            <a tabindex="-1" onfocus="this.blur()" href="https://evan-blue.github.io/blindtype.github.io/" target="_blank" rel="noopener">github page网址</a>
+            <a tabindex="-1" onfocus="this.blur()" href="https://www.zcse.edu.cn/info/1696/47121.htm" target="_blank" rel="noopener">盲文教程资料</a>
+            <a tabindex="-1" onfocus="this.blur()" href="https://www.zgmx.org.cn/updatenews.html" target="_blank" rel="noopener">中国盲人协会</a>
+            <a tabindex="-1" onfocus="this.blur()" href="https://www.blc.org.cn/" target="_blank" rel="noopener">中国盲文图书馆</a>
+            <span tabindex="-1" onfocus="this.blur()">Q群-659256567</span>
         </footer>
     </main>
 
@@ -129,11 +136,11 @@
                 <div class="kb-dual-bindings">
                     <div class="kb-binding-group">
                         <span class="kb-group-label">主键盘</span>
-                        <div class="key-bindings" id="keyBindings"></div>
+                        <div class="key-bindings rtl" id="keyBindings"></div>
                     </div>
                     <div class="kb-binding-group">
                         <span class="kb-group-label">小键盘</span>
-                        <div class="key-bindings" id="keyBindingsAlt"></div>
+                        <div class="key-bindings rtl" id="keyBindingsAlt"></div>
                     </div>
                 </div>
                 <button type="button" class="kb-reset-btn" id="kbResetBtn">自定义键位<kbd
@@ -142,17 +149,17 @@
                     <span class="kb-preset-label">常用键位预设</span>
                     <div class="kb-preset-row">
                         <span class="kb-preset-cat">纵向</span>
-                        <button type="button" class="kb-preset" data-preset="kbd-v-u">ujmik,</button>
-                        <button type="button" class="kb-preset" data-preset="kbd-v-i">ik,ol.</button>
-                        <button type="button" class="kb-preset" data-preset="numpad-v-7">741852</button>
-                        <button type="button" class="kb-preset" data-preset="numpad-v-8">852963</button>
+                        <button type="button" class="kb-preset" data-preset="kbd">ik,ujm</button>
+                        <button type="button" class="kb-preset" data-preset="kbd">ol.ik,</button>
+                        <button type="button" class="kb-preset" data-preset="numpad">852741</button>
+                        <button type="button" class="kb-preset" data-preset="numpad">963852</button>
                     </div>
                     <div class="kb-preset-row">
                         <span class="kb-preset-cat">横向</span>
-                        <button type="button" class="kb-preset" data-preset="kbd-h-o">oiulkj</button>
-                        <button type="button" class="kb-preset" data-preset="kbd-h-l">lkj.,m</button>
-                        <button type="button" class="kb-preset" data-preset="numpad-h-9">987654</button>
-                        <button type="button" class="kb-preset" data-preset="numpad-h-6">654321</button>
+                        <button type="button" class="kb-preset" data-preset="kbd">lkjoiu</button>
+                        <button type="button" class="kb-preset" data-preset="kbd">.,mlkj</button>
+                        <button type="button" class="kb-preset" data-preset="numpad">654987</button>
+                        <button type="button" class="kb-preset" data-preset="numpad">321654</button>
                     </div>
                 </div>
             </div>
@@ -229,8 +236,11 @@
                     <div class="ht-row ht-header"><span class="ht-label"></span><span class="ht-keys">主键盘</span><span
                             class="ht-keys">小键盘</span></div>
                     <div class="ht-row">
-                        <span class="ht-label"><span
-                                class="ht-dot-grid"><span>1</span><span>4</span><span>2</span><span>5</span><span>3</span><span>6</span></span></span>
+                        <span class="ht-label">
+                            <span class="ht-dot-grid">
+                                <span>1</span><span>4</span><span>2</span><span>5</span><span>3</span><span>6</span>
+                            </span>
+                        </span>
                         <span class="ht-keys"><span class="ht-dot-grid"><kbd id="helpDot1L">?</kbd><kbd
                                     id="helpDot4L">?</kbd><kbd id="helpDot2L">?</kbd><kbd id="helpDot5L">?</kbd><kbd
                                     id="helpDot3L">?</kbd><kbd id="helpDot6L">?</kbd></span></span><span
@@ -279,6 +289,15 @@
     <div class="mapping-slide" id="mappingSlide" role="dialog" aria-modal="true" aria-label="盲文对照表面板" inert>
         <div class="mapping-slide-header">
             <h2>盲文对照表</h2>
+
+            <div class="mapping-header-center">
+                <div class="mode-toggle" id="mappingModeToggle">
+                    <button class="mode-toggle-btn active" data-mode="reading" >阅读时</button>
+                    <button class="mode-toggle-btn" data-mode="writing">书写时</button>
+                </div>
+                <span class="mode-toggle-help tooltip-help" aria-label="书写从右到左，阅读从左到右">?</span>
+            </div>
+            
             <div class="mapping-header-right">
                 <button class="pin-toggle" id="pinToggle" title="锁定面板" aria-label="锁定面板">
                     <span class="pin-icon">📌</span>
@@ -286,7 +305,40 @@
                 <button class="mapping-slide-close" id="mappingSlideClose" aria-label="关闭对照表">&times;</button>
             </div>
         </div>
-        <div class="mapping-body" id="mappingContainer"></div>
+        <div class="mapping-body">
+            <section class="category" data-cat="声母">
+                <div class="category-title"><h2>声母</h2></div>
+                <div class="mapping-grid"></div>
+            </section>
+            <section class="category" data-cat="韵母">
+                <div class="category-title"><h2>韵母</h2></div>
+                <div class="mapping-grid"></div>
+            </section>
+            <section class="category" data-cat="声调">
+                <div class="category-title"><h2>声调</h2></div>
+                <div class="mapping-grid"></div>
+            </section>
+            <section class="category" data-cat="标点">
+                <div class="category-title"><h2>标点</h2></div>
+                <div class="mapping-grid"></div>
+            </section>
+            <section class="category" data-cat="数字">
+                <div class="category-title"><h2>数字</h2></div>
+                <div class="mapping-grid"></div>
+            </section>
+            <section class="category" data-cat="空方">
+                <div class="category-title"><h2>空方</h2></div>
+                <div class="mapping-grid"></div>
+            </section>
+            <section class="category" data-cat="英文字母">
+                <div class="category-title">
+                    <h2>英文字母</h2>
+                    <span class="mode-toggle-help tooltip-help" 
+                    aria-label="A-J只有上面四个点位, K-T在此基础上增加了点位5，U-Z增加了点位56（W例外）">?</span>
+                </div>
+                <div class="mapping-grid"></div>
+            </section>
+        </div>
     </div>
 
     <!-- Developer Panel -->
@@ -388,24 +440,8 @@
             </span>
         </div>
     </aside>
-    <script src="https://unpkg.com/pinyin-pro"></script>
-    <script src="./js/pinyinUtils.js"></script>
-    <script src="./js/brailleUtils.js"></script>
-    <script src="./js/loadMappings.js"></script>
-    <script src="./js/textSplitting.js"></script>
-    <script src="./js/keyConfig.js"></script>
-    <script src="./js/brailleOutput.js"></script>
-    <script src="./js/panelManager.js"></script>
-    <script src="./js/panelSettings.js"></script>
-    <script src="./js/panelHelp.js"></script>
-    <script src="./js/panelMapping.js"></script>
-    <script src="./js/brailleInput.js"></script>
-    <script src="./js/brailleSpeech.js"></script>
-    <script src="./js/tutorial.js"></script>
-    <script src="./js/fileOperations.js"></script>
-    <script src="./js/history.js"></script>
-    <script src="./js/devPanel.js"></script>
-    <script src="./js/init.js"></script>
+    
+    <script type="module" src="./js/init.js"></script>
 </body>
 
 </html>

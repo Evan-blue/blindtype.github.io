@@ -1,33 +1,47 @@
 // devPanel.js - 可拖动开发者面板
 
+import {
+    dotInput,
+    inputOneHot,
+    numberToBraille,
+    englishToBraille,
+    chineseToBraille,
+    mixedToBraille,
+} from './brailleInput.js';
+import { speakText } from './brailleSpeech.js';
+import { SETTINGS, saveSettings } from './config.js';
+import { clearOutput } from './panelSettings.js';
+import { ONEHOT_MAPPINGS } from './loadMappings.js';
+import { _batchInputOneHot } from './fileOperations.js';
+
 /**
  * @description: 模拟盲文键盘逐键输入（走 toggleDot → confirmInput 流程，可视化反馈）
  * @param {string[]} oneHotList 一组6位oneHot编码
  * @param {number}   charDelay  字符间延迟(ms)，默认400
  * @return {Promise<void>}
  */
-async function simulateKeyInput(oneHotList, charDelay = 400) {
+export async function simulateKeyInput(oneHotList, charDelay = 400) {
     for (let i = 0; i < oneHotList.length; i++) {
         const dots = oneHotList[i].split('').map(Number);
 
-        clearTimeout(debounceTimer); // 防止上一轮的防抖定时器干扰
+        clearTimeout(dotInput.debounceTimer); // 防止上一轮的防抖定时器干扰
         // 逐一点亮/关闭对应点位（toggleDot 使用1-based索引）
         for (let d = 0; d < 6; d++) {
-            if (dotState[d] !== dots[d]) {
-                toggleDot(d + 1);
+            if (dotInput.state[d] !== dots[d]) {
+                dotInput.toggle(d + 1);
                 await sleep(100);
             }
         }
         // 关闭不需要的点位
         for (let d = 0; d < 6; d++) {
-            if (dotState[d] && !dots[d]) {
-                toggleDot(d + 1);
+            if (dotInput.state[d] && !dots[d]) {
+                dotInput.toggle(d + 1);
                 await sleep(80);
             }
         }
 
         await sleep(120);
-        confirmInput();
+        dotInput.confirm();
         await sleep(charDelay);
     }
 }
@@ -37,7 +51,7 @@ async function simulateKeyInput(oneHotList, charDelay = 400) {
  * @param {number} ms 毫秒
  * @return {Promise<void>}
  */
-function sleep(ms) {
+export function sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
 }
 
@@ -45,7 +59,7 @@ function sleep(ms) {
  * @description: 初始化开发者面板（绑定拖动逻辑和测试按钮事件）
  * @return {void}
  */
-function initDevPanel() {
+export function initDevPanel() {
     const panel = document.getElementById('devPanel');
     const header = panel.querySelector('.dev-header');
 
@@ -151,7 +165,6 @@ function initDevPanel() {
         dragging = false;
     });
 
-    // ── 汉字输入转盲文 ──
     // ── 输入/键入模式 ──
     let devMode = 'input';
     const devModeBtns = panel.querySelectorAll('.dev-mode-btn');
@@ -233,7 +246,7 @@ function initDevPanel() {
         const input = prompt('请输入随机字符数量', '100');
         const n = parseInt(input, 10);
         if (!n || n < 1 || n > 500) return;
-        const allKeys = [...Object.keys(PINYIN_MAPPING), ...Object.keys(PUNC_MAPPING)];
+        const allKeys = [...Object.keys(ONEHOT_MAPPINGS.pinyin), ...Object.keys(ONEHOT_MAPPINGS.punc)];
         const list = [];
         for (let i = 0; i < n; i++) {
             list.push(allKeys[Math.floor(Math.random() * allKeys.length)]);

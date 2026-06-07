@@ -35,3 +35,48 @@ button {
     border: none;
     background: none;
 }
+
+/* Help icon (circle badge) */
+.mode-toggle-help {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-muted);
+    cursor: help;
+    position: relative;
+    flex-shrink: 0;
+}
+
+/* Tooltip via aria-label, appears on hover/focus to the right */
+.tooltip-help::after {
+    content: attr(aria-label);
+    position: absolute;
+    top: 50%;
+    left: calc(100% + 8px);
+    transform: translateY(-50%);
+    background: var(--bg-card);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 10;
+}
+
+.tooltip-help:hover::after,
+.tooltip-help:focus-visible::after {
+    opacity: 1;
+}
+
+.rtl{
+    direction: rtl;
+}

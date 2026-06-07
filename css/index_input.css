@@ -30,6 +30,7 @@
     justify-content: center;
     font-size: 12px;
     color: var(--text-muted);
+    /* transform: scale(0.85); */
     transition: all .15s;
     cursor: pointer;
     user-select: none;
@@ -50,6 +51,7 @@
     border-color: var(--accent);
     color: #fff;
     box-shadow: 0 0 12px var(--accent-glow);
+    transform: scale(1);
 }
 
 .dot-label {
@@ -135,7 +137,7 @@ body.light .dot-cell.active .dot-label { color: #ddd; }
     align-items: center;
     justify-content: center;
     gap: 4px;
-    min-width: 72px;
+    min-width: 86px;
     height: 90px;
     cursor: pointer;
     transition: background 0.15s, border-color 0.15s, transform 0.1s;
@@ -161,6 +163,40 @@ body.light .dot-cell.active .dot-label { color: #ddd; }
 }
 
 .preview-box .braille-char {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.preview-box .braille-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.preview-box .braille-label {
+    text-align: center;
+    font-size: 10px;
+    color: var(--text-muted);
+    line-height: 1;
+}
+
+.preview-box .braille-writing {
+    font-size: 28px;
+    line-height: 1;
+    color: var(--text-muted);
+}
+
+.preview-box .braille-sep {
+    color: var(--text-muted);
+    font-size: 20px;
+    transform: scale(0.2, 1.5) translateY(-0.1em);
+    line-height: 40px;
+    opacity: 0.5;
+}
+
+.preview-box .braille-reading {
     font-size: 28px;
     line-height: 1;
     color: var(--text);
@@ -169,15 +205,20 @@ body.light .dot-cell.active .dot-label { color: #ddd; }
 .preview-box .preview-dots {
     font-size: 11px;
     color: var(--text-sub);
+    min-height: 1em;
 }
 
 .preview-box .pinyin-label {
     font-size: 13px;
     color: var(--text-sub);
     font-weight: bold;
+    min-height: 1em;
 }
 
-.preview-box.empty .braille-char,
+.preview-box.empty .braille-label,
+.preview-box.empty .braille-writing,
+.preview-box.empty .braille-reading,
+.preview-box.empty .braille-sep,
 .preview-box.empty .preview-dots,
 .preview-box.empty .pinyin-label {
     color: var(--empty-color);

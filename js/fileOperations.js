@@ -1,8 +1,11 @@
 // fileOperations.js - 文件打开与保存
 
-// ── 打开文件 ──
-
-document.getElementById('btnOpenFile').addEventListener('click', handleOpenFile);
+import { outputItems, setRenderSuppressed } from './brailleState.js';
+import { inputOneHot, mixedToBraille } from './brailleInput.js';
+import { speakText } from './brailleSpeech.js';
+import { SETTINGS } from './config.js';
+import { clearOutput } from './panelSettings.js';
+import { invalidatePageCache, renderOutput } from './brailleOutput.js';
 
 /**
  * @description: 分批插入oneHot编码，每批20个，批次间让出主线程避免UI卡死
@@ -10,22 +13,22 @@ document.getElementById('btnOpenFile').addEventListener('click', handleOpenFile)
  * @param {number} [chunkSize=20] 每批数量
  * @return {Promise<void>}
  */
-async function _batchInputOneHot(list, chunkSize = 20) {
-    _renderSuppressed = true;
+export async function _batchInputOneHot(list, chunkSize = 20) {
+    setRenderSuppressed(true);
     try {
         for (let i = 0; i < list.length; i += chunkSize) {
             const chunk = list.slice(i, i + chunkSize);
             for (const oh of chunk) {
                 inputOneHot(oh);
             }
-            _renderSuppressed = false;
+            setRenderSuppressed(false);
             invalidatePageCache();
             renderOutput();
             await new Promise(r => setTimeout(r, 0));
-            _renderSuppressed = true;
+            setRenderSuppressed(true);
         }
     } finally {
-        _renderSuppressed = false;
+        setRenderSuppressed(false);
     }
     invalidatePageCache();
     renderOutput();
@@ -95,7 +98,7 @@ function _loadFileContent(file) {
  * @description: 通过文件选择器打开txt文件
  * @return {void}
  */
-function handleOpenFile() {
+export function handleOpenFile() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.txt,text/plain';
@@ -108,32 +111,11 @@ function handleOpenFile() {
     input.click();
 }
 
-// ── 拖拽打开文件 ──
-
-document.addEventListener('dragover', (e) => {
-    e.preventDefault();
-});
-
-document.addEventListener('drop', (e) => {
-    e.preventDefault();
-    const file = e.dataTransfer?.files[0];
-    if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.txt')) {
-        speakText('仅支持txt文件');
-        return;
-    }
-    _loadFileContent(file);
-});
-
-// ── 保存文件 ──
-
-document.getElementById('btnSaveContent').addEventListener('click', handleSaveContent);
-
 /**
  * @description: 将输出区内容保存为文本文件（优先使用 File System Access API，降级为下载方式）
  * @return {void}
  */
-function handleSaveContent() {
+export function handleSaveContent() {
     if (outputItems.length === 0) {
         speakText('当前没有可保存的内容', 1.5);
         return;
@@ -179,4 +161,24 @@ function saveWithDownload(content) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+}
+
+export function initFileOperations() {
+    document.getElementById('btnOpenFile').addEventListener('click', handleOpenFile);
+    document.getElementById('btnSaveContent').addEventListener('click', handleSaveContent);
+
+    document.addEventListener('dragover', (e) => {
+        e.preventDefault();
+    });
+
+    document.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const file = e.dataTransfer?.files[0];
+        if (!file) return;
+        if (!file.name.toLowerCase().endsWith('.txt')) {
+            speakText('仅支持txt文件');
+            return;
+        }
+        _loadFileContent(file);
+    });
 }

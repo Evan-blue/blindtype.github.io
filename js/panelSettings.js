@@ -1,224 +1,39 @@
-// panelSettings.js - 设置管理与设置面板
+// panelSettings.js - 设置面板 UI
 
-// 从 CONFIGURABLE_ACTIONS 生成默认 actionKeyBindings
-const _defaultActionKeyBindings = {};
-for (const [action, cfg] of Object.entries(CONFIGURABLE_ACTIONS)) {
-    _defaultActionKeyBindings[action] = cfg.defaultKey;
-}
-
-const DEFAULT_SETTINGS = {
-    keyBindings: {
-        keyboard: { ...DOT_KEY_DEFAULTS.keyboard },
-        numpad:   { ...DOT_KEY_DEFAULTS.numpad },
-    },
-    actionKeyBindings: { ..._defaultActionKeyBindings },
-    speechRate: 1.2,
-    debounceSpeech: true,
-    maxUndoHistory: 10,
-    brailleFontSize: 12,
-    allowSpeech: true,
-    announceEmptyCell: false,
-    wordSegmentation: true,
-    cursorJumpMode: 'sentenceEnd',
-    punctAutoSpacing: true,
-    multiSelect: false,
-    forceWelcome: false,
-    mainKeyboardDigits: true,
-    mergeNewlines: true,
-    omitToneMapping: true,
-};
+import { speakText, cancelAllSpeech } from './brailleSpeech.js';
+import { createSlidePanel } from './panelManager.js';
+import { outputItems, cursor } from './brailleState.js';
+import { invalidatePageCache, renderOutput } from './brailleOutput.js';
+import { helpPanel, renderHelpPanel } from './panelHelp.js';
+import { pushUndo } from './history.js';
+import {
+    DOT_KEY_DEFAULTS,
+    KEY_TO_DOT,
+    DOT_TO_KEY,
+    DOT_TO_KEY_NUMPAD,
+    activeKeyGroup,
+    setActiveKeyGroupRaw,
+    _isNumpadKey,
+    KEY_ACTIONS,
+    CONFIGURABLE_ACTIONS,
+    KEY_COMBOS,
+    DEFAULT_SETTINGS,
+    SETTINGS,
+    _CHAR_TO_KEYID,
+    saveSettings,
+    applyKeyBindings,
+    applyActionKeyBindings,
+    applyBrailleFontSize,
+} from './config.js';
 
 const DOT_NAMES = ['1点', '2点', '3点', '4点', '5点', '6点'];
 const DOT_NAME_AUDIOS = ['1号点', '2号点', '3号点', '4号点', '5号点', '6号点'];
-const SEQ_ORDER = [1, 2, 3, 4, 5, 6]; // 一键重设顺序
+const SEQ_ORDER = [1, 2, 3, 4, 5, 6];
 
-let SETTINGS = {};
-let _kbListening = null;      // 当前正在监听按键的 dot 编号，null 表示未监听
-let _kbListeningGroup = null;  // 当前监听所属组：'keyboard' | 'numpad'
-let _akbListening = null;      // 当前正在监听按键的动作名，null 表示未监听
-let _seqBinding = null;        // 一键重设状态：{ step: 0..5, keys: {} } 或 null
-
-const KEY_PRESETS = {
-    'numpad-v-7': { '1': 'Numpad7', '2': 'Numpad4', '3': 'Numpad1', '4': 'Numpad8', '5': 'Numpad5', '6': 'Numpad2' },
-    'numpad-v-8': { '1': 'Numpad8', '2': 'Numpad5', '3': 'Numpad2', '4': 'Numpad9', '5': 'Numpad6', '6': 'Numpad3' },
-    'numpad-h-9': { '1': 'Numpad9', '2': 'Numpad8', '3': 'Numpad7', '4': 'Numpad6', '5': 'Numpad5', '6': 'Numpad4' },
-    'numpad-h-6': { '1': 'Numpad6', '2': 'Numpad5', '3': 'Numpad4', '4': 'Numpad3', '5': 'Numpad2', '6': 'Numpad1' },
-    'kbd-v-u': { '1': 'KeyU', '2': 'KeyJ', '3': 'KeyM', '4': 'KeyI', '5': 'KeyK', '6': 'Comma' },
-    'kbd-v-i': { '1': 'KeyI', '2': 'KeyK', '3': 'Comma', '4': 'KeyO', '5': 'KeyL', '6': 'Period' },
-    'kbd-h-o': { '1': 'KeyO', '2': 'KeyI', '3': 'KeyU', '4': 'KeyL', '5': 'KeyK', '6': 'KeyJ' },
-    'kbd-h-l': { '1': 'KeyL', '2': 'KeyK', '3': 'KeyJ', '4': 'Period', '5': 'Comma', '6': 'KeyM' },
-};
-
-// 立即加载默认值，确保 SETTINGS 对象始终可用
-SETTINGS = {
-    ...DEFAULT_SETTINGS,
-    keyBindings: {
-        keyboard: { ...DEFAULT_SETTINGS.keyBindings.keyboard },
-        numpad:   { ...DEFAULT_SETTINGS.keyBindings.numpad },
-    },
-    actionKeyBindings: { ..._defaultActionKeyBindings },
-};
-
-function _migrateKeyId(keyId) {
-    if (/^[0-9]$/.test(keyId)) return 'Numpad' + keyId;
-    if (/^[a-zA-Z]$/.test(keyId)) return 'Key' + keyId.toUpperCase();
-    if (keyId === ',') return 'Comma';
-    if (keyId === '.') return 'Period';
-    if (keyId === ';') return 'Semicolon';
-    if (keyId === "'") return 'Quote';
-    if (keyId === '/') return 'NumpadDivide';
-    if (keyId === '*') return 'NumpadMultiply';
-    if (keyId === ' ') return 'Space';
-    return keyId;
-}
-
-function _migrateKeyIds(kb) {
-    for (const dot of Object.keys(kb)) {
-        const old = kb[dot];
-        const migrated = _migrateKeyId(old);
-        if (migrated !== old) kb[dot] = migrated;
-    }
-}
-
-function _migrateActionKeyIds(akb) {
-    for (const action of Object.keys(akb)) {
-        const old = akb[action];
-        if (!old) continue;
-        const migrated = _migrateKeyId(old);
-        if (migrated !== old) akb[action] = migrated;
-    }
-}
-
-function loadSettings() {
-    const saved = localStorage.getItem('braille-settings');
-    if (saved) {
-        try {
-            SETTINGS = JSON.parse(saved);
-        } catch (_) {
-            SETTINGS = {};
-        }
-    } else {
-        SETTINGS = {};
-    }
-
-    if (!SETTINGS.keyBindings) SETTINGS.keyBindings = {};
-
-    if (SETTINGS.keyBindings['1'] && typeof SETTINGS.keyBindings['1'] === 'string') {
-        const oldKb = SETTINGS.keyBindings;
-        _migrateKeyIds(oldKb);
-        let numpadCount = 0;
-        for (const key of Object.values(oldKb)) {
-            if (_isNumpadKey(key)) numpadCount++;
-        }
-        SETTINGS.keyBindings = {
-            keyboard: numpadCount > 3 ? { ...DOT_KEY_DEFAULTS.keyboard } : { ...oldKb },
-            numpad:   numpadCount > 3 ? { ...oldKb } : { ...DOT_KEY_DEFAULTS.numpad },
-        };
-    } else {
-        if (!SETTINGS.keyBindings.keyboard) SETTINGS.keyBindings.keyboard = { ...DOT_KEY_DEFAULTS.keyboard };
-        if (!SETTINGS.keyBindings.numpad) SETTINGS.keyBindings.numpad = { ...DOT_KEY_DEFAULTS.numpad };
-        _migrateKeyIds(SETTINGS.keyBindings.keyboard);
-        _migrateKeyIds(SETTINGS.keyBindings.numpad);
-    }
-
-    if (!SETTINGS.actionKeyBindings) SETTINGS.actionKeyBindings = { ..._defaultActionKeyBindings };
-    _migrateActionKeyIds(SETTINGS.actionKeyBindings);
-
-    for (const [action, key] of Object.entries(_defaultActionKeyBindings)) {
-        if (SETTINGS.actionKeyBindings[action] === undefined) SETTINGS.actionKeyBindings[action] = key;
-    }
-    if (SETTINGS.maxUndoHistory === undefined) SETTINGS.maxUndoHistory = DEFAULT_SETTINGS.maxUndoHistory;
-    if (SETTINGS.brailleFontSize === undefined) SETTINGS.brailleFontSize = DEFAULT_SETTINGS.brailleFontSize;
-    if (SETTINGS.announceEmptyCell === undefined) SETTINGS.announceEmptyCell = DEFAULT_SETTINGS.announceEmptyCell;
-    if (SETTINGS.wordSegmentation === undefined) SETTINGS.wordSegmentation = DEFAULT_SETTINGS.wordSegmentation;
-    if (SETTINGS.cursorJumpMode === undefined) SETTINGS.cursorJumpMode = DEFAULT_SETTINGS.cursorJumpMode;
-    if (SETTINGS.punctAutoSpacing === undefined) SETTINGS.punctAutoSpacing = DEFAULT_SETTINGS.punctAutoSpacing;
-    if (SETTINGS.multiSelect === undefined) SETTINGS.multiSelect = DEFAULT_SETTINGS.multiSelect;
-    if (SETTINGS.allowSpeech === undefined) SETTINGS.allowSpeech = DEFAULT_SETTINGS.allowSpeech;
-    if (SETTINGS.forceWelcome === undefined) SETTINGS.forceWelcome = DEFAULT_SETTINGS.forceWelcome;
-    if (SETTINGS.mainKeyboardDigits === undefined) SETTINGS.mainKeyboardDigits = DEFAULT_SETTINGS.mainKeyboardDigits;
-    if (SETTINGS.mergeNewlines === undefined) SETTINGS.mergeNewlines = DEFAULT_SETTINGS.mergeNewlines;
-    applyBrailleFontSize();
-
-    localStorage.removeItem('braille-alt-groups');
-}
-
-function saveSettings() {
-    localStorage.setItem('braille-settings', JSON.stringify(SETTINGS));
-}
-
-function resetToDefaults() {
-    SETTINGS = {
-        ...DEFAULT_SETTINGS,
-        keyBindings: {
-            keyboard: { ...DEFAULT_SETTINGS.keyBindings.keyboard },
-            numpad:   { ...DEFAULT_SETTINGS.keyBindings.numpad },
-        },
-        actionKeyBindings: { ..._defaultActionKeyBindings },
-    };
-    saveSettings();
-    applyKeyBindings();
-    applyActionKeyBindings();
-    updateKeyLabels();
-    applyBrailleFontSize();
-    renderToolbarKeyLabels();
-    const kbContainer = document.getElementById('keyBindings');
-    if (kbContainer) renderKeyBindingsUI(kbContainer);
-    const akbContainer = document.getElementById('actionKeyBindings');
-    if (akbContainer) renderActionKeyBindingsUI(akbContainer);
-    const speechRate = document.getElementById('speechRate');
-    const speechRateVal = document.getElementById('speechRateVal');
-    if (speechRate) { speechRate.value = DEFAULT_SETTINGS.speechRate; speechRateVal.textContent = DEFAULT_SETTINGS.speechRate; }
-    const debounce = document.getElementById('debounceSpeech');
-    if (debounce) debounce.checked = DEFAULT_SETTINGS.debounceSpeech;
-    const allowSp = document.getElementById('allowSpeech');
-    if (allowSp) allowSp.checked = DEFAULT_SETTINGS.allowSpeech;
-    const announce = document.getElementById('announceEmptyCell');
-    if (announce) announce.checked = DEFAULT_SETTINGS.announceEmptyCell;
-    const wordSeg = document.getElementById('wordSegmentation');
-    if (wordSeg) wordSeg.checked = DEFAULT_SETTINGS.wordSegmentation;
-    const jumpRadio = document.querySelector(`input[name="cursorJumpMode"][value="${DEFAULT_SETTINGS.cursorJumpMode}"]`);
-    if (jumpRadio) jumpRadio.checked = true;
-    const punct = document.getElementById('punctAutoSpacing');
-    if (punct) punct.checked = DEFAULT_SETTINGS.punctAutoSpacing;
-    const multiSel = document.getElementById('multiSelect');
-    if (multiSel) multiSel.checked = DEFAULT_SETTINGS.multiSelect;
-    const mergeNL = document.getElementById('mergeNewlines');
-    if (mergeNL) mergeNL.checked = DEFAULT_SETTINGS.mergeNewlines;
-    const maxUndo = document.getElementById('maxUndoHistory');
-    const maxUndoVal = document.getElementById('maxUndoHistoryVal');
-    if (maxUndo) { maxUndo.value = DEFAULT_SETTINGS.maxUndoHistory; maxUndoVal.textContent = DEFAULT_SETTINGS.maxUndoHistory; }
-    const brailleFs = document.getElementById('brailleFontSize');
-    const brailleFsVal = document.getElementById('brailleFontSizeVal');
-    if (brailleFs) { brailleFs.value = DEFAULT_SETTINGS.brailleFontSize; brailleFsVal.textContent = DEFAULT_SETTINGS.brailleFontSize; }
-    invalidatePageCache();
-    renderOutput();
-    speakText('已恢复默认设置');
-}
-
-function applyKeyBindings() {
-    const kb = SETTINGS.keyBindings;
-    for (const k of Object.keys(KEY_TO_DOT)) delete KEY_TO_DOT[k];
-    for (const k of Object.keys(DOT_TO_KEY)) delete DOT_TO_KEY[k];
-    for (const k of Object.keys(DOT_TO_KEY_NUMPAD)) delete DOT_TO_KEY_NUMPAD[k];
-    for (const group of ['keyboard', 'numpad']) {
-        for (const [dotStr, key] of Object.entries(kb[group] || {})) {
-            if (key && !(key in KEY_TO_DOT)) {
-                KEY_TO_DOT[key] = parseInt(dotStr, 10);
-            }
-        }
-    }
-    for (const [dotStr, key] of Object.entries(kb.keyboard || {})) {
-        if (key) DOT_TO_KEY[parseInt(dotStr, 10)] = key;
-    }
-    for (const [dotStr, key] of Object.entries(kb.numpad || {})) {
-        if (key) DOT_TO_KEY_NUMPAD[parseInt(dotStr, 10)] = key;
-    }
-}
-
-function _eventToKeyId(e) {
-    return e.code;
-}
+let _kbListening = null;
+let _kbListeningGroup = null;
+let _akbListening = null;
+let _seqBinding = null;
 
 function _keyIdToLabel(keyId) {
     if (!keyId) return '?';
@@ -238,6 +53,8 @@ function _keyIdToLabel(keyId) {
     if (keyId === 'Delete') return 'DEL';
     return keyId;
 }
+
+function _eventToKeyId(e) { return e.code; }
 
 function _showBindMask(text) {
     const mask = document.getElementById('bindMask');
@@ -301,7 +118,7 @@ function _renderGroupBindings(container, group, ORDER) {
     }
 }
 
-function renderKeyBindingsUI(container) {
+export function renderKeyBindingsUI(container) {
     if (!container) return;
     const ORDER = [1, 4, 2, 5, 3, 6];
 
@@ -320,7 +137,7 @@ function renderKeyBindingsUI(container) {
     }
 }
 
-function _startSeqBinding() {
+export function _startSeqBinding() {
     if (!settingsPanel.slide.classList.contains('open')) {
         settingsPanel.open();
     }
@@ -332,32 +149,11 @@ function _startSeqBinding() {
         return;
     }
     _seqBinding = { step: 0, keys: {} };
-    const dot = SEQ_ORDER[_seqBinding.step];
     _showBindMask('请按下第1个按键（1号点）');
     speakText('请按下第1个按键，1号点');
 }
 
-const _NON_CONFIGURABLE_KEYS = new Set([
-    'Numpad0', 'NumpadDivide', 'NumpadMultiply',
-    'Backspace', 'Delete', 'Space',
-    'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
-    'KeyG', 'KeyH',
-]);
-
-function applyActionKeyBindings() {
-    const akb = SETTINGS.actionKeyBindings;
-    const configurableActions = new Set(Object.keys(CONFIGURABLE_ACTIONS));
-    for (const [key, act] of Object.entries(KEY_ACTIONS)) {
-        if (configurableActions.has(act) && !_NON_CONFIGURABLE_KEYS.has(key)) {
-            delete KEY_ACTIONS[key];
-        }
-    }
-    for (const [action, key] of Object.entries(akb)) {
-        if (key) KEY_ACTIONS[key] = action;
-    }
-}
-
-function renderActionKeyBindingsUI(container) {
+export function renderActionKeyBindingsUI(container) {
     if (!container) return;
     const akb = SETTINGS.actionKeyBindings;
     container.querySelectorAll('.kb-badge').forEach(badge => {
@@ -392,17 +188,85 @@ function renderActionKeyBindingsUI(container) {
     });
 }
 
-function applyKeyPreset(presetName) {
-    const preset = KEY_PRESETS[presetName];
-    if (!preset) return;
-    const isNumpadPreset = presetName.startsWith('numpad-');
-    const group = isNumpadPreset ? 'numpad' : 'keyboard';
-    SETTINGS.keyBindings[group] = { ...preset };
+export function resetToDefaults() {
+    const akbDefault = {};
+    for (const [action, cfg] of Object.entries(CONFIGURABLE_ACTIONS)) {
+        akbDefault[action] = cfg.defaultKey;
+    }
+    for (const k of Object.keys(SETTINGS)) delete SETTINGS[k];
+    Object.assign(SETTINGS, {
+        ...DEFAULT_SETTINGS,
+        keyBindings: {
+            keyboard: { ...DEFAULT_SETTINGS.keyBindings.keyboard },
+            numpad: { ...DEFAULT_SETTINGS.keyBindings.numpad },
+        },
+        actionKeyBindings: { ...akbDefault },
+    });
+    saveSettings();
+    applyKeyBindings();
+    applyActionKeyBindings();
+    updateKeyLabels();
+    applyBrailleFontSize();
+    renderToolbarKeyLabels();
+    const kbContainer = document.getElementById('keyBindings');
+    if (kbContainer) renderKeyBindingsUI(kbContainer);
+    const akbContainer = document.getElementById('actionKeyBindings');
+    if (akbContainer) renderActionKeyBindingsUI(akbContainer);
+    const speechRate = document.getElementById('speechRate');
+    const speechRateVal = document.getElementById('speechRateVal');
+    if (speechRate) { speechRate.value = DEFAULT_SETTINGS.speechRate; speechRateVal.textContent = DEFAULT_SETTINGS.speechRate; }
+    const debounce = document.getElementById('debounceSpeech');
+    if (debounce) debounce.checked = DEFAULT_SETTINGS.debounceSpeech;
+    const allowSp = document.getElementById('allowSpeech');
+    if (allowSp) allowSp.checked = DEFAULT_SETTINGS.allowSpeech;
+    const announce = document.getElementById('announceEmptyCell');
+    if (announce) announce.checked = DEFAULT_SETTINGS.announceEmptyCell;
+    const wordSeg = document.getElementById('wordSegmentation');
+    if (wordSeg) wordSeg.checked = DEFAULT_SETTINGS.wordSegmentation;
+    const jumpRadio = document.querySelector(`input[name="cursorJumpMode"][value="${DEFAULT_SETTINGS.cursorJumpMode}"]`);
+    if (jumpRadio) jumpRadio.checked = true;
+    const punct = document.getElementById('punctAutoSpacing');
+    if (punct) punct.checked = DEFAULT_SETTINGS.punctAutoSpacing;
+    const multiSel = document.getElementById('multiSelect');
+    if (multiSel) multiSel.checked = DEFAULT_SETTINGS.multiSelect;
+    const mergeNL = document.getElementById('mergeNewlines');
+    if (mergeNL) mergeNL.checked = DEFAULT_SETTINGS.mergeNewlines;
+    const maxUndo = document.getElementById('maxUndoHistory');
+    const maxUndoVal = document.getElementById('maxUndoHistoryVal');
+    if (maxUndo) { maxUndo.value = DEFAULT_SETTINGS.maxUndoHistory; maxUndoVal.textContent = DEFAULT_SETTINGS.maxUndoHistory; }
+    const brailleFs = document.getElementById('brailleFontSize');
+    const brailleFsVal = document.getElementById('brailleFontSizeVal');
+    if (brailleFs) { brailleFs.value = DEFAULT_SETTINGS.brailleFontSize; brailleFsVal.textContent = DEFAULT_SETTINGS.brailleFontSize; }
+    invalidatePageCache();
+    renderOutput();
+    speakText('已恢复默认设置');
+}
+
+export function applyKeyPreset(btn) {
+    const device = btn.dataset.preset;
+    const chars = [...btn.innerText.trim()];
+    if (chars.length !== 6) return;
+
+    const isNumpad = device === 'numpad';
+    const group = isNumpad ? 'numpad' : 'keyboard';
+
+    const preset = {};
+    chars.forEach((ch, i) => {
+        const dot = i + 1;
+        if (isNumpad) {
+            preset[dot] = /^\d$/.test(ch) ? 'Numpad' + ch : _CHAR_TO_KEYID[ch] || '';
+        } else {
+            preset[dot] = /^[a-zA-Z]$/.test(ch) ? 'Key' + ch.toUpperCase() : (_CHAR_TO_KEYID[ch] || '');
+        }
+    });
+
+    SETTINGS.keyBindings[group] = preset;
     saveSettings();
     applyKeyBindings();
     updateKeyLabels();
     const container = document.getElementById('keyBindings');
     if (container) renderKeyBindingsUI(container);
+
     const _keyIdToSpoken = {
         Comma: '逗号', Period: '句号', Semicolon: '分号', Quote: '引号',
         Slash: '斜杠', Backslash: '反斜杠', BracketLeft: '左方括号', BracketRight: '右方括号',
@@ -418,14 +282,15 @@ function applyKeyPreset(presetName) {
         if (/^Key[A-Z]$/.test(keyId)) return keyId.slice(3);
         return _keyIdToSpoken[keyId] || keyId;
     }
-    const orientation = presetName.includes('-v-') ? '纵向' : '横向';
-    const groupLabel = isNumpadPreset ? '小键盘' : '主键盘';
-    const labels = SEQ_ORDER.map(d => _keyIdToAudio(preset[d])).join(' ');
+
+    const orientation = btn.closest('.kb-preset-row')?.querySelector('.kb-preset-cat')?.textContent || '';
+    const groupLabel = isNumpad ? '小键盘' : '主键盘';
+    const labels = Object.values(preset).map(_keyIdToAudio).join(' ');
     speakText('启用' + groupLabel + orientation + '键位预设', SETTINGS.speechRate);
     speakText(labels, 3);
 }
 
-function handleKeyBindingCapture(e) {
+export function handleKeyBindingCapture(e) {
     if (e.key === 'Escape') {
         if (_akbListening !== null) {
             e.preventDefault();
@@ -552,7 +417,7 @@ function handleKeyBindingCapture(e) {
     return true;
 }
 
-function updateKeyLabels() {
+export function updateKeyLabels() {
     const dotCells = document.querySelectorAll('.dot-cell');
     dotCells.forEach(cell => {
         const idx = +cell.dataset.idx;
@@ -571,35 +436,31 @@ function updateKeyLabels() {
     applyActiveKeyGroup();
 }
 
-function applyActiveKeyGroup() {
+export function applyActiveKeyGroup() {
     const grid = document.getElementById('dotGrid');
     if (!grid) return;
     grid.classList.remove('active-group-keyboard', 'active-group-numpad');
     grid.classList.add('active-group-' + activeKeyGroup);
 }
 
-function setActiveKeyGroup(keyId) {
+export function setActiveKeyGroup(keyId) {
     const group = _isNumpadKey(keyId) ? 'numpad' : 'keyboard';
     if (group === activeKeyGroup) return;
-    activeKeyGroup = group;
+    setActiveKeyGroupRaw(group);
     applyActiveKeyGroup();
 }
 
-function applyBrailleFontSize() {
-    document.documentElement.style.setProperty('--braille-font-size', SETTINGS.brailleFontSize + 'px');
-}
-
-function clearOutput() {
+export function clearOutput() {
     pushUndo();
     outputItems.length = 0;
-    cursorIdx = 0;
-    selectedIndices.clear();
+    cursor.idx = 0;
+    cursor.selectedIndices.clear();
     invalidatePageCache();
     speakText('输出区已清除');
     renderOutput();
 }
 
-function renderToolbarKeyLabels() {
+export function renderToolbarKeyLabels() {
     function _labelForAction(action) {
         for (const combo of KEY_COMBOS) {
             if (combo.action === action) {
@@ -634,17 +495,7 @@ function renderToolbarKeyLabels() {
     }
 }
 
-// 键位监听时点击遮罩取消绑定
-document.getElementById('bindMask')?.addEventListener('click', () => {
-    if (_kbListening !== null || _akbListening !== null || _seqBinding !== null) {
-        _cancelAllListening();
-        speakText('已取消');
-    }
-});
-
-// ── 设置面板 ──
-
-const settingsPanel = createSlidePanel({
+export const settingsPanel = createSlidePanel({
     slideId: 'settingsSlide',
     overlayId: 'settingsOverlay',
     btnId: 'btnSettings',
@@ -659,19 +510,17 @@ const settingsPanel = createSlidePanel({
         _seqBinding = null;
         _hideBindMask();
         const kbContainer = document.getElementById('keyBindings');
-        if (kbContainer && typeof renderKeyBindingsUI === 'function') renderKeyBindingsUI(kbContainer);
+        if (kbContainer) renderKeyBindingsUI(kbContainer);
         const akbContainer = document.getElementById('actionKeyBindings');
-        if (akbContainer && typeof renderActionKeyBindingsUI === 'function') renderActionKeyBindingsUI(akbContainer);
+        if (akbContainer) renderActionKeyBindingsUI(akbContainer);
     },
     openSpeak: '打开设置',
     closeSpeak: '关闭设置',
 });
 
-toggleSettings = settingsPanel.toggle;
+export let toggleSettings = settingsPanel.toggle;
 
-// ── 设置控件初始化 ──
-
-function initSettingsPanel() {
+export function initSettingsPanel() {
     const settingsForm = document.getElementById('settingsForm');
     if (settingsForm) {
         settingsForm.addEventListener('submit', (e) => e.preventDefault());
@@ -688,9 +537,7 @@ function initSettingsPanel() {
     }
 
     document.querySelectorAll('#kbPresets .kb-preset').forEach(btn => {
-        btn.addEventListener('click', () => {
-            applyKeyPreset(btn.dataset.preset);
-        });
+        btn.addEventListener('click', () => applyKeyPreset(btn));
     });
 
     const speechRateInput = document.getElementById('speechRate');
@@ -765,8 +612,8 @@ function initSettingsPanel() {
         multiSelectCheck.addEventListener('change', () => {
             SETTINGS.multiSelect = multiSelectCheck.checked;
             if (!SETTINGS.multiSelect) {
-                selectedIndices.clear();
-                _selAnchor = -1;
+                cursor.selectedIndices.clear();
+                cursor.clearAnchor();
                 renderOutput();
             }
             saveSettings();
@@ -808,3 +655,10 @@ function initSettingsPanel() {
         });
     }
 }
+
+document.getElementById('bindMask')?.addEventListener('click', () => {
+    if (_kbListening !== null || _akbListening !== null || _seqBinding !== null) {
+        _cancelAllListening();
+        speakText('已取消');
+    }
+});
