@@ -10,6 +10,20 @@ import {
     _buildValidComponents,
 } from './loadMappings.js';
 
+
+export const pyinUtils = {
+    ChineseToSegedPinyin: (text, opts = {}) => {
+        if (!text || typeof text !== 'string') return opts.type === 'string' ? '' : [];
+        const pinyinPro = getPinyinPro();
+        if (!pinyinPro) throw new Error('pinyin-pro 尚未加载，请先调用 loadPinyinPro()');
+        return pinyinPro.segment(text, {
+            toneType: opts.toneType || 'num',
+            format: opts.format || pinyinPro.OutputFormat.AllString,
+        });
+    }
+}
+
+
 /**
  * @description: 将中文文本转为拼音数组(调用了pinyin-pro)
  * @param {string} text 中文文本
@@ -21,9 +35,9 @@ import {
  */
 export function chineseToPinyin(text, opts = {}) {
     if (!text || typeof text !== 'string') return opts.type === 'string' ? '' : [];
-    const mod = getPinyinPro();
-    if (!mod) throw new Error('pinyin-pro 尚未加载，请先调用 loadPinyinPro()');
-    return mod.pinyin(text, {
+    const pinyinPro = getPinyinPro();
+    if (!pinyinPro) throw new Error('pinyin-pro 尚未加载，请先调用 loadPinyinPro()');
+    return pinyinPro.pinyin(text, {
         toneType: opts.toneType || 'num',
         type: opts.type || 'array',
         separator: opts.separator || ' ',

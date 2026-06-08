@@ -9,26 +9,57 @@ const PINYIN_PRO_URLS = [
     'https://unpkg.com/pinyin-pro@3.18.2/dist/index.mjs',
 ];
 
+const PINYIN_DICT_URLS = [
+    'https://esm.sh/@pinyin-pro/data@1.3.0/complete',
+    'https://cdn.jsdelivr.net/npm/@pinyin-pro/data@1.3.0/dist/complete.mjs',
+];
+
+async function myload(urls, moduleName) {
+    for (const url of urls) {
+        try {
+            const mod = await import(url);
+            console.log(`${moduleName} 从 ${url} 加载成功`);
+            return mod;
+        } catch (e) {
+            console.warn(`${moduleName} 从 ${url} 加载失败:`, e.message);
+        }
+    }
+    throw new Error('所有 CDN 加载失败: ' + urls.join(', '));
+}
+
 export async function loadPinyinPro() {
     if (_pinyinPro) return _pinyinPro;
     if (_pinyinProPromise) return _pinyinProPromise;
 
-    _pinyinProPromise = (async () => {
-        for (const url of PINYIN_PRO_URLS) {
-            try {
-                _pinyinPro = await import(url);
-                console.log(`pinyin-pro 从 ${url} 加载成功`);
-                return _pinyinPro;
-            } catch (e) {
-                console.warn(`pinyin-pro 从 ${url} 加载失败:`, e.message);
-            }
-        }
-        throw new Error('pinyin-pro 所有 CDN 加载失败: ' + PINYIN_PRO_URLS.join(', '));
-    })();
+    _pinyinProPromise = myload(PINYIN_PRO_URLS, 'pinyin-pro')
+        .then(mod => { _pinyinPro = mod; return _pinyinPro; })
+        .catch(e => { _pinyinProPromise = null; throw e; })
+        .then(() => _initPinyinPro());
 
     return _pinyinProPromise;
 }
 
 export function getPinyinPro() {
     return _pinyinPro;
+}
+
+/**
+ * @description: 加载 pinyin-pro 并注入完整字典（多 CDN fallback）
+ * @return {Promise<void>}
+ */
+export async function _initPinyinPro() {
+    const mod = await loadPinyinPro();
+    for (const url of PINYIN_DICT_URLS) {
+        try {
+            const dict = await import(url);
+            mod.addDict(dict.default);
+            const testStr = '小明硕士毕业于中国科学院计算所，后在日本京都大学深造';
+            const testResult = mod.segment(testStr, { toneType: 'num', format: mod.OutputFormat.AllString });
+            console.log(testResult);
+            console.log(`pinyin-pro 完整字典从 ${url} 加载成功`);
+            return;
+        } catch (e) {
+            console.warn(`pinyin-pro 完整字典从 ${url} 加载失败:`, e.message);
+        }
+    }
 }
