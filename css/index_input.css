@@ -51,7 +51,7 @@
     color: #fff;
     box-shadow: 0 0 12px var(--accent-glow);
     box-shadow: 
-        inset 0px 10px 15px rgba(0, 0, 0, .5), 
+        inset 1px 3px 2px rgba(0, 0, 0, .5), 
         inset 0px 0px 5px rgba(255, 255, 255, .3), 
         inset -5px -5px 15px rgba(255, 255, 255, 0.2);;
     transform: scale(1);
@@ -86,12 +86,12 @@ body.light .dot-cell.active .dot-label { color: #ddd; }
 
 /* 默认（无 active-group 类时）：主键盘点亮 */
 .dot-cell .kb-lbl {
-    font-size: 14px;
+    font-size: 16px;
     opacity: 1;
 }
 
 .dot-cell .np-lbl {
-    font-size: 9px;
+    font-size: 8px;
     opacity: 0.35;
 }
 
@@ -102,12 +102,12 @@ body.light .dot-cell.active .dot-label { color: #ddd; }
 
 /* 主键盘活跃 */
 .active-group-keyboard .dot-cell .kb-lbl {
-    font-size: 14px;
+    font-size: 16px;
     opacity: 1;
 }
 
 .active-group-keyboard .dot-cell .np-lbl {
-    font-size: 9px;
+    font-size: 8px;
     opacity: 0.35;
 }
 
