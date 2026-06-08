@@ -48,9 +48,12 @@
 
 .dot-cell.active {
     background: var(--accent);
-    border-color: var(--accent);
     color: #fff;
     box-shadow: 0 0 12px var(--accent-glow);
+    box-shadow: 
+        inset 0px 10px 15px rgba(0, 0, 0, .5), 
+        inset 0px 0px 5px rgba(255, 255, 255, .3), 
+        inset -5px -5px 15px rgba(255, 255, 255, 0.2);;
     transform: scale(1);
 }
 

@@ -9,9 +9,9 @@
 // ── 默认盲文点位键组（两组并列，始终同时生效）──
 export const DOT_KEY_DEFAULTS = {
     keyboard: {
-        '4': 'KeyU', '1': 'KeyI',
-        '5': 'KeyJ', '2': 'KeyK',
-        '6': 'KeyM', '3': 'Comma'
+        '4': 'KeyI','1': 'KeyU', 
+        '5': 'KeyK','2': 'KeyJ', 
+        '6': 'Comma','3': 'KeyM', 
     },
     numpad: {
         '4': 'Numpad7', '1': 'Numpad8',
