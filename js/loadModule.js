@@ -33,8 +33,7 @@ export async function loadPinyinPro() {
 
     _pinyinProPromise = myload(PINYIN_PRO_URLS, 'pinyin-pro')
         .then(mod => { _pinyinPro = mod; return _pinyinPro; })
-        .catch(e => { _pinyinProPromise = null; throw e; })
-        .then(() => _initPinyinPro());
+        .catch(e => { _pinyinProPromise = null; throw e; });
 
     return _pinyinProPromise;
 }
@@ -48,12 +47,13 @@ export function getPinyinPro() {
  * @return {Promise<void>}
  */
 export async function _initPinyinPro() {
+    console.log('正在加载 pinyin-pro配置...');
     const mod = await loadPinyinPro();
     for (const url of PINYIN_DICT_URLS) {
         try {
             const dict = await import(url);
             mod.addDict(dict.default);
-            const testStr = '小明硕士毕业于中国科学院计算所，后在日本京都大学深造';
+            const testStr = '小明硕士毕业于哈尔滨佛学院，后在加里敦大学深造';
             const testResult = mod.segment(testStr, { toneType: 'num', format: mod.OutputFormat.AllString });
             console.log(testResult);
             console.log(`pinyin-pro 完整字典从 ${url} 加载成功`);

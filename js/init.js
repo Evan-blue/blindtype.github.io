@@ -2,7 +2,7 @@
 
 
 import { loadAllMappings } from './loadMappings.js';
-import { loadPinyinPro } from './loadModule.js';
+import { loadPinyinPro, _initPinyinPro } from './loadModule.js';
 import {
     outputItems,
     cursor,
@@ -173,6 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadAllMappings()
         .then(() => loadPinyinPro())
         .then(() => {
+            _initPinyinPro();  // 后台异步加载完整字典，不阻塞页面初始化
 
         // ── Load settings & apply ──
         loadSettings();
