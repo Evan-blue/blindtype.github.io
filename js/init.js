@@ -170,11 +170,11 @@ function matchCombo(e) {
 
 
 document.addEventListener('DOMContentLoaded', () => {
+    // ── pinyin 分支：并行加载模块 → 后台拉字典 ──
+    loadPinyinPro().then(() => _initPinyinPro());
+    // ── 主页面分支 ──
     loadAllMappings()
-        .then(() => loadPinyinPro())
         .then(() => {
-            _initPinyinPro();  // 后台异步加载完整字典，不阻塞页面初始化
-
         // ── Load settings & apply ──
         loadSettings();
         applyBrailleFontSize();
@@ -186,8 +186,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // ── Fill key-label from config ──
         updateKeyLabels();
 
-        // ── Render mapping table ──
+        // ── Panel initialization ──
         renderMappingTable();
+        initSettingsPanel();
 
         // ── Init submodule event handlers ──
         initBrailleOutput();
@@ -348,8 +349,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnClearAll) {
             btnClearAll.addEventListener('click', clearOutput);
         }
-
-        initSettingsPanel();
 
         initForceWelcomeToggle();
 

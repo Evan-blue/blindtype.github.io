@@ -36,7 +36,7 @@ export const pyinUtils = {
 export function chineseToPinyin(text, opts = {}) {
     if (!text || typeof text !== 'string') return opts.type === 'string' ? '' : [];
     const pinyinPro = getPinyinPro();
-    if (!pinyinPro) throw new Error('pinyin-pro 尚未加载，请先调用 loadPinyinPro()');
+    if (!pinyinPro) return opts.type === 'string' ? '' : [];
     return pinyinPro.pinyin(text, {
         toneType: opts.toneType || 'num',
         type: opts.type || 'array',
