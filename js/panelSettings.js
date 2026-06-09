@@ -138,9 +138,6 @@ export function renderKeyBindingsUI(container) {
 }
 
 export function _startSeqBinding() {
-    if (!settingsPanel.slide.classList.contains('open')) {
-        settingsPanel.open();
-    }
     if (_kbListening !== null || _akbListening !== null) {
         _cancelAllListening();
     }
@@ -491,6 +488,7 @@ export function renderToolbarKeyLabels() {
         'tkbd-toggleHelp': 'toggleHelp',
         'tkbd-toggleSettings': 'toggleSettings',
         'tkbd-resetKeyBindings': 'resetKeyBindings',
+        'tkbd-kbResetKeyBindings': 'resetKeyBindings',
     };
     for (const [id, action] of Object.entries(map)) {
         const el = document.getElementById(id);

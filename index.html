@@ -480,7 +480,7 @@
                 </div>
             </div>
             <span class="controls-actions">
-                <button class="bind-btn" id="btnCustomBind" title="打开自定义键位设置">自定义键位</button>
+                <button class="bind-btn" id="btnCustomBind" title="打开自定义键位设置">自定义键位 <kbd id="tkbd-kbResetKeyBindings"></kbd></button>
                 <button class="reset-btn" id="btnKbResetDefaults" title="恢复默认键位">恢复默认</button>
             </span>
         </div>
@@ -546,7 +546,7 @@
 
             <!-- Row 4: Bottom row -->
             <div class="kb-row">
-                <span class="kb-key w275"><span class="primary">Shift</span></span>
+                <span class="kb-key w275" data-key="shift"><span class="primary">Shift</span></span>
                 <span class="kb-key" data-key="z"><span class="primary">Z</span></span>
                 <span class="kb-key" data-key="x"><span class="primary">X</span></span>
                 <span class="kb-key" data-key="c"><span class="primary">C</span></span>
@@ -557,19 +557,19 @@
                 <span class="kb-key" data-key=","><span class="primary">,</span><span class="secondary">&lt;</span></span>
                 <span class="kb-key" data-key="."><span class="primary">.</span><span class="secondary">&gt;</span></span>
                 <span class="kb-key" data-key="/"><span class="primary">/</span><span class="secondary">?</span></span>
-                <span class="kb-key w275"><span class="primary">Shift</span></span>
+                <span class="kb-key w275" data-key="shift"><span class="primary">Shift</span></span>
             </div>
 
             <!-- Row 5: Space row -->
             <div class="kb-row">
-                <span class="kb-key w15"><span class="primary">Ctrl</span></span>
+                <span class="kb-key w15" data-key="ctrl"><span class="primary">Ctrl</span></span>
                 <span class="kb-key w15"><span class="primary">Win</span></span>
                 <span class="kb-key w15"><span class="primary">Alt</span></span>
                 <span class="kb-key w625" data-key="space"><span class="primary">Space</span></span>
                 <span class="kb-key w15"><span class="primary">Alt</span></span>
                 <span class="kb-key w15"><span class="primary">Win</span></span>
                 <span class="kb-key w15"><span class="primary">Menu</span></span>
-                <span class="kb-key w15"><span class="primary">Ctrl</span></span>
+                <span class="kb-key w15" data-key="ctrl"><span class="primary">Ctrl</span></span>
             </div>
         </div>
 
@@ -612,30 +612,28 @@
         <div class="kb-ref">
             <div class="kb-ref-col">
                 <h3 class="kb-ref-title">组合键</h3>
-                <div class="kb-ref-row"><kbd>Ctrl</kbd>+<kbd>Z</kbd> 撤销</div>
-                <div class="kb-ref-row"><kbd>Ctrl</kbd>+<kbd>Y</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> 重做</div>
-                <div class="kb-ref-row"><kbd>Ctrl</kbd>+<kbd>A</kbd> 全选</div>
-                <div class="kb-ref-row"><kbd>Ctrl</kbd>+<kbd>S</kbd> 保存</div>
-                <div class="kb-ref-row"><kbd>Ctrl</kbd>+<kbd>O</kbd> 打开文件</div>
-                <div class="kb-ref-row"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd> 自定义键位</div>
-                <div class="kb-ref-row"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>H</kbd> 新手教程</div>
+                <div class="kb-ref-row" data-hl="ctrl z"><kbd>Ctrl</kbd>+<kbd>Z</kbd> 撤销</div>
+                <div class="kb-ref-row"><span data-hl="ctrl y"><kbd>Ctrl</kbd>+<kbd>Y</kbd></span> / <span data-hl="ctrl shift z"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></span> 重做</div>
+                <div class="kb-ref-row" data-hl="ctrl a"><kbd>Ctrl</kbd>+<kbd>A</kbd> 全选</div>
+                <div class="kb-ref-row" data-hl="ctrl s"><kbd>Ctrl</kbd>+<kbd>S</kbd> 保存</div>
+                <div class="kb-ref-row" data-hl="ctrl o"><kbd>Ctrl</kbd>+<kbd>O</kbd> 打开文件</div>
+                <div class="kb-ref-row" data-hl="ctrl shift h"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>H</kbd> 新手教程</div>
             </div>
             <div class="kb-ref-col">
                 <h3 class="kb-ref-title">操作</h3>
-                <div class="kb-ref-row"><kbd>Delete</kbd> 向后删除</div>
-                <div class="kb-ref-row"><kbd>C</kbd> 清空输出区</div>
-                <div class="kb-ref-row"><kbd>R</kbd> 朗读</div>
+                <div class="kb-ref-row" data-hl="backspace"><kbd>Delete</kbd> 向后删除</div>
+                <div class="kb-ref-row" data-hl="c"><kbd>C</kbd> 清空输出区</div>
+                <div class="kb-ref-row" data-hl="r"><kbd>R</kbd> 朗读</div>
                 <div class="kb-ref-row"><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> 光标</div>
-                <div class="kb-ref-row"><kbd>G</kbd> / <kbd>H</kbd> 翻页</div>
-                <div class="kb-ref-row"><kbd>Shift</kbd>+<kbd>←</kbd><kbd>→</kbd> 范围选择</div>
-                <div class="kb-ref-row"><kbd>T</kbd> 键位展示</div>
+                <div class="kb-ref-row" data-hl="g h"><kbd>G</kbd> / <kbd>H</kbd> 翻页</div>
+                <div class="kb-ref-row" data-hl="shift"><kbd>Shift</kbd>+<kbd>←</kbd><kbd>→</kbd> 范围选择</div>
             </div>
             <div class="kb-ref-col">
                 <h3 class="kb-ref-title">面板</h3>
-                <div class="kb-ref-row"><kbd>Q</kbd> 盲文对照表</div>
-                <div class="kb-ref-row"><kbd>W</kbd> 键位帮助</div>
-                <div class="kb-ref-row"><kbd>E</kbd> 设置</div>
-                <div class="kb-ref-row"><kbd>T</kbd> 键盘展示</div>
+                <div class="kb-ref-row" data-hl="q"><kbd>Q</kbd> 盲文对照表</div>
+                <div class="kb-ref-row" data-hl="w"><kbd>W</kbd> 键位帮助</div>
+                <div class="kb-ref-row" data-hl="e"><kbd>E</kbd> 设置</div>
+                <div class="kb-ref-row" data-hl="t"><kbd>T</kbd> 键位和设置</div>
             </div>
             <div class="kb-ref-col">
                 <h3 class="kb-ref-title">其他设置</h3>

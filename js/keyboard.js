@@ -331,4 +331,25 @@
     if (kbSpeechRate) _onRangeInput(kbSpeechRate, kbSpeechRateVal, 'speechRate');
     if (kbBrailleFontSize) _onRangeInput(kbBrailleFontSize, kbBrailleFontSizeVal, 'brailleFontSize');
     if (kbMaxUndoHistory) _onRangeInput(kbMaxUndoHistory, kbMaxUndoHistoryVal, 'maxUndoHistory');
+
+    // ── 参考面板悬停高亮对应键盘按键 ──
+    const kbRef = document.querySelector('.kb-ref');
+    if (kbRef) {
+        kbRef.addEventListener('mouseover', (e) => {
+            const el = e.target.closest('[data-hl]');
+            if (!el || !el.closest('.kb-ref')) return;
+            const keys = el.dataset.hl.split(/\s+/);
+            keys.forEach(k => {
+                kbSection.querySelectorAll(`.kb-key[data-key="${CSS.escape(k)}"]`).forEach(el => el.classList.add('highlight'));
+            });
+        });
+        kbRef.addEventListener('mouseout', (e) => {
+            const el = e.target.closest('[data-hl]');
+            if (!el || !el.closest('.kb-ref')) return;
+            const keys = el.dataset.hl.split(/\s+/);
+            keys.forEach(k => {
+                kbSection.querySelectorAll(`.kb-key[data-key="${CSS.escape(k)}"]`).forEach(el => el.classList.remove('highlight'));
+            });
+        });
+    }
 })();

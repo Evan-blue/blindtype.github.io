@@ -453,13 +453,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const code = bindings[d];
                 if (!code) continue;
                 if (code.startsWith('Key')) labels.push(code.slice(3));
-                else if (code.startsWith('Numpad')) labels.push('小键盘' + code.slice(6));
+                else if (code.startsWith('Numpad')) labels.push(code.slice(6));
                 else if (code === 'Comma') labels.push('逗号');
                 else if (code === 'Period') labels.push('句号');
                 else labels.push(code);
             }
-            speakText('启用' + groupLabel + '键位预设', SETTINGS.speechRate);
-            speakText(labels.join(' '), 3);
+            speakText('启用' + groupLabel + '键位预设' + labels.join(' '), SETTINGS.speechRate);
         };
 
         window._kbUpdateSetting = function (key, value) {
