@@ -14,7 +14,7 @@
     --text: #e0e0e0;
     --text-heading: #ececff;
     --text-sub: #c0c0ff;
-    --text-muted: #888;
+    --text-muted: #999;
     --text-label: #a0ffa0;
 
     --border: #333;
@@ -55,7 +55,7 @@ body.light {
     --text: #333333;
     --text-heading: #222222;
     --text-sub: #6c3fd4;
-    --text-muted: #666;
+    --text-muted: #777;
     --text-label: #2e7d32;
 
     --border: #d0d0d0;
@@ -80,4 +80,43 @@ body.light {
     --empty-color: #cccccc;
     --scrollbar-thumb: #6c3fd466;
     --scrollbar-thumb-hover: #6c3fd4aa;
+}
+
+/* ── 设计 Token（双主题共享）── */
+
+:root {
+    /* 间距（4px 基准） */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 12px;
+    --space-lg: 16px;
+    --space-xl: 24px;
+    --space-2xl: 32px;
+    --space-3xl: 48px;
+
+    /* 字号（1.25 modular scale） */
+    --text-xs: 0.75rem;
+    --text-sm: 0.8125rem;
+    --text-base: 0.9375rem;
+    --text-lg: 1.1875rem;
+    --text-xl: 1.5rem;
+    --text-2xl: 1.875rem;
+
+    /* 圆角 */
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-full: 50%;
+
+    /* 层级 */
+    --z-dropdown: 100;
+    --z-overlay: 1000;
+    --z-slide: 1001;
+    --z-modal: 2000;
+    --z-toast: 2100;
+
+    /* 过渡 */
+    --ease-out: 150ms ease-out;
+    --ease-in: 150ms ease-in;
+    --ease-slide: 300ms ease-out;
 }

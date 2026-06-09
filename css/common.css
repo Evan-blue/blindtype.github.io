@@ -2,17 +2,17 @@
 @import url('theme.css');
 
 
-/* 尊重用户减少动画偏好：让动画瞬间完成，当前版本先不做 */
-/* @media (prefers-reduced-motion: reduce) {
+/* 尊重用户减少动画偏好 */
+@media (prefers-reduced-motion: reduce) {
 
     *,
     *::before,
     *::after {
-        animation-duration: 0.01ms !important;
+        /* animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important; */
     }
-} */
+}
 
 :root { 
     --dot-label-distance:-2.5px;

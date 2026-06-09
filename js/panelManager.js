@@ -21,7 +21,7 @@ export function createSlidePanel(cfg) {
             slide.classList.add('open');
             slide.removeAttribute('inert');
             overlay.classList.add('open');
-            btn.setAttribute('aria-expanded', 'true');
+            if (btn) btn.setAttribute('aria-expanded', 'true');
             closeBtn.focus();
             if (cfg.openSpeak) speakText(cfg.openSpeak, 1.5);
         },
@@ -31,8 +31,8 @@ export function createSlidePanel(cfg) {
             slide.classList.remove('open');
             slide.setAttribute('inert', '');
             overlay.classList.remove('open');
-            btn.setAttribute('aria-expanded', 'false');
-            btn.focus();
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+            if (btn) btn.focus();
             if (cfg.closeSpeak) speakText(cfg.closeSpeak, 1.5);
         },
 
@@ -52,10 +52,12 @@ export function createSlidePanel(cfg) {
         });
     }
 
-    btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        panel.open();
-    });
+    if (btn) {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            panel.open();
+        });
+    }
 
     overlay.addEventListener('click', () => {
         if (panel.pinLit) return;

@@ -37,6 +37,8 @@ import {
 } from './brailleSpeech.js';
 import {
     SETTINGS,
+    DEFAULT_SETTINGS,
+    CONFIGURABLE_ACTIONS,
     saveSettings,
     loadSettings,
     applyKeyBindings,
@@ -245,6 +247,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+            // T 键：切换键盘键位展示
+            if (e.key === 't' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                const openPanel = document.querySelector('.settings-slide.open, .help-slide.open, .mapping-slide.open');
+                if (!openPanel) {
+                    e.preventDefault();
+                    toggleKbOverlay();
+                    return;
+                }
+            }
+
             // Shift+Esc 直接结束教程
             if (e.shiftKey && e.key === 'Escape') {
                 if (stopTutorial()) { e.preventDefault(); return; }
@@ -252,6 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Esc 关闭面板 / 暂停教程
             if (e.key === 'Escape') {
+                if (kbOverlay.classList.contains('open')) { closeKbOverlay(); e.preventDefault(); return; }
                 if (handleTutorialEscape()) { e.preventDefault(); return; }
                 if (settingsPanel.slide.classList.contains('open')) { settingsPanel.close(); e.preventDefault(); return; }
                 if (helpPanel.slide.classList.contains('open')) { helpPanel.close(); e.preventDefault(); return; }
@@ -335,6 +348,14 @@ document.addEventListener('DOMContentLoaded', () => {
             themeToggle.setAttribute('aria-pressed', String(isLight));
         });
 
+        // ── Keyboard toggle button ──
+        const btnKbToggle = document.getElementById('btnKbToggle');
+        if (btnKbToggle) {
+            btnKbToggle.addEventListener('click', () => toggleKbOverlay());
+        }
+        const tkbdKbToggle = document.getElementById('tkbd-kbToggle');
+        if (tkbdKbToggle) tkbdKbToggle.textContent = 'T';
+
         // ── Header tutorial button ──
         document.getElementById('btnTutorial').addEventListener('click', () => playTutorial());
 
@@ -409,6 +430,111 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }, 200);
         }).observe(outputArea);
+
+        // ── Keyboard overlay ──
+        const kbOverlay = document.getElementById('kbIframeOverlay');
+        const kbIframeClose = document.getElementById('kbIframeClose');
+
+        window._kbOpenSeqBinding = _startSeqBinding;
+
+        window._kbApplyPreset = function (scope, name) {
+            const bindings = window._kbPresetToDotBindings && window._kbPresetToDotBindings(name);
+            if (!bindings) return;
+            const group = scope === 'numpad' ? 'numpad' : 'keyboard';
+            SETTINGS.keyBindings[group] = { ...bindings };
+            saveSettings();
+            applyKeyBindings();
+            updateKeyLabels();
+            document.dispatchEvent(new CustomEvent('bindings-changed'));
+
+            const groupLabel = scope === 'numpad' ? '小键盘' : '主键盘';
+            const labels = [];
+            for (let d = 1; d <= 6; d++) {
+                const code = bindings[d];
+                if (!code) continue;
+                if (code.startsWith('Key')) labels.push(code.slice(3));
+                else if (code.startsWith('Numpad')) labels.push('小键盘' + code.slice(6));
+                else if (code === 'Comma') labels.push('逗号');
+                else if (code === 'Period') labels.push('句号');
+                else labels.push(code);
+            }
+            speakText('启用' + groupLabel + '键位预设', SETTINGS.speechRate);
+            speakText(labels.join(' '), 3);
+        };
+
+        window._kbUpdateSetting = function (key, value) {
+            SETTINGS[key] = value;
+            if (key === 'brailleFontSize') applyBrailleFontSize();
+            saveSettings();
+        };
+
+        window._kbResetDefaults = function () {
+            const akbDefault = {};
+            for (const [action, cfg] of Object.entries(CONFIGURABLE_ACTIONS)) {
+                akbDefault[action] = cfg.defaultKey;
+            }
+            SETTINGS.keyBindings = {
+                keyboard: { ...DEFAULT_SETTINGS.keyBindings.keyboard },
+                numpad: { ...DEFAULT_SETTINGS.keyBindings.numpad },
+            };
+            SETTINGS.actionKeyBindings = { ...akbDefault };
+            saveSettings();
+            applyKeyBindings();
+            applyActionKeyBindings();
+            updateKeyLabels();
+            renderToolbarKeyLabels();
+            syncKeyboard();
+            syncKbSettings();
+            document.dispatchEvent(new CustomEvent('bindings-changed'));
+        };
+
+        function getSettingsData() {
+            return {
+                debounceSpeech: SETTINGS.debounceSpeech,
+                speechRate: SETTINGS.speechRate,
+                brailleFontSize: SETTINGS.brailleFontSize,
+                maxUndoHistory: SETTINGS.maxUndoHistory,
+            };
+        }
+        function syncKbSettings() {
+            if (window._kbSyncSettings) window._kbSyncSettings(getSettingsData());
+        }
+
+        function getBindingsData() {
+            return {
+                keyboard: SETTINGS.keyBindings.keyboard,
+                numpad: SETTINGS.keyBindings.numpad,
+                spaceKey: 'Space',
+                numConfirmKey: 'Numpad0',
+                deleteKey: SETTINGS.actionKeyBindings.delete,
+                backspaceKey: 'Backspace',
+                numDeleteKey: 'NumpadMultiply',
+                clearInputKey: SETTINGS.actionKeyBindings.clearInput,
+                numClearInputKey: 'NumpadDivide',
+            };
+        }
+        function syncKeyboard() {
+            if (window._kbApplyBindings) window._kbApplyBindings(getBindingsData());
+        }
+        function openKbOverlay() {
+            kbOverlay.classList.add('open');
+            syncKeyboard();
+            syncKbSettings();
+        }
+        function closeKbOverlay() {
+            kbOverlay.classList.remove('open');
+        }
+        function toggleKbOverlay() {
+            kbOverlay.classList.contains('open') ? closeKbOverlay() : openKbOverlay();
+        }
+
+        kbIframeClose.addEventListener('click', closeKbOverlay);
+
+        // 键位变更后同步到键盘可视化
+        document.addEventListener('bindings-changed', syncKeyboard);
+
+        // 初始同步
+        syncKeyboard();
 
         // ── Dev panel ──
         initDevPanel();

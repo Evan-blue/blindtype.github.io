@@ -9,12 +9,12 @@
 .action-btn {
     padding: 8px 16px;
     border: 1px solid var(--border-light);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     background: var(--bg-toolbar);
     color: var(--text);
     font-size: 13px;
     cursor: pointer;
-    transition: .1s;
+    transition: .15s;
 }
 
 .action-btn:active {
@@ -22,7 +22,8 @@
 }
 
 .action-btn.clear-btn {
-    border-color: var(--border-kbd);
+    border-color: #f0a020;
+    color: #f0a020;
 }
 
 .action-btn.delete-btn {

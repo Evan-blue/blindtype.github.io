@@ -1,0 +1,435 @@
+:root {
+    --kb-bg: #2a2a3e;
+    --kb-key-bg: #3a3a55;
+    --kb-key-text: #ccc;
+    --kb-key-border: #555;
+    --kb-key-radius: 6px;
+    --kb-gap: 4px;
+}
+
+.kb-iframe-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 32px;
+    overflow-y: auto;
+}
+
+/* ── 键盘容器 ── */
+.keyboard {
+    display: flex;
+    flex-direction: column;
+    gap: var(--kb-gap);
+    background: var(--bg-card, #16213e);
+    border: 1px solid var(--border, #333);
+    border-radius: 12px;
+    padding: 20px 16px;
+    max-width: 780px;
+    width: 100%;
+    user-select: none;
+}
+
+.kb-row {
+    display: flex;
+    gap: var(--kb-gap);
+    justify-content: center;
+}
+
+/* ── 单个按键 ── */
+.kb-key {
+    position: relative;
+    min-width: 44px;
+    height: 44px;
+    border-radius: var(--kb-key-radius);
+    border: 1px solid var(--kb-key-border);
+    background: var(--kb-key-bg);
+    color: var(--kb-key-text);
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.1;
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+    cursor: default;
+    /* 窄键 (字母区) */
+    flex: 0 0 44px;
+}
+
+/* 修饰键宽度 */
+.kb-key.w15 { flex: 0 0 66px; }
+.kb-key.w175 { flex: 0 0 78px; }
+.kb-key.w2 { flex: 0 0 90px; }
+.kb-key.w225 { flex: 0 0 100px; }
+.kb-key.w275 { flex: 0 0 122px; }
+.kb-key.w625 { flex: 0 0 280px; }  /* 空格 */
+
+/* ── 键上文字 ── */
+.kb-key .primary {
+    font-size: 14px;
+    line-height: 1;
+}
+.kb-key .secondary {
+    font-size: 8px;
+    opacity: 0.55;
+    line-height: 1;
+}
+
+/* ── 自定义颜色（通过 CSS 变量） ── */
+.kb-key[data-color] {
+    --_c: var(--key-color);
+    background: color-mix(in srgb, var(--_c) 30%, var(--kb-key-bg, #3a3a55));
+    border-color: color-mix(in srgb, var(--_c) 55%, transparent);
+    box-shadow: inset 0 0 10px color-mix(in srgb, var(--_c) 18%, transparent);
+}
+
+/* ── 点位角标 ── */
+.kb-key[data-dot]::after {
+    content: attr(data-dot);
+    position: absolute;
+    bottom: 1px;
+    left: 4px;
+    font-size: 8px;
+    font-weight: 700;
+    opacity: 0.7;
+    line-height: 1;
+}
+
+/* ── 定位凸起 (F / J / Numpad5) ── */
+.kb-key[data-bump]::before {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 10px;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--kb-key-text, #ccc);
+    opacity: 0.55;
+}
+
+/* ── 预设色板 ── */
+.kb-key[data-color="dot1"],
+.kb-key[data-color="dot2"],
+.kb-key[data-color="dot3"],
+.kb-key[data-color="dot4"],
+.kb-key[data-color="dot5"],
+.kb-key[data-color="dot6"] {
+    --key-color: #7f5af0;
+    background: color-mix(in srgb, var(--key-color) 80%, var(--kb-key-bg, #3a3a55));
+    color: #fff;
+}
+.kb-key[data-color="space"] { --key-color: #4caf50; }
+.kb-key[data-color="delete"] { --key-color: #e91e63; }
+.kb-key[data-color="action"] { --key-color: #f0a020; }
+
+/* ── 图例 ── */
+.legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 24px;
+    font-size: 13px;
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.legend-swatch {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    border: 1px solid rgba(255,255,255,0.2);
+    flex-shrink: 0;
+}
+.legend kbd {
+    display: inline-block;
+    padding: 1px 6px;
+    background: var(--bg-kbd);
+    border: 1px solid var(--border-kbd);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 11px;
+    color: var(--text);
+    line-height: 1.4;
+}
+
+/* ── 操作栏 ── */
+.controls {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+.controls-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: center;
+    margin-top: 2px;
+}
+.controls-label {
+    font-size: 12px;
+    color: var(--text-sub, #c0c0ff);
+    font-weight: 600;
+    margin-right: 4px;
+    min-width: 100px;
+    white-space: nowrap;
+}
+.controls button {
+    min-width: 100px;
+    padding: 6px 14px;
+    border: 1px solid var(--border, #333);
+    border-radius: 6px;
+    background: var(--bg-card, #16213e);
+    color: var(--text, #e0e0e0);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+.controls button:hover {
+    border-color: var(--accent, #7f5af0);
+    background: var(--accent-light, #7f5af033);
+}
+.controls button.active {
+    background: var(--accent, #7f5af0);
+    color: #fff;
+    border-color: var(--accent, #7f5af0);
+}
+
+.controls-actions {
+    margin-top: auto;
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    margin-left: 8px;
+    padding-left: 16px;
+    border-left: 1px solid var(--border, #333);
+    flex-shrink: 0;
+}
+
+.bind-btn,
+.reset-btn {
+    min-width: auto;
+    padding: 5px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.controls .bind-btn {
+    border: 1px solid var(--accent, #7f5af0);
+    background: transparent;
+    color: var(--accent, #7f5af0);
+}
+.controls .bind-btn:hover {
+    background: var(--accent, #7f5af0);
+    border-color: var(--accent, #7f5af0);
+    color: #fff;
+}
+
+.controls .reset-btn {
+    border: 1px solid var(--danger-border, #e91e63);
+    background: transparent;
+    color: var(--danger, #e91e63);
+}
+.controls .reset-btn:hover {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: #fff;
+}
+
+/* ── 小键盘 ── */
+.kb-section {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    flex-wrap: nowrap;
+    max-width: 900px;
+    width: 100%;
+}
+
+.numpad {
+    display: grid;
+    grid-template-columns: repeat(4, 52px);
+    grid-template-rows: repeat(5, 44px);
+    gap: var(--kb-gap);
+    background: var(--bg-card, #16213e);
+    border: 1px solid var(--border, #333);
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.numpad .kb-key {
+    min-width: 0;
+    flex: none;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--kb-key-radius);
+    font-size: 14px;
+}
+
+.numpad .kb-key.span-row {
+    grid-row: span 2;
+}
+
+.numpad .kb-key.span-col {
+    grid-column: span 2;
+}
+
+/* ── 参考面板 ── */
+.kb-ref {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    max-width: 780px;
+    width: 100%;
+    margin-top: 24px;
+}
+
+.kb-ref-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-sub, #c0c0ff);
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border, #333);
+}
+
+.kb-ref-row {
+    font-size: 13px;
+    color: var(--text, #e0e0e0);
+    line-height: 2;
+    white-space: nowrap;
+}
+
+.kb-ref-col:last-child .kb-ref-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.kb-ref-row kbd {
+    display: inline-block;
+    padding: 1px 6px;
+    background: var(--bg-kbd, #2a2a4e);
+    border: 1px solid var(--border-kbd, #555);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 11px;
+    color: var(--text, #e0e0e0);
+    line-height: 1.4;
+}
+
+.kb-ref-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.kb-ref-check input[type="checkbox"] {
+    accent-color: var(--accent, #7f5af0);
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+}
+
+.kb-ref-label {
+    line-height: 1.6;
+}
+
+.kb-ref-range {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.kb-ref-range input[type="range"] {
+    flex: 1;
+    max-width: 120px;
+    height: 4px;
+    accent-color: var(--accent, #7f5af0);
+    cursor: pointer;
+}
+
+.kb-ref-val {
+    font-size: 12px;
+    color: var(--text-sub, #c0c0ff);
+    min-width: 28px;
+    text-align: right;
+}
+
+/* ── 响应式 ── */
+@media (max-width: 820px) {
+    .keyboard {
+        padding: 12px 8px;
+    }
+    .kb-key {
+        min-width: 28px;
+        height: 38px;
+        flex: 0 0 28px;
+        font-size: 10px;
+        border-radius: 4px;
+    }
+    .kb-key .primary { font-size: 11px; }
+    .kb-key .secondary { display: none; }
+    .kb-key.w15 { flex: 0 0 44px; }
+    .kb-key.w175 { flex: 0 0 52px; }
+    .kb-key.w2 { flex: 0 0 60px; }
+    .kb-key.w225 { flex: 0 0 66px; }
+    .kb-key.w275 { flex: 0 0 80px; }
+    .kb-key.w625 { flex: 0 0 180px; }
+    .kb-section {
+        flex-direction: column;
+        align-items: center;
+    }
+    .controls {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    .kb-presets {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        width: 100%;
+    }
+    .controls-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    .controls-label {
+        min-width: 0;
+        font-size: 11px;
+    }
+    .controls button {
+        min-width: 0;
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+    .controls-actions {
+        margin-left: 0;
+        padding-left: 0;
+        border-left: none;
+    }
+    .kb-ref {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    .kb-ref-row {
+        white-space: normal;
+    }
+}

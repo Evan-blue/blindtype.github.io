@@ -2,9 +2,9 @@
 
 .dev-panel {
     position: fixed;
-    top: 16px;
-    right: 16px;
-    z-index: 999;
+    top: 50px;
+    right: 26px;
+    z-index: 3500;
 }
 
 .dev-panel.flip .dev-sections-wrap {
@@ -195,7 +195,7 @@
     color: var(--text-muted);
     font-size: 11px;
     cursor: pointer;
-    transition: .1s;
+    transition: .15s;
 }
 
 .dev-mode-btn.active {
@@ -217,7 +217,7 @@
     color: var(--text);
     font-size: 12px;
     cursor: pointer;
-    transition: .1s;
+    transition: .15s;
     text-align: left;
     white-space: nowrap;
 }

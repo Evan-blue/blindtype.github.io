@@ -41,7 +41,7 @@ export function renderHelpPanel() {
         { action: 'delete', kbdId: 'htKbdDelete', npId: 'htNpDelete' },
     ];
     for (const { action, kbdId, npId } of tableMap) {
-        const keys = (actionKeys[action] || []).filter(k => k !== 'Backspace');
+        const keys = (actionKeys[action] || []);
         const kbdKeys = keys.filter(k => !_isNumpadKey(k));
         const npKeys = keys.filter(k => _isNumpadKey(k));
         const kbdEl = document.getElementById(kbdId);

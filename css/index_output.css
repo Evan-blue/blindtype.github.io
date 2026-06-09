@@ -2,7 +2,7 @@
 
 .output-panel {
     background: var(--bg-card);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     padding: 20px;
     flex: 1;
     min-width: 420px;
@@ -31,7 +31,7 @@
     padding: 6px 14px;
     min-width: 82px;
     border: 1px solid var(--border-light);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     background: var(--bg-toolbar);
     color: var(--text);
     font-size: 13px;
@@ -72,7 +72,7 @@
     transform: translateY(-50%);
     width: 36px;
     height: 72px;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     border: 1px solid var(--border-light);
     background: var(--bg-card);
     color: var(--text);
@@ -125,7 +125,7 @@
 .output-text {
     flex: 1;
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     padding: 12px;
     background: var(--bg-input);
     display: flex;

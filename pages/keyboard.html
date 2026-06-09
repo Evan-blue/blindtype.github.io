@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>键盘键位展示</title>
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/keyboard.css">
+</head>
+
+<body>
+
+    <h1>键盘键位展示</h1>
+
+    <!-- 预设切换 -->
+    <div class="controls" id="controls">
+        <div class="kb-presets">
+            <div class="controls-row" data-group="main">
+                <span class="controls-label">Perkins 标准键位</span>
+                <button data-preset="fdsjkl">FDS JKL</button>
+            </div>
+            <div class="controls-row" data-group="main">
+                <span class="controls-label">主键盘 Keyboard</span>
+                <button data-preset="ik,ujm">IK, UJM</button>
+                <button data-preset="ol.ik,">OL. IK,</button>
+                <button data-preset=".,mlkj">., MLKJ</button>
+                <button data-preset="lkjoiu">LKJ OIU</button>
+            </div>
+            <div class="controls-row" data-group="numpad">
+                <span class="controls-label">小键盘 Numpad</span>
+                <button data-preset="numpad852741">852741</button>
+                <button data-preset="numpad963852">963852</button>
+                <button data-preset="numpad654987">654987</button>
+                <button data-preset="numpad321654">321654</button>
+            </div>
+        </div>
+        <button class="bind-btn" id="btnCustomBind" title="打开自定义键位设置">自定义键位</button>
+
+    </div>
+
+    <!-- 键盘区域 -->
+    <div class="kb-section" id="kbSection">
+
+    <!-- 主键盘 -->
+    <div class="keyboard" id="keyboard">
+
+        <!-- Row 1: 数字/功能 -->
+        <div class="kb-row">
+            <span class="kb-key"><span class="primary">`</span><span class="secondary">~</span></span>
+            <span class="kb-key"><span class="primary">1</span><span class="secondary">!</span></span>
+            <span class="kb-key"><span class="primary">2</span><span class="secondary">@</span></span>
+            <span class="kb-key"><span class="primary">3</span><span class="secondary">#</span></span>
+            <span class="kb-key"><span class="primary">4</span><span class="secondary">$</span></span>
+            <span class="kb-key"><span class="primary">5</span><span class="secondary">%</span></span>
+            <span class="kb-key"><span class="primary">6</span><span class="secondary">^</span></span>
+            <span class="kb-key"><span class="primary">7</span><span class="secondary">&amp;</span></span>
+            <span class="kb-key"><span class="primary">8</span><span class="secondary">*</span></span>
+            <span class="kb-key"><span class="primary">9</span><span class="secondary">(</span></span>
+            <span class="kb-key"><span class="primary">0</span><span class="secondary">)</span></span>
+            <span class="kb-key"><span class="primary">-</span><span class="secondary">_</span></span>
+            <span class="kb-key"><span class="primary">=</span><span class="secondary">+</span></span>
+            <span class="kb-key w2" data-key="backspace"><span class="primary">Backspace</span></span>
+        </div>
+
+        <!-- Row 2: QWERTY -->
+        <div class="kb-row">
+            <span class="kb-key w15"><span class="primary">Tab</span></span>
+            <span class="kb-key" data-key="q"><span class="primary">Q</span></span>
+            <span class="kb-key" data-key="w"><span class="primary">W</span></span>
+            <span class="kb-key" data-key="e"><span class="primary">E</span></span>
+            <span class="kb-key" data-key="r"><span class="primary">R</span></span>
+            <span class="kb-key" data-key="t"><span class="primary">T</span></span>
+            <span class="kb-key" data-key="y"><span class="primary">Y</span></span>
+            <span class="kb-key" data-key="u"><span class="primary">U</span></span>
+            <span class="kb-key" data-key="i"><span class="primary">I</span></span>
+            <span class="kb-key" data-key="o"><span class="primary">O</span></span>
+            <span class="kb-key" data-key="p"><span class="primary">P</span></span>
+            <span class="kb-key"><span class="primary">[</span><span class="secondary">{</span></span>
+            <span class="kb-key"><span class="primary">]</span><span class="secondary">}</span></span>
+            <span class="kb-key w175"><span class="primary">\</span><span class="secondary">|</span></span>
+        </div>
+
+        <!-- Row 3: Home row -->
+        <div class="kb-row">
+            <span class="kb-key w225"><span class="primary">Caps</span></span>
+            <span class="kb-key" data-key="a"><span class="primary">A</span></span>
+            <span class="kb-key" data-key="s"><span class="primary">S</span></span>
+            <span class="kb-key" data-key="d"><span class="primary">D</span></span>
+            <span class="kb-key" data-key="f"><span class="primary">F</span></span>
+            <span class="kb-key" data-key="g"><span class="primary">G</span></span>
+            <span class="kb-key" data-key="h"><span class="primary">H</span></span>
+            <span class="kb-key" data-key="j"><span class="primary">J</span></span>
+            <span class="kb-key" data-key="k"><span class="primary">K</span></span>
+            <span class="kb-key" data-key="l"><span class="primary">L</span></span>
+            <span class="kb-key"><span class="primary">;</span><span class="secondary">:</span></span>
+            <span class="kb-key"><span class="primary">'</span><span class="secondary">"</span></span>
+            <span class="kb-key w275"><span class="primary">Enter</span></span>
+        </div>
+
+        <!-- Row 4: Bottom row -->
+        <div class="kb-row">
+            <span class="kb-key w275"><span class="primary">Shift</span></span>
+            <span class="kb-key" data-key="z"><span class="primary">Z</span></span>
+            <span class="kb-key" data-key="x"><span class="primary">X</span></span>
+            <span class="kb-key" data-key="c"><span class="primary">C</span></span>
+            <span class="kb-key" data-key="v"><span class="primary">V</span></span>
+            <span class="kb-key" data-key="b"><span class="primary">B</span></span>
+            <span class="kb-key" data-key="n"><span class="primary">N</span></span>
+            <span class="kb-key" data-key="m"><span class="primary">M</span></span>
+            <span class="kb-key" data-key=","><span class="primary">,</span><span class="secondary">&lt;</span></span>
+            <span class="kb-key" data-key="."><span class="primary">.</span><span class="secondary">&gt;</span></span>
+            <span class="kb-key" data-key="/"><span class="primary">/</span><span class="secondary">?</span></span>
+            <span class="kb-key w275"><span class="primary">Shift</span></span>
+        </div>
+
+        <!-- Row 5: Space row -->
+        <div class="kb-row">
+            <span class="kb-key w15"><span class="primary">Ctrl</span></span>
+            <span class="kb-key w15"><span class="primary">Win</span></span>
+            <span class="kb-key w15"><span class="primary">Alt</span></span>
+            <span class="kb-key w625" data-key="space"><span class="primary">Space</span></span>
+            <span class="kb-key w15"><span class="primary">Alt</span></span>
+            <span class="kb-key w15"><span class="primary">Win</span></span>
+            <span class="kb-key w15"><span class="primary">Menu</span></span>
+            <span class="kb-key w15"><span class="primary">Ctrl</span></span>
+        </div>
+    </div>
+
+    <!-- 小键盘 -->
+    <div class="numpad" id="numpad">
+        <span class="kb-key" data-key="numlock"><span class="primary">Num</span></span>
+        <span class="kb-key" data-key="num/"><span class="primary">/</span></span>
+        <span class="kb-key" data-key="num*"><span class="primary">*</span></span>
+        <span class="kb-key" data-key="num-"><span class="primary">−</span></span>
+
+        <span class="kb-key" data-key="num7"><span class="primary">7</span></span>
+        <span class="kb-key" data-key="num8"><span class="primary">8</span></span>
+        <span class="kb-key" data-key="num9"><span class="primary">9</span></span>
+        <span class="kb-key span-row" data-key="num+"><span class="primary">+</span></span>
+
+        <span class="kb-key" data-key="num4"><span class="primary">4</span></span>
+        <span class="kb-key" data-key="num5"><span class="primary">5</span></span>
+        <span class="kb-key" data-key="num6"><span class="primary">6</span></span>
+
+        <span class="kb-key" data-key="num1"><span class="primary">1</span></span>
+        <span class="kb-key" data-key="num2"><span class="primary">2</span></span>
+        <span class="kb-key" data-key="num3"><span class="primary">3</span></span>
+        <span class="kb-key span-row" data-key="numenter"><span class="primary">Enter</span></span>
+
+        <span class="kb-key span-col" data-key="num0"><span class="primary">0</span></span>
+        <span class="kb-key" data-key="num."><span class="primary">.</span></span>
+    </div>
+
+    </div><!-- /kb-section -->
+
+    <!-- 图例 -->
+    <div class="legend" id="legend" style="display:none;">
+        <span class="legend-item"><span class="legend-swatch" style="background:#f1c40f"></span> 盲文点位 1-6</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:#7f5af0"></span> 确认（<kbd>空格</kbd> / <kbd>0</kbd>）</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:#f0a020"></span> 清空当前输入（<kbd>Y</kbd> / <kbd>/</kbd>）</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:#e91e63"></span> 删除（<kbd>Backspace</kbd> / <kbd>*</kbd>）</span>
+    </div>
+
+    <script src="../js/keyboard.js"></script>
+
+</body>
+
+</html>

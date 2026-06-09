@@ -10,8 +10,8 @@ const PINYIN_PRO_URLS = [
 ];
 
 const PINYIN_DICT_URLS = [
-    'https://esm.sh/@pinyin-pro/data@1.3.0/complete',
     'https://cdn.jsdelivr.net/npm/@pinyin-pro/data@1.3.0/dist/complete.mjs',
+    'https://esm.sh/@pinyin-pro/data@1.3.0/complete',
 ];
 
 async function myload(urls, moduleName) {
@@ -31,6 +31,10 @@ export async function loadPinyinPro() {
     if (_pinyinPro) return _pinyinPro;
     if (_pinyinProPromise) return _pinyinProPromise;
 
+    const el = document.getElementById('dictLoading');
+    el.innerHTML = '加载拼音库<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span>';
+    if (el) el.classList.add('visible');
+
     _pinyinProPromise = myload(PINYIN_PRO_URLS, 'pinyin-pro')
         .then(mod => { _pinyinPro = mod; return _pinyinPro; })
         .catch(e => { _pinyinProPromise = null; throw e; });
@@ -47,19 +51,24 @@ export function getPinyinPro() {
  * @return {Promise<void>}
  */
 export async function _initPinyinPro() {
-    console.log('正在加载 pinyin-pro配置...');
+    const el = document.getElementById('dictLoading');
+    if (el) el.classList.add('visible');
+    el.innerHTML = '加载字典配置<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span>';
     const mod = await loadPinyinPro();
     for (const url of PINYIN_DICT_URLS) {
         try {
+            console.log(`pinyin-pro 完整字典从 ${url} 加载中...`);
             const dict = await import(url);
             mod.addDict(dict.default);
             const testStr = '小明硕士毕业于哈尔滨佛学院，后在加里敦大学深造';
             const testResult = mod.segment(testStr, { toneType: 'num', format: mod.OutputFormat.AllString });
             console.log(testResult);
             console.log(`pinyin-pro 完整字典从 ${url} 加载成功`);
+            if (el) el.remove();
             return;
         } catch (e) {
             console.warn(`pinyin-pro 完整字典从 ${url} 加载失败:`, e.message);
         }
     }
+    if (el) el.remove();
 }

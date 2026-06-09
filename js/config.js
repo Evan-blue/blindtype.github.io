@@ -9,9 +9,9 @@
 // ── 默认盲文点位键组（两组并列，始终同时生效）──
 export const DOT_KEY_DEFAULTS = {
     keyboard: {
-        '4': 'KeyI','1': 'KeyU', 
-        '5': 'KeyK','2': 'KeyJ', 
-        '6': 'Comma','3': 'KeyM', 
+        '4': 'KeyU', '1': 'KeyI',
+        '5': 'KeyJ', '2': 'KeyK',
+        '6': 'KeyM', '3': 'Comma',
     },
     numpad: {
         '4': 'Numpad7', '1': 'Numpad8',
@@ -51,15 +51,13 @@ export const KEY_ACTIONS = {
     'ArrowDown': 'cursorDown',
     'KeyG': 'pageUp',
     'KeyH': 'pageDown',
-    'KeyF': 'clearInput',
-    'KeyD': 'delete',
+    'KeyY': 'clearInput',
     'KeyC': 'clearOutput',
     'KeyR': 'readAloud',
 };
 
 export const CONFIGURABLE_ACTIONS = {
-    clearInput: { defaultKey: 'KeyF', label: '清空当前输入' },
-    delete: { defaultKey: 'KeyD', label: '删除上一个字符' },
+    clearInput: { defaultKey: 'KeyY', label: '清空当前输入' },
     clearOutput: { defaultKey: 'KeyC', label: '清空输出区' },
 };
 
@@ -188,6 +186,9 @@ export function loadSettings() {
     for (const [action, key] of Object.entries(_defaultActionKeyBindings)) {
         if (SETTINGS.actionKeyBindings[action] === undefined) SETTINGS.actionKeyBindings[action] = key;
     }
+    // 迁移：F 清除点位 → Y，D 删除盲文 → 移除
+    if (SETTINGS.actionKeyBindings.clearInput === 'KeyF') SETTINGS.actionKeyBindings.clearInput = 'KeyY';
+    if (SETTINGS.actionKeyBindings.delete === 'KeyD') delete SETTINGS.actionKeyBindings.delete;
     for (const key of Object.keys(DEFAULT_SETTINGS)) {
         if (SETTINGS[key] === undefined) SETTINGS[key] = DEFAULT_SETTINGS[key];
     }

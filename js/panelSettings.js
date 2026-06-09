@@ -351,6 +351,7 @@ export function handleKeyBindingCapture(e) {
             saveSettings();
             applyKeyBindings();
             updateKeyLabels();
+            document.dispatchEvent(new CustomEvent('bindings-changed'));
             _seqBinding = null;
             _hideBindMask();
             const groupLabel = group === 'numpad' ? '小键盘' : '主键盘';
@@ -381,6 +382,7 @@ export function handleKeyBindingCapture(e) {
         saveSettings();
         applyKeyBindings();
         updateKeyLabels();
+        document.dispatchEvent(new CustomEvent('bindings-changed'));
         const containerId = group === 'numpad' ? 'keyBindingsAlt' : 'keyBindings';
         const badge = document.querySelector(`#${containerId} .kb-badge.listening`);
         if (badge) {
@@ -401,6 +403,7 @@ export function handleKeyBindingCapture(e) {
         saveSettings();
         applyActionKeyBindings();
         renderToolbarKeyLabels();
+        document.dispatchEvent(new CustomEvent('bindings-changed'));
         const badge = document.querySelector('#actionKeyBindings .kb-badge.listening');
         if (badge) {
             badge.classList.remove('listening');
