@@ -1,6 +1,7 @@
 /* index_dev.css - 开发者面板 */
 
 .dev-panel {
+    display: none;
     position: fixed;
     top: 50px;
     right: 26px;

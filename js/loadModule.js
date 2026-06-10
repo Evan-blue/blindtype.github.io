@@ -65,6 +65,7 @@ export async function _initPinyinPro() {
             console.log(testResult);
             console.log(`pinyin-pro 完整字典从 ${url} 加载成功`);
             if (el) el.remove();
+            window.pinyinPro = mod;
             return;
         } catch (e) {
             console.warn(`pinyin-pro 完整字典从 ${url} 加载失败:`, e.message);

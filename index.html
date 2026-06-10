@@ -336,6 +336,8 @@
             <section class="category" data-cat="数字">
                 <div class="category-title">
                     <h2>数字</h2>
+                    <span class="mode-toggle-help tooltip-help"
+                        aria-label="除了数号是3456以外，所有数字字符都只用上方四个点位，即1245实现">?</span>
                 </div>
                 <div class="mapping-grid"></div>
             </section>
@@ -354,6 +356,7 @@
                 <div class="mapping-grid"></div>
             </section>
         </div>
+        <div class="mapping-resize-handle"></div>
     </div>
 
     <!-- Developer Panel -->
@@ -436,7 +439,7 @@
                 <button class="dev-btn" id="devNumber">123.456</button>
                 <button class="dev-btn" id="devEnglish">Can you type without looking?</button>
                 <button class="dev-btn" id="devRandom">随机若干字符</button>
-                <button class="dev-btn" id="devLoadTestFile">加载测试文件</button>
+
             </div>
         </div>
         <div class="dev-header">
@@ -479,10 +482,18 @@
                     <button data-preset="numpad321654">321654</button>
                 </div>
             </div>
-            <span class="controls-actions">
-                <button class="bind-btn" id="btnCustomBind" title="打开自定义键位设置">自定义键位 <kbd id="tkbd-kbResetKeyBindings"></kbd></button>
-                <button class="reset-btn" id="btnKbResetDefaults" title="恢复默认键位">恢复默认</button>
-            </span>
+            <div class="controls-right-group">
+                <div class="controls-binding-status" id="kbBindingStatus">
+                    <span class="binding-status-label" id="kbKbdLabel">主键盘</span>
+                    <span class="binding-status-rect" id="kbKbdRect" title="当前主键盘键位"></span>
+                    <span class="binding-status-label" id="kbNumpadLabel">小键盘</span>
+                    <span class="binding-status-rect" id="kbNumpadRect" title="当前小键盘键位"></span>
+                </div>
+                <span class="controls-actions">
+                    <button class="bind-btn" id="btnCustomBind" title="打开自定义键位设置">自定义键位 <kbd id="tkbd-kbResetKeyBindings"></kbd></button>
+                    <button class="reset-btn" id="btnKbResetDefaults" title="恢复默认键位">恢复默认设置</button>
+                </span>
+            </div>
         </div>
 
         <!-- 键盘区域 -->
@@ -506,7 +517,7 @@
                 <span class="kb-key"><span class="primary">0</span><span class="secondary">)</span></span>
                 <span class="kb-key"><span class="primary">-</span><span class="secondary">_</span></span>
                 <span class="kb-key"><span class="primary">=</span><span class="secondary">+</span></span>
-                <span class="kb-key w2" data-key="backspace"><span class="primary">Backspace</span></span>
+                <span class="kb-key w2" data-key="backspace"><span class="primary primary-desk">Backspace</span><span class="primary primary-mobi">⌫</span></span>
             </div>
 
             <!-- Row 2: QWERTY -->
@@ -539,7 +550,7 @@
                 <span class="kb-key" data-key="j" data-bump><span class="primary">J</span></span>
                 <span class="kb-key" data-key="k"><span class="primary">K</span></span>
                 <span class="kb-key" data-key="l"><span class="primary">L</span></span>
-                <span class="kb-key"><span class="primary">;</span><span class="secondary">:</span></span>
+                <span class="kb-key" data-key=";"><span class="primary">;</span><span class="secondary">:</span></span>
                 <span class="kb-key"><span class="primary">'</span><span class="secondary">"</span></span>
                 <span class="kb-key w275"><span class="primary">Enter</span></span>
             </div>
@@ -568,13 +579,22 @@
                 <span class="kb-key w625" data-key="space"><span class="primary">Space</span></span>
                 <span class="kb-key w15"><span class="primary">Alt</span></span>
                 <span class="kb-key w15"><span class="primary">Win</span></span>
-                <span class="kb-key w15"><span class="primary">Menu</span></span>
                 <span class="kb-key w15" data-key="ctrl"><span class="primary">Ctrl</span></span>
             </div>
         </div>
 
-        <!-- 小键盘 -->
-        <div class="numpad" id="kbNumpad">
+        <!-- 方向键区 + 小键盘 -->
+        <div class="kb-right">
+            <div class="nav-cluster">
+                <span class="kb-key" data-key="delete"><span class="primary">Del</span></span>
+                <span class="kb-key" data-key="arrowup"><span class="primary">↑</span></span>
+                <span class="kb-key" data-key="arrowdown"><span class="primary">↓</span></span>
+                <span class="kb-key" data-key="arrowleft"><span class="primary">←</span></span>
+                <span class="kb-key" data-key="arrowright"><span class="primary">→</span></span>
+            </div>
+
+            <!-- 小键盘 -->
+            <div class="numpad" id="kbNumpad">
             <span class="kb-key" data-key="numlock"><span class="primary">Num</span></span>
             <span class="kb-key" data-key="num/"><span class="primary">/</span></span>
             <span class="kb-key" data-key="num*"><span class="primary">*</span></span>
@@ -597,6 +617,7 @@
             <span class="kb-key span-col" data-key="num0"><span class="primary">0</span></span>
             <span class="kb-key" data-key="num."><span class="primary">.</span></span>
         </div>
+        </div><!-- /kb-right -->
 
         </div><!-- /kb-section -->
 
@@ -621,22 +642,26 @@
             </div>
             <div class="kb-ref-col">
                 <h3 class="kb-ref-title">操作</h3>
-                <div class="kb-ref-row" data-hl="backspace"><kbd>Delete</kbd> 向后删除</div>
+                <div class="kb-ref-row" data-hl="delete"><kbd>Delete</kbd> 向后删除</div>
                 <div class="kb-ref-row" data-hl="c"><kbd>C</kbd> 清空输出区</div>
                 <div class="kb-ref-row" data-hl="r"><kbd>R</kbd> 朗读</div>
-                <div class="kb-ref-row"><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> 光标</div>
+                <div class="kb-ref-row" data-hl="arrowleft arrowright arrowup arrowdown"><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> 移动光标</div>
                 <div class="kb-ref-row" data-hl="g h"><kbd>G</kbd> / <kbd>H</kbd> 翻页</div>
-                <div class="kb-ref-row" data-hl="shift"><kbd>Shift</kbd>+<kbd>←</kbd><kbd>→</kbd> 范围选择</div>
+                <div class="kb-ref-row" data-hl="shift arrowleft arrowright"><kbd>Shift</kbd>+<kbd>←</kbd><kbd>→</kbd> 范围选择</div>
             </div>
             <div class="kb-ref-col">
                 <h3 class="kb-ref-title">面板</h3>
                 <div class="kb-ref-row" data-hl="q"><kbd>Q</kbd> 盲文对照表</div>
-                <div class="kb-ref-row" data-hl="w"><kbd>W</kbd> 键位帮助</div>
+                <div class="kb-ref-row" data-hl="w"><kbd>W</kbd> 键位和设置</div>
                 <div class="kb-ref-row" data-hl="e"><kbd>E</kbd> 设置</div>
-                <div class="kb-ref-row" data-hl="t"><kbd>T</kbd> 键位和设置</div>
+                <div class="kb-ref-row" data-hl="t"><kbd>T</kbd> 键位帮助</div>
             </div>
             <div class="kb-ref-col">
                 <h3 class="kb-ref-title">其他设置</h3>
+                <label class="kb-ref-row kb-ref-check">
+                    <input type="checkbox" id="kbMultiSelect" tabindex="-1" onfocus="this.blur()">
+                    启用多选
+                </label>
                 <label class="kb-ref-row kb-ref-check">
                     <input type="checkbox" id="kbDebounceSpeech" tabindex="-1" onfocus="this.blur()">
                     输入实时语音播报
@@ -665,6 +690,8 @@
             </div>
         </div>
 
+            <div class="kb-close-strip kb-close-strip-left" id="kbCloseStripLeft"></div>
+            <div class="kb-close-strip kb-close-strip-right" id="kbCloseStripRight"></div>
         </div><!-- /kb-iframe-body -->
     </div>
 

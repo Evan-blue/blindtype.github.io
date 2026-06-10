@@ -14,7 +14,7 @@ import {
 export const pyinUtils = {
     ChineseToSegedPinyin: (text, opts = {}) => {
         if (!text || typeof text !== 'string') return opts.type === 'string' ? '' : [];
-        const pinyinPro = getPinyinPro();
+        const pinyinPro = window.pinyinPro || getPinyinPro();
         if (!pinyinPro) throw new Error('pinyin-pro 尚未加载，请先调用 loadPinyinPro()');
         return pinyinPro.segment(text, {
             toneType: opts.toneType || 'num',

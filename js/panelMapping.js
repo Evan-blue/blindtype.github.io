@@ -108,3 +108,32 @@ export let toggleMapping = mappingPanel.toggle;
         speakText(_readingMode ? '阅读时' : '书写时');
     });
 })();
+
+// ── 拖动改变面板宽度 ──
+(function _setupResize() {
+    const slide = document.getElementById('mappingSlide');
+    const handle = slide && slide.querySelector('.mapping-resize-handle');
+    if (!handle) return;
+
+    let _dragging = false;
+    let _startX = 0;
+    let _startW = 0;
+
+    handle.addEventListener('mousedown', (e) => {
+        _dragging = true;
+        _startX = e.clientX;
+        _startW = slide.offsetWidth;
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!_dragging) return;
+        const w = Math.min(810, Math.max(420, _startW + e.clientX - _startX));
+        slide.style.width = w + 'px';
+        slide.style.maxWidth = 'none';
+    });
+
+    document.addEventListener('mouseup', () => {
+        _dragging = false;
+    });
+})();

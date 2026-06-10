@@ -8,11 +8,8 @@ import {
     chineseToBraille,
     mixedToBraille,
 } from './brailleInput.js';
-import { speakText } from './brailleSpeech.js';
 import { SETTINGS, saveSettings } from './config.js';
-import { clearOutput } from './panelSettings.js';
 import { ONEHOT_MAPPINGS } from './loadMappings.js';
-import { _batchInputOneHot } from './fileOperations.js';
 
 /**
  * @description: 模拟盲文键盘逐键输入（走 toggleDot → confirmInput 流程，可视化反馈）
@@ -61,6 +58,7 @@ export function sleep(ms) {
  */
 export function initDevPanel() {
     const panel = document.getElementById('devPanel');
+    panel.style.display = 'none';  // 确保内联样式与 CSS 默认值一致，使键盘序列检测生效
     const header = panel.querySelector('.dev-header');
 
     // ── 按钮不触发拖动 ──
@@ -83,7 +81,7 @@ export function initDevPanel() {
                 buf += e.key.toLowerCase();
                 if (buf.length > SECRET.length) buf = buf.slice(-SECRET.length);
                 if (buf === SECRET) {
-                    panel.style.display = '';
+                    panel.style.display = 'block';
                     buf = '';
                 }
             }
@@ -252,27 +250,6 @@ export function initDevPanel() {
             list.push(allKeys[Math.floor(Math.random() * allKeys.length)]);
         }
         execMode(list);
-    });
-
-    // ── 加载测试文件 ──
-    document.getElementById('devLoadTestFile').addEventListener('click', async () => {
-        try {
-            const resp = await fetch('./test_files/test2.txt');
-            if (!resp.ok) { speakText('加载测试文件失败'); return; }
-            const rawText = await resp.text();
-            if (!rawText || !rawText.trim()) { speakText('测试文件内容为空'); return; }
-
-            const result = chineseToBraille(rawText.trim());
-            if (result && result.length > 0) {
-                clearOutput();
-                await _batchInputOneHot(result);
-                speakText('已加载测试文件');
-            } else {
-                speakText('测试文件中未检测到有效内容');
-            }
-        } catch (e) {
-            speakText('加载测试文件出错');
-        }
     });
 
     // ── Tab 切换：高级设置 / 模拟输入 ──

@@ -71,8 +71,10 @@ export const KEY_COMBOS = [
     { ctrl: true, key: 'o', action: 'openFile' },
     { ctrl: true, shift: true, key: 'H', action: 'tutorial' },
     { key: 'q', action: 'toggleMapping' },
-    { key: 'w', action: 'toggleHelp' },
-    { key: 'e', action: 'toggleSettings' },
+    { key: 'w', action: 'toggleKeyboard' },
+    { key: 't', action: 'toggleTheme' }
+    // { key: 'e', action: 'toggleSettings' },  // 暂时注释
+    // { key: 't', action: 'toggleHelp' },  // 暂时注释
 ];
 
 const _defaultActionKeyBindings = {};

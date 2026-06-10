@@ -32,6 +32,19 @@
     flex-direction: column;
 }
 
+.mapping-resize-handle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 6px;
+    height: 100%;
+    cursor: ew-resize;
+    z-index: 10;
+}
+.mapping-resize-handle:hover {
+    background: rgba(127, 90, 240, 0.3);
+}
+
 .mapping-slide.open {
     transform: translateX(0);
 }
