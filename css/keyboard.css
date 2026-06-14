@@ -25,8 +25,8 @@
 
 /* ── 侧边关闭条 ── */
 .kb-close-strip {
-    position: absolute;
-    top: 0;
+    position: fixed;
+    top: 42px;
     bottom: 0;
     /* width: 100px; */
     width: 12%;
@@ -178,6 +178,7 @@
 .kb-key[data-color="space"] { --key-color: #4caf50; }
 .kb-key[data-color="delete"] { --key-color: #e91e63; }
 .kb-key[data-color="action"] { --key-color: #f0a020; }
+.kb-key[data-color="function"] { --key-color: #0f26a9; }
 
 /* ── 拖拽状态 ── */
 .kb-key.dragging {
@@ -575,10 +576,12 @@
         border-left: none;
     }
     .kb-ref {
+        width: 70%;
         grid-template-columns: 1fr;
         gap: 16px;
     }
     .kb-ref-row {
         white-space: normal;
     }
+    .kb-close-strip { width: 10%; }
 }

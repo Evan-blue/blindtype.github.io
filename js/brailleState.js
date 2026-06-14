@@ -1,6 +1,9 @@
 // brailleState.js - 共享状态与上下文函数
 // 所有模块通过 import 引用同一份状态，消除循环依赖
 
+import { splitPinyinChars, _resolveOmittedTone } from './utils-pinyin.js';
+import { SETTINGS } from './config.js';
+
 // ── 光标对象（封装光标状态与纯索引操作）──
 export const cursor = {
     _idx: 0,
@@ -133,4 +136,53 @@ export function getEnglishCase() {
     if (!isInEnglishContext()) return null;
     const item = outputItems[getEnglishStartIdx()];
     return item.letterCase || null;
+}
+
+// ── 输出项元数据计算（原在 brailleOutput.js，提取到共享层以解除循环依赖）──
+
+/**
+ * @description: 计算 outputItems 中每个拼音分组的元数据（merged 拼音、首尾标记）
+ *   以空方(000000)为分隔符，按段计算拼音分组信息
+ *   返回值: itemMeta 数组，每项为 null（非分组项）或 { merged, isFirst, isLast }
+ * @return {object[]}
+ */
+export function computeItemMeta() {
+    const emptyIndices = [];
+    outputItems.forEach((item, i) => {
+        if (item.oneHot === '000000') emptyIndices.push(i);
+    });
+
+    const meta = new Array(outputItems.length).fill(null);
+    for (let g = 0; g <= emptyIndices.length; g++) {
+        const start = g === 0 ? 0 : emptyIndices[g - 1] + 1;
+        const end = g < emptyIndices.length ? emptyIndices[g] : outputItems.length;
+        if (outputItems.slice(start, end).some(it => it.isNumber || it.isEnglish)) continue;
+        if (end - start >= 2) {
+            const TONE_SYM_TO_NUM = { '¯': '1', '´': '2', 'ˇ': '3', '`': '4' };
+            const chars = outputItems.slice(start, end).map((it, ci, arr) => {
+                const ch = TONE_SYM_TO_NUM[it.char] || it.char || '';
+                if (ch !== 'e/o') return ch;
+                const prevCh = ci > 0 ? (TONE_SYM_TO_NUM[arr[ci - 1].char] || arr[ci - 1].char || '') : '';
+                if (prevCh === 'b' || prevCh === 'p' || prevCh === 'f') return 'o';
+                if (prevCh === 'm') return 'o';
+                return 'e';
+            });
+            const syllables = splitPinyinChars(chars);
+            if (syllables) {
+                let pos = start;
+                for (const syl of syllables) {
+                    let merged = syl.merged;
+                    if (SETTINGS.omitToneMapping !== false && !/\d$/.test(merged)) {
+                        const tone = _resolveOmittedTone(merged);
+                        if (tone) merged += tone;
+                    }
+                    for (let k = 0; k < syl.count; k++) {
+                        meta[pos + k] = { merged, isFirst: k === 0, isLast: k === syl.count - 1 };
+                    }
+                    pos += syl.count;
+                }
+            }
+        }
+    }
+    return meta;
 }

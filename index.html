@@ -62,10 +62,10 @@
             </button>
             <span class="dict-loading" id="dictLoading" aria-live="polite">字典配置加载中…</span>
             <div class="help-settings-row">
-                <button class="help-btn" id="btnMapping" title="盲文对照表" aria-label="盲文对照表" aria-expanded="false">📄<kbd
+                <button class="help-btn" id="btnMapping" title="盲文对照表" aria-label="盲文对照表" aria-expanded="false">⠿<kbd
                         id="tkbd-toggleMapping"></kbd></button>
                 <span class="help-right-group">
-                    <button class="help-btn kb-toggle-btn" id="btnKbToggle" title="键盘键位展示" aria-label="键盘键位展示" aria-expanded="false">⌨<kbd
+                    <button class="help-btn kb-toggle-btn" id="btnKbToggle" title="键盘和设置" aria-label="键盘和设置" aria-expanded="false">⚙<kbd
                             id="tkbd-kbToggle"></kbd></button>
                 </span>
             </div>
@@ -455,8 +455,8 @@
     <!-- Keyboard iframe overlay -->
     <div class="kb-iframe-overlay" id="kbIframeOverlay">
         <div class="kb-iframe-header">
-            <span class="kb-iframe-label">键盘键位展示</span>
-            <button class="kb-iframe-close" id="kbIframeClose" aria-label="关闭键盘展示">&times;</button>
+            <span class="kb-iframe-label">键盘和设置</span>
+            <button class="kb-iframe-close" id="kbIframeClose" aria-label="关闭键盘和设置">&times;</button>
         </div>
         <div class="kb-iframe-body">
 
@@ -490,6 +490,7 @@
                     <span class="binding-status-rect" id="kbNumpadRect" title="当前小键盘键位"></span>
                 </div>
                 <span class="controls-actions">
+                    <button class="bind-btn" id="btnSpeakBindings" title="播报当前两套盲文键位">播报键位</button>
                     <button class="bind-btn" id="btnCustomBind" title="打开自定义键位设置">自定义键位 <kbd id="tkbd-kbResetKeyBindings"></kbd></button>
                     <button class="reset-btn" id="btnKbResetDefaults" title="恢复默认键位">恢复默认设置</button>
                 </span>
@@ -623,6 +624,7 @@
 
         <!-- 图例 -->
         <div class="legend" id="kbLegend" style="display:none;">
+            <span class="legend-item"><span class="legend-swatch" style="background:#0f26a9"></span> 功能键</span>
             <span class="legend-item"><span class="legend-swatch" style="background:#7f5af0"></span> 盲文点位 1-6</span>
             <span class="legend-item"><span class="legend-swatch" style="background:#4caf50"></span> 确认(<kbd>空格</kbd> / <kbd>0</kbd>)</span>
             <span class="legend-item"><span class="legend-swatch" style="background:#f0a020"></span> 清空当前输入(<kbd>Y</kbd> / <kbd>/</kbd>)</span>
@@ -638,23 +640,25 @@
                 <div class="kb-ref-row" data-hl="ctrl a"><kbd>Ctrl</kbd>+<kbd>A</kbd> 全选</div>
                 <div class="kb-ref-row" data-hl="ctrl s"><kbd>Ctrl</kbd>+<kbd>S</kbd> 保存</div>
                 <div class="kb-ref-row" data-hl="ctrl o"><kbd>Ctrl</kbd>+<kbd>O</kbd> 打开文件</div>
+                <div class="kb-ref-row" data-hl="ctrl k"><kbd>Ctrl</kbd>+<kbd>K</kbd> 播报盲文键位</div>
                 <div class="kb-ref-row" data-hl="ctrl shift h"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>H</kbd> 新手教程</div>
             </div>
             <div class="kb-ref-col">
                 <h3 class="kb-ref-title">操作</h3>
                 <div class="kb-ref-row" data-hl="delete"><kbd>Delete</kbd> 向后删除</div>
-                <div class="kb-ref-row" data-hl="c"><kbd>C</kbd> 清空输出区</div>
-                <div class="kb-ref-row" data-hl="r"><kbd>R</kbd> 朗读</div>
                 <div class="kb-ref-row" data-hl="arrowleft arrowright arrowup arrowdown"><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> 移动光标</div>
-                <div class="kb-ref-row" data-hl="g h"><kbd>G</kbd> / <kbd>H</kbd> 翻页</div>
                 <div class="kb-ref-row" data-hl="shift arrowleft arrowright"><kbd>Shift</kbd>+<kbd>←</kbd><kbd>→</kbd> 范围选择</div>
+                <div class="kb-ref-row" data-hl="ctrl arrowup arrowdown"><kbd>Ctrl</kbd>+<kbd>↑</kbd><kbd>↓</kbd> 调整语速</div>
+                <div class="kb-ref-row" data-hl="g h"><kbd>G</kbd> / <kbd>H</kbd> 翻页</div>
             </div>
             <div class="kb-ref-col">
-                <h3 class="kb-ref-title">面板</h3>
+                <h3 class="kb-ref-title">功能键位</h3>
                 <div class="kb-ref-row" data-hl="q"><kbd>Q</kbd> 盲文对照表</div>
-                <div class="kb-ref-row" data-hl="w"><kbd>W</kbd> 键位和设置</div>
+                <div class="kb-ref-row" data-hl="w"><kbd>W</kbd> 键盘和设置</div>
                 <div class="kb-ref-row" data-hl="e"><kbd>E</kbd> 设置</div>
-                <div class="kb-ref-row" data-hl="t"><kbd>T</kbd> 键位帮助</div>
+                <div class="kb-ref-row" data-hl="r"><kbd>R</kbd> 朗读</div>
+                <div class="kb-ref-row" data-hl="t"><kbd>T</kbd> 切换主题</div>
+                <div class="kb-ref-row" data-hl="c"><kbd>C</kbd> 清空输出区</div>
             </div>
             <div class="kb-ref-col">
                 <h3 class="kb-ref-title">其他设置</h3>
@@ -669,7 +673,7 @@
                 <div class="kb-ref-row">
                     <span class="kb-ref-label">语音播报速度</span>
                     <div class="kb-ref-range">
-                        <input type="range" id="kbSpeechRate" min="0.5" max="4" step="0.05" tabindex="-1">
+                        <input type="range" id="kbSpeechRate" min="0.5" max="4" step="0.1" tabindex="-1">
                         <span class="kb-ref-val" id="kbSpeechRateVal">1.2</span>
                     </div>
                 </div>

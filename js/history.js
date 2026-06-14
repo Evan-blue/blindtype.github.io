@@ -31,8 +31,7 @@ function _restore(snap) {
     outputItems.length = 0;
     snap.items.forEach(it => outputItems.push(it));
     cursor.idx = snap.cursor;
-    cursor.selectedIndices.clear();
-    cursor.clearAnchor();
+    cursor.clearSelection();
     invalidatePageCache();
     renderOutput();
 }

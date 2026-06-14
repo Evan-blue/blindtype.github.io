@@ -1,4 +1,4 @@
-// keyboard.js - 键盘键位可视化逻辑（与主页集成）
+// keyboard.js - 键盘和设置可视化逻辑（与主页集成）
 
 (function () {
     // ── 预设映射（名称即定义：键盘预设每个字符是 data-key，numpad 预设取数字部分）──
@@ -64,7 +64,7 @@
         });
     }
 
-    function applyBindings(kbdBindings, numBindings, spaceKey, numConfirmKey, deleteKey, backspaceKey, numDeleteKey, clearInputKey, numClearInputKey) {
+    function applyBindings(kbdBindings, numBindings, spaceKey, numConfirmKey, deleteKey, backspaceKey, numDeleteKey, clearInputKey, numClearInputKey, functionKeys) {
         clearAll();
         if (kbdBindings) {
             for (const [dot, code] of Object.entries(kbdBindings)) {
@@ -127,6 +127,12 @@
                 const el = kbSection.querySelector(`.kb-key[data-key="${dk}"]`);
                 if (el) el.setAttribute('data-color', 'action');
             }
+        }
+        if (functionKeys) {
+            functionKeys.forEach(dk => {
+                const el = kbSection.querySelector(`.kb-key[data-key="${CSS.escape(dk)}"]`);
+                if (el) el.setAttribute('data-color', 'function');
+            });
         }
         legend.style.display = 'flex';
     }
@@ -191,15 +197,9 @@
     }
 
     // ── 当前绑定状态占位 ──
-    function codeToLabel(code) {
-        if (!code) return '?';
-        if (code.startsWith('Key')) return code.slice(3);
-        if (code.startsWith('Numpad')) return code.slice(6);
-        if (code === 'Comma') return ',';
-        if (code === 'Period') return '.';
-        if (code === 'Semicolon') return ';';
-        if (code === 'Quote') return "'";
-        return code;
+    function _kl(code) {
+        var fn = window._keyIdToLabel;
+        return fn ? fn(code) : (code || '?');
     }
 
     function bindingsMatchPreset(bindings, scope) {
@@ -228,7 +228,7 @@
                 kbdRect.style.display = 'none';
                 if (kbdLabel) kbdLabel.style.display = 'none';
             } else {
-                kbdRect.textContent = [...Array(6)].map((_, i) => codeToLabel(data.keyboard[i + 1])).join(' ');
+                kbdRect.textContent = [...Array(6)].map((_, i) => _kl(data.keyboard[i + 1])).join(' ');
                 kbdRect.style.display = '';
                 if (kbdLabel) kbdLabel.style.display = '';
             }
@@ -239,7 +239,7 @@
                 numpadRect.style.display = 'none';
                 if (numpadLabel) numpadLabel.style.display = 'none';
             } else {
-                numpadRect.textContent = [...Array(6)].map((_, i) => codeToLabel(data.numpad[i + 1])).join(' ');
+                numpadRect.textContent = [...Array(6)].map((_, i) => _kl(data.numpad[i + 1])).join(' ');
                 numpadRect.style.display = '';
                 if (numpadLabel) numpadLabel.style.display = '';
             }
@@ -314,6 +314,14 @@
         if (window._kbApplyPreset) window._kbApplyPreset(scope, name);
     });
 
+    // ── 播报盲文键位按钮 ──
+    const btnSpeakBindings = document.getElementById('btnSpeakBindings');
+    if (btnSpeakBindings) {
+        btnSpeakBindings.addEventListener('click', () => {
+            if (window._kbSpeakAllBindings) window._kbSpeakAllBindings();
+        });
+    }
+
     // ── 自定义键位按钮 ──
     const btnCustomBind = document.getElementById('btnCustomBind');
     if (btnCustomBind) {
@@ -322,21 +330,24 @@
         });
     }
 
-    // ── 着色按键点击反馈 ──
+    // ── 着色按键 hover / 点击反馈 ──
     const DOT_SPEAK = ['', '1号点', '2号点', '3号点', '4号点', '5号点', '6号点'];
-    kbSection.addEventListener('click', (e) => {
-        const key = e.target.closest('.kb-key[data-color]');
-        if (!key) return;
-        const color = key.getAttribute('data-color');
+    const KEY_LABEL = {
+        'num/': '小键盘斜杠', 'num*': '小键盘星号', 'num+': '小键盘加号',
+        'num-': '小键盘减号', 'num.': '小键盘点号', 'numenter': '小键盘回车',
+        ',': '逗号', '.': '句号', ';': '分号', '\'': '引号',
+        'space': '空格', 'backspace': '退格',
+    };
+    const FUNC_LABEL = {
+        q: '盲文对照表', w: '键盘和设置', e: '设置',
+        r: '朗读', t: '切换主题', c: '清空输出区',
+    };
+
+    function speakKey(keyEl) {
+        const color = keyEl.getAttribute('data-color');
         if (!color) return;
-        const dataKey = key.getAttribute('data-key') || '';
-        const KEY_LABEL = {
-            'num/': '小键盘斜杠', 'num*': '小键盘星号', 'num+': '小键盘加号',
-            'num-': '小键盘减号', 'num.': '小键盘点号', 'numenter': '小键盘回车',
-            ',': '逗号', '.': '句号', ';': '分号', '\'': '引号',
-            'space': '空格', 'backspace': '退格',
-        };
-        const label = KEY_LABEL[dataKey] || (dataKey.startsWith('num') ? '小键盘' + dataKey.replace('num', '') : key.querySelector('.primary')?.textContent?.trim()) || dataKey;
+        const dataKey = keyEl.getAttribute('data-key') || '';
+        const label = KEY_LABEL[dataKey] || (dataKey.startsWith('num') ? '小键盘' + dataKey.replace('num', '') : keyEl.querySelector('.primary')?.textContent?.trim()) || dataKey;
 
         let msg = '';
         if (color.startsWith('dot')) {
@@ -347,10 +358,22 @@
             msg = '删除';
         } else if (color === 'action') {
             msg = '清空输入';
+        } else if (color === 'function') {
+            msg = FUNC_LABEL[dataKey] || '功能键';
         }
-        if (window._kbSpeak && msg) {
-            window._kbSpeak(label + '，' + msg);
+        if (window._kbSpeakImmediate && msg) {
+            window._kbSpeakImmediate(label + '，' + msg);
         }
+    }
+
+    kbSection.addEventListener('mouseover', (e) => {
+        const key = e.target.closest('.kb-key[data-color]');
+        if (key) speakKey(key);
+    });
+
+    kbSection.addEventListener('click', (e) => {
+        const key = e.target.closest('.kb-key[data-color]');
+        if (key) speakKey(key);
     });
 
     // ── 恢复默认键位按钮 ──
@@ -366,7 +389,7 @@
     // ── 对外接口（init.js 调用）──
     window._kbApplyBindings = function (data) {
         _lastBindings = data;
-        applyBindings(data.keyboard, data.numpad, data.spaceKey, data.numConfirmKey, data.deleteKey, data.backspaceKey, data.numDeleteKey, data.clearInputKey, data.numClearInputKey);
+        applyBindings(data.keyboard, data.numpad, data.spaceKey, data.numConfirmKey, data.deleteKey, data.backspaceKey, data.numDeleteKey, data.clearInputKey, data.numClearInputKey, data.functionKeys);
         matchPresets(data.keyboard, data.numpad);
         updateBindingStatus(data);
     };
@@ -382,11 +405,11 @@
     const kbMaxUndoHistoryVal = document.getElementById('kbMaxUndoHistoryVal');
 
     window._kbSyncSettings = function (s) {
-        if (kbMultiSelect) kbMultiSelect.checked = s.multiSelect;
-        if (kbDebounceSpeech) kbDebounceSpeech.checked = s.debounceSpeech;
-        if (kbSpeechRate) { kbSpeechRate.value = s.speechRate; kbSpeechRateVal.textContent = s.speechRate; }
-        if (kbBrailleFontSize) { kbBrailleFontSize.value = s.brailleFontSize; kbBrailleFontSizeVal.textContent = s.brailleFontSize; }
-        if (kbMaxUndoHistory) { kbMaxUndoHistory.value = s.maxUndoHistory; kbMaxUndoHistoryVal.textContent = s.maxUndoHistory; }
+        if (kbMultiSelect && s.multiSelect !== undefined) kbMultiSelect.checked = s.multiSelect;
+        if (kbDebounceSpeech && s.debounceSpeech !== undefined) kbDebounceSpeech.checked = s.debounceSpeech;
+        if (kbSpeechRate && s.speechRate !== undefined) { kbSpeechRate.value = s.speechRate; kbSpeechRateVal.textContent = s.speechRate; }
+        if (kbBrailleFontSize && s.brailleFontSize !== undefined) { kbBrailleFontSize.value = s.brailleFontSize; kbBrailleFontSizeVal.textContent = s.brailleFontSize; }
+        if (kbMaxUndoHistory && s.maxUndoHistory !== undefined) { kbMaxUndoHistory.value = s.maxUndoHistory; kbMaxUndoHistoryVal.textContent = s.maxUndoHistory; }
     };
 
     if (kbMultiSelect) {
@@ -404,6 +427,7 @@
             valEl.textContent = el.value;
             if (window._kbUpdateSetting) window._kbUpdateSetting(key, key === 'brailleFontSize' || key === 'maxUndoHistory' ? parseInt(el.value, 10) : parseFloat(el.value));
         });
+        el.addEventListener('change', () => el.blur());
     }
     if (kbSpeechRate) _onRangeInput(kbSpeechRate, kbSpeechRateVal, 'speechRate');
     if (kbBrailleFontSize) {

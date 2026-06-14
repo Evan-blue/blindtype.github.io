@@ -1,7 +1,7 @@
 // panelMapping.js - 盲文对照表面板
 
 import { createSlidePanel } from './panelManager.js';
-import { speakText, speakBraille } from './brailleSpeech.js';
+import { speakText, speakBraille, speakImmediate } from './brailleSpeech.js';
 import { oneHotToBrailleChar, onehotToIndex } from './utils-braille.js';
 import { ONEHOT_MAPPINGS } from './loadMappings.js';
 
@@ -70,14 +70,9 @@ export function renderMappingTable() {
                 '<span class="mc-dots">' + dotsStr + '</span>' +
                 '<span class="mc-label">' + entry.label + '</span>';
             const forceNum = catName === '数字';
-            card.addEventListener('click', () => {
-                if (entry.audio) {
-                    speakText(entry.audio + ', 键位' + onehotToIndex(entry.oneHot));
-                } else {
-                    speakBraille(entry.oneHot, 1, { forceNumber: forceNum });
-                    speakText('键位' + onehotToIndex(entry.oneHot));
-                }
-            });
+            const speakText = (entry.audio || entry.label) + ', 键位' + onehotToIndex(entry.oneHot)
+            card.addEventListener('click', () => { speakImmediate(speakText) });
+            card.addEventListener('mouseenter', () => { _readingMode && speakImmediate(speakText) });
             grid.appendChild(card);
         });
     });
@@ -128,7 +123,7 @@ export let toggleMapping = mappingPanel.toggle;
 
     document.addEventListener('mousemove', (e) => {
         if (!_dragging) return;
-        const w = Math.min(810, Math.max(420, _startW + e.clientX - _startX));
+        const w = Math.min(810, Math.max(420, _startW + _startX - e.clientX));
         slide.style.width = w + 'px';
         slide.style.maxWidth = 'none';
     });

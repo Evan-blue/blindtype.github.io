@@ -9,9 +9,9 @@
 // ── 默认盲文点位键组（两组并列，始终同时生效）──
 export const DOT_KEY_DEFAULTS = {
     keyboard: {
-        '4': 'KeyU', '1': 'KeyI',
-        '5': 'KeyJ', '2': 'KeyK',
-        '6': 'KeyM', '3': 'Comma',
+        '1': 'KeyF', '2': 'KeyD', '3': 'KeyS', '4': 'KeyJ', '5': 'KeyK', '6': 'KeyL', 
+        // '1': 'KeyI', '2': 'KeyK', '3': 'Comma', '4': 'KeyU', '5': 'KeyJ', '6': 'KeyM', 
+        // '1': 'KeyL', '2': 'KeyK', '3': 'KeyJ', '4': 'KeyO', '5': 'KeyI', '6': 'KeyU',
     },
     numpad: {
         '4': 'Numpad7', '1': 'Numpad8',
@@ -68,12 +68,15 @@ export const KEY_COMBOS = [
     { ctrl: true, key: 'y', action: 'redo' },
     { ctrl: true, shift: true, key: 'Z', action: 'redo' },
     { ctrl: true, shift: true, key: 'K', action: 'resetKeyBindings' },
+    { ctrl: true, key: 'k', action: 'speakBindings' },
     { ctrl: true, key: 'o', action: 'openFile' },
     { ctrl: true, shift: true, key: 'H', action: 'tutorial' },
+    { ctrl: true, key: 'ArrowUp', action: 'speechRateUp' },
+    { ctrl: true, key: 'ArrowDown', action: 'speechRateDown' },
     { key: 'q', action: 'toggleMapping' },
     { key: 'w', action: 'toggleKeyboard' },
-    { key: 't', action: 'toggleTheme' }
-    // { key: 'e', action: 'toggleSettings' },  // 暂时注释
+    { key: 't', action: 'toggleTheme' },
+    { key: 'e', action: 'toggleSettings' },  // 暂时注释
     // { key: 't', action: 'toggleHelp' },  // 暂时注释
 ];
 
@@ -88,9 +91,9 @@ export const DEFAULT_SETTINGS = {
         numpad: { ...DOT_KEY_DEFAULTS.numpad },
     },
     actionKeyBindings: { ..._defaultActionKeyBindings },
-    speechRate: 1.2,
+    speechRate: 1.8,
     debounceSpeech: true,
-    maxUndoHistory: 10,
+    maxUndoHistory: 20,
     brailleFontSize: 12,
     allowSpeech: true,
     announceEmptyCell: false,
@@ -105,11 +108,6 @@ export const DEFAULT_SETTINGS = {
 };
 
 export let SETTINGS = {};
-
-export const _CHAR_TO_KEYID = {
-    ',': 'Comma', '.': 'Period', ';': 'Semicolon', "'": 'Quote',
-    '/': 'NumpadDivide', '*': 'NumpadMultiply',
-};
 
 SETTINGS = {
     ...DEFAULT_SETTINGS,
@@ -244,4 +242,24 @@ export function applyActionKeyBindings() {
 
 export function applyBrailleFontSize() {
     document.documentElement.style.setProperty('--braille-font-size', SETTINGS.brailleFontSize + 'px');
+}
+
+// ── 按键标识 → UI 显示名（短符号，用于面板 badge / 绑定状态）──
+export function keyIdToLabel(keyId) {
+    if (!keyId) return '?';
+    if (/^Numpad\d$/.test(keyId)) return keyId.slice(6);
+    const numpadLabels = { NumpadAdd: '+', NumpadSubtract: '-', NumpadMultiply: '*', NumpadDivide: '/', NumpadDecimal: '.', NumpadEnter: 'Enter' };
+    if (numpadLabels[keyId]) return numpadLabels[keyId];
+    if (/^Digit\d$/.test(keyId)) return keyId.slice(5);
+    if (/^Key[A-Z]$/.test(keyId)) return keyId.slice(3);
+    const punctLabels = { Comma: ',', Period: '.', Semicolon: ';', Quote: "'", Slash: '/', Backslash: '\\', BracketLeft: '[', BracketRight: ']', Minus: '-', Equal: '=', Backquote: '`' };
+    if (punctLabels[keyId]) return punctLabels[keyId];
+    if (keyId === 'Space') return 'Space';
+    if (keyId === 'ArrowLeft') return '←';
+    if (keyId === 'ArrowRight') return '→';
+    if (keyId === 'ArrowUp') return '↑';
+    if (keyId === 'ArrowDown') return '↓';
+    if (keyId === 'Backspace') return '⌫';
+    if (keyId === 'Delete') return 'DEL';
+    return keyId;
 }

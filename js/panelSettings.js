@@ -19,12 +19,17 @@ import {
     KEY_COMBOS,
     DEFAULT_SETTINGS,
     SETTINGS,
-    _CHAR_TO_KEYID,
     saveSettings,
     applyKeyBindings,
     applyActionKeyBindings,
     applyBrailleFontSize,
+    keyIdToLabel,
 } from './config.js';
+
+const _CHAR_TO_KEYID = {
+    ',': 'Comma', '.': 'Period', ';': 'Semicolon', "'": 'Quote',
+    '/': 'NumpadDivide', '*': 'NumpadMultiply',
+};
 
 const DOT_NAMES = ['1点', '2点', '3点', '4点', '5点', '6点'];
 const DOT_NAME_AUDIOS = ['1号点', '2号点', '3号点', '4号点', '5号点', '6号点'];
@@ -34,25 +39,6 @@ let _kbListening = null;
 let _kbListeningGroup = null;
 let _akbListening = null;
 let _seqBinding = null;
-
-function _keyIdToLabel(keyId) {
-    if (!keyId) return '?';
-    if (/^Numpad\d$/.test(keyId)) return keyId.slice(6);
-    const numpadLabels = { NumpadAdd: '+', NumpadSubtract: '-', NumpadMultiply: '*', NumpadDivide: '/', NumpadDecimal: '.', NumpadEnter: 'Enter' };
-    if (numpadLabels[keyId]) return numpadLabels[keyId];
-    if (/^Digit\d$/.test(keyId)) return keyId.slice(5);
-    if (/^Key[A-Z]$/.test(keyId)) return keyId.slice(3);
-    const punctLabels = { Comma: ',', Period: '.', Semicolon: ';', Quote: "'", Slash: '/', Backslash: '\\', BracketLeft: '[', BracketRight: ']', Minus: '-', Equal: '=', Backquote: '`' };
-    if (punctLabels[keyId]) return punctLabels[keyId];
-    if (keyId === 'Space') return 'Space';
-    if (keyId === 'ArrowLeft') return '←';
-    if (keyId === 'ArrowRight') return '→';
-    if (keyId === 'ArrowUp') return '↑';
-    if (keyId === 'ArrowDown') return '↓';
-    if (keyId === 'Backspace') return '⌫';
-    if (keyId === 'Delete') return 'DEL';
-    return keyId;
-}
 
 function _eventToKeyId(e) { return e.code; }
 
@@ -92,7 +78,7 @@ function _renderGroupBindings(container, group, ORDER) {
         keyBadge.dataset.dot = d;
         keyBadge.dataset.group = group;
         keyBadge.title = '点击后按键盘任意键设置';
-        keyBadge.innerHTML = `<span class="dot-label">${d}</span><span class="key-label">${_keyIdToLabel(kb[d])}</span>`;
+        keyBadge.innerHTML = `<span class="dot-label">${d}</span><span class="key-label">${keyIdToLabel(kb[d])}</span>`;
 
         keyBadge.addEventListener('click', () => {
             if (_kbListening === d && _kbListeningGroup === group && !_seqBinding) {
@@ -159,9 +145,9 @@ export function renderActionKeyBindingsUI(container) {
         badge.classList.remove('listening');
         let keyLabel = badge.querySelector('.key-label');
         if (keyLabel) {
-            keyLabel.textContent = _keyIdToLabel(label);
+            keyLabel.textContent = keyIdToLabel(label);
         } else {
-            badge.textContent = _keyIdToLabel(label);
+            badge.textContent = keyIdToLabel(label);
         }
         const newBadge = badge.cloneNode(true);
         badge.parentNode.replaceChild(newBadge, badge);
@@ -332,8 +318,8 @@ export function handleKeyBindingCapture(e) {
         const dupDot = Object.entries(_seqBinding.keys).find(([, k]) => k === keyId);
         if (dupDot) {
             const dupDotNum = parseInt(dupDot[0], 10);
-            _showBindMask('按键 ' + _keyIdToLabel(keyId) + ' 已被' + DOT_NAMES[dupDotNum - 1] + '使用，请换一个按键（' + DOT_NAMES[dot - 1] + '）');
-            speakText(_keyIdToLabel(keyId) + '已被' + DOT_NAMES[dupDotNum - 1] + '使用，请换一个按键');
+            _showBindMask('按键 ' + keyIdToLabel(keyId) + ' 已被' + DOT_NAMES[dupDotNum - 1] + '使用，请换一个按键（' + DOT_NAMES[dot - 1] + '）');
+            speakText(keyIdToLabel(keyId) + '已被' + DOT_NAMES[dupDotNum - 1] + '使用，请换一个按键');
             return true;
         }
         _seqBinding.keys[dot] = keyId;
@@ -371,7 +357,7 @@ export function handleKeyBindingCapture(e) {
         const group = _kbListeningGroup;
         const existingDot = KEY_TO_DOT[keyId];
         if (existingDot !== undefined && existingDot !== boundDot) {
-            _showBindMask('按键 ' + _keyIdToLabel(keyId) + ' 已被' + DOT_NAMES[existingDot - 1] + '使用，请换一个按键');
+            _showBindMask('按键 ' + keyIdToLabel(keyId) + ' 已被' + DOT_NAMES[existingDot - 1] + '使用，请换一个按键');
             speakText('按键已被' + DOT_NAMES[existingDot - 1] + '使用');
             return true;
         }
@@ -385,12 +371,12 @@ export function handleKeyBindingCapture(e) {
         if (badge) {
             badge.classList.remove('listening');
             const keyLabel = badge.querySelector('.key-label');
-            if (keyLabel) keyLabel.textContent = _keyIdToLabel(keyId);
+            if (keyLabel) keyLabel.textContent = keyIdToLabel(keyId);
         }
         _kbListening = null;
         _kbListeningGroup = null;
         _hideBindMask();
-        speakText(DOT_NAMES[boundDot - 1] + '已绑定' + _keyIdToLabel(keyId));
+        speakText(DOT_NAMES[boundDot - 1] + '已绑定' + keyIdToLabel(keyId));
         return true;
     }
 
@@ -405,12 +391,12 @@ export function handleKeyBindingCapture(e) {
         if (badge) {
             badge.classList.remove('listening');
             const keyLabel = badge.querySelector('.key-label');
-            if (keyLabel) keyLabel.textContent = _keyIdToLabel(keyId);
+            if (keyLabel) keyLabel.textContent = keyIdToLabel(keyId);
         }
         _akbListening = null;
         _hideBindMask();
         const actionLabel = CONFIGURABLE_ACTIONS[boundAction]?.label || boundAction;
-        speakText(actionLabel + '已绑定' + _keyIdToLabel(keyId));
+        speakText(actionLabel + '已绑定' + keyIdToLabel(keyId));
         return true;
     }
 
@@ -426,11 +412,11 @@ export function updateKeyLabels() {
         const kbKey = DOT_TO_KEY[idx];
         const npKey = DOT_TO_KEY_NUMPAD[idx];
         if (kbKey !== undefined && npKey !== undefined) {
-            label.innerHTML = '<span class="kb-lbl">' + _keyIdToLabel(kbKey) + '</span><span class="key-sep">/</span><span class="np-lbl">' + _keyIdToLabel(npKey) + '</span>';
+            label.innerHTML = '<span class="kb-lbl">' + keyIdToLabel(kbKey) + '</span><span class="key-sep">/</span><span class="np-lbl">' + keyIdToLabel(npKey) + '</span>';
         } else if (kbKey !== undefined) {
-            label.innerHTML = '<span class="kb-lbl">' + _keyIdToLabel(kbKey) + '</span>';
+            label.innerHTML = '<span class="kb-lbl">' + keyIdToLabel(kbKey) + '</span>';
         } else if (npKey !== undefined) {
-            label.innerHTML = '<span class="np-lbl">' + _keyIdToLabel(npKey) + '</span>';
+            label.innerHTML = '<span class="np-lbl">' + keyIdToLabel(npKey) + '</span>';
         }
     });
     applyActiveKeyGroup();
@@ -473,7 +459,7 @@ export function renderToolbarKeyLabels() {
             }
         }
         for (const [key, act] of Object.entries(KEY_ACTIONS)) {
-            if (act === action) return _keyIdToLabel(key);
+            if (act === action) return keyIdToLabel(key);
         }
         return '?';
     }
@@ -613,8 +599,7 @@ export function initSettingsPanel() {
         multiSelectCheck.addEventListener('change', () => {
             SETTINGS.multiSelect = multiSelectCheck.checked;
             if (!SETTINGS.multiSelect) {
-                cursor.selectedIndices.clear();
-                cursor.clearAnchor();
+                cursor.clearSelection();
                 renderOutput();
             }
             saveSettings();

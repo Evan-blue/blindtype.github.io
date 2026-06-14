@@ -14,7 +14,7 @@ import {
 import { pinyinToSpokenChar, resolveSoloFinal } from './utils-pinyin.js';
 import { indexToOnehot } from './utils-braille.js';
 import { SETTINGS } from './config.js';
-import { computeItemMeta } from './brailleOutput.js';
+import { computeItemMeta } from './brailleState.js';
 
 // ── 双通道语音调度器 ──
 // 主通道（操作反馈/朗读）与教程通道各自维护独立队列，互不阻塞。
@@ -170,6 +170,37 @@ export function speakText(text, rate) {
     queues.main.push({ 'text': ',' + text, 'rate': rate });
     _playNext();
     return true;
+}
+
+/**
+ * @description: 立即播报（打断当前语音，不排队，适合键盘 hover 等高频反馈）
+ * @param {string} text 播报内容
+ * @param {number} [rate] 播报速度
+ * @return {void}
+ */
+export function speakImmediate(text, rate) {
+    if (!SETTINGS.allowSpeech || !window.speechSynthesis) return;
+    rate = rate || SETTINGS.speechRate;
+
+    // 清空主通道队列，取消当前语音
+    queues.main.clear();
+    queues.tutorial.clearInterruptState();
+    window.speechSynthesis.cancel();
+
+    const u = new SpeechSynthesisUtterance(',' + text);
+    u.lang = 'zh-CN';
+    u.rate = rate;
+    u.onend = () => {
+        SpeechQueue._activeChannel = null;
+        // 主通道空闲后尝试恢复教程
+        queues.tutorial.resumeIfNeeded();
+    };
+    u.onerror = () => {
+        SpeechQueue._activeChannel = null;
+        queues.tutorial.resumeIfNeeded();
+    };
+    SpeechQueue._activeChannel = 'main';
+    window.speechSynthesis.speak(u);
 }
 
 /**

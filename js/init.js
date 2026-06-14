@@ -34,6 +34,7 @@ import {
     speakText,
     speakBraille,
     readAloud,
+    speakImmediate,
 } from './brailleSpeech.js';
 import {
     SETTINGS,
@@ -47,7 +48,10 @@ import {
     KEY_TO_DOT,
     KEY_ACTIONS,
     KEY_COMBOS,
+    keyIdToLabel,
 } from './config.js';
+
+window._keyIdToLabel = keyIdToLabel;
 import {
     renderActionKeyBindingsUI,
     renderToolbarKeyLabels,
@@ -72,6 +76,7 @@ import {
     initForceWelcomeToggle,
     welcomeConfirm,
     welcomeSkip,
+    _keyLabel,
 } from './tutorial.js';
 import { undo, redo } from './history.js';
 import {
@@ -84,56 +89,91 @@ import { initDevPanel } from './devPanel.js';
 let _toggleKbOverlay = null;
 let _toggleTheme = null;
 
+// ── ACTION_HANDLERS 的 helper 函数 ──
+
 /**
- * @description: 将配置中的动作名映射到实际函数调用
- * @param {string} action 动作名
+ * @description: 处理删除操作（根据是否多选以及是否按下 Forward）
+ * @param {boolean} isForward 是否为向前删除
  * @return {void}
  */
-function dispatchAction(action) {
-    switch (action) {
-        case 'confirm': dotInput.confirm(); break;
-        case 'clearInput': dotInput.clear(); break;
-        case 'clearOutput': clearOutput(); break;
-        case 'delete':
-            if (SETTINGS.multiSelect && cursor.selectedIndices.size > 0) deleteSelected();
-            else deleteLast();
-            break;
-        case 'deleteForward':
-            if (SETTINGS.multiSelect && cursor.selectedIndices.size > 0) deleteSelected();
-            else deleteForward();
-            break;
-        case 'selectAll':
-            if (!SETTINGS.multiSelect) break;
-            cursor.selectedIndices.clear();
-            for (let i = 0; i < outputItems.length; i++) cursor.selectedIndices.add(i);
-            cursor.selAnchor = 0;
-            cursor.idx = outputItems.length;
-            renderOutput();
-            speakText('已全选');
-            break;
-        case 'space':
-            if (dotInput.isLit) dotInput.confirm();
-            else inputSpace();
-            break;
-        case 'cursorLeft': moveCursor(-1); break;
-        case 'cursorRight': moveCursor(1); break;
-        case 'cursorUp': moveCursorUp(); break;
-        case 'cursorDown': moveCursorDown(); break;
-        case 'undo': undo(); break;
-        case 'redo': redo(); break;
-        case 'readAloud': readAloud(); break;
-        case 'save': handleSaveContent(); break;
-        case 'openFile': handleOpenFile(); break;
-        case 'tutorial': playTutorial(); break;
-        case 'toggleSettings': toggleSettings(); break;
-        case 'toggleHelp': toggleHelp(); break;
-        case 'toggleMapping': toggleMapping(); break;
-        case 'toggleKeyboard': if (_toggleKbOverlay) _toggleKbOverlay(); break;
-        case 'toggleTheme': if (_toggleTheme) _toggleTheme(); break;
-        case 'resetKeyBindings': _startSeqBinding(); break;
-        case 'pageUp': if (pages.isActive) switchToPage(pages.idx - 1); break;
-        case 'pageDown': if (pages.isActive) switchToPage(pages.idx + 1); break;
+function _handleDelete(isForward = false) {
+    if (SETTINGS.multiSelect && cursor.selectedIndices.size > 0) {
+        deleteSelected();
+    } else {
+        isForward ? deleteForward() : deleteLast();
     }
+}
+
+/**
+ * @description: 全选所有输出项
+ * @return {void}
+ */
+function _handleSelectAll() {
+    if (!SETTINGS.multiSelect) return;
+    cursor.selectedIndices.clear();
+    for (let i = 0; i < outputItems.length; i++) cursor.selectedIndices.add(i);
+    cursor.selAnchor = 0;
+    cursor.idx = outputItems.length;
+    renderOutput();
+    speakText('已全选');
+}
+
+/**
+ * @description: 调整语速（增减）
+ * @param {number} delta 调整量（正为增加，负为减少）
+ * @return {void}
+ */
+function _handleSpeechRateChange(delta) {
+    const newRate = delta > 0
+        ? Math.min(4, +(SETTINGS.speechRate + 0.1).toFixed(1))
+        : Math.max(0.5, +(SETTINGS.speechRate - 0.1).toFixed(1));
+    SETTINGS.speechRate = newRate;
+    saveSettings();
+    if (window._kbSyncSettings) window._kbSyncSettings({ speechRate: SETTINGS.speechRate });
+    speakText('语速' + SETTINGS.speechRate, SETTINGS.speechRate);
+}
+
+/**
+ * @description: 将配置中的动作名映射到实际函数调用
+ * @type {Record<string, () => void>}
+ */
+const ACTION_HANDLERS = {
+    confirm: () => dotInput.confirm(),
+    clearInput: () => dotInput.clear(),
+    clearOutput: () => clearOutput(),
+    delete: () => _handleDelete(false),
+    deleteForward: () => _handleDelete(true),
+    selectAll: () => _handleSelectAll(),
+    space: () => {
+        if (dotInput.isLit) dotInput.confirm();
+        else inputSpace();
+    },
+    cursorLeft: () => moveCursor(-1),
+    cursorRight: () => moveCursor(1),
+    cursorUp: () => moveCursorUp(),
+    cursorDown: () => moveCursorDown(),
+    undo: () => undo(),
+    redo: () => redo(),
+    readAloud: () => readAloud(),
+    save: () => handleSaveContent(),
+    openFile: () => handleOpenFile(),
+    tutorial: () => playTutorial(),
+    toggleSettings: () => toggleSettings(),
+    toggleHelp: () => toggleHelp(),
+    toggleMapping: () => toggleMapping(),
+    toggleKeyboard: () => { if (_toggleKbOverlay) _toggleKbOverlay(); },
+    toggleTheme: () => { if (_toggleTheme) _toggleTheme(); },
+    resetKeyBindings: () => _startSeqBinding(),
+    speechRateUp: () => _handleSpeechRateChange(1),
+    speechRateDown: () => _handleSpeechRateChange(-1),
+    speakBindings: () => { if (window._kbSpeakAllBindings) window._kbSpeakAllBindings(); },
+    pageUp: () => { if (pages.isActive) switchToPage(pages.idx - 1); },
+    pageDown: () => { if (pages.isActive) switchToPage(pages.idx + 1); },
+};
+
+function dispatchAction(action) {
+    const handler = ACTION_HANDLERS[action];
+    if (handler) handler();
 }
 
 /**
@@ -142,17 +182,29 @@ function dispatchAction(action) {
  * @return {boolean} 是否已处理该按键
  */
 function tryDispatch(keyId) {
+    // 点位键
     if (KEY_TO_DOT[keyId] !== undefined) {
         const dotIdx = KEY_TO_DOT[keyId];
         dotInput.toggle(dotIdx);
         setActiveKeyGroup(keyId);
         return true;
     }
-    if (KEY_ACTIONS[keyId] !== undefined) {
-        dispatchAction(KEY_ACTIONS[keyId]);
+    // 动作键
+    const action = KEY_ACTIONS[keyId];
+    if (action !== undefined) {
+        dispatchAction(action);
         return true;
     }
     return false;
+}
+
+function normalizeComboKey(key) {
+    if (typeof key !== 'string') return key;
+    return key.length === 1 ? key.toLowerCase() : key;
+}
+
+function isEditableTarget(target) {
+    return !!target && !!target.closest('textarea, input, [contenteditable="true"], [contenteditable=""], [contenteditable="plaintext-only"]');
 }
 
 /**
@@ -161,18 +213,18 @@ function tryDispatch(keyId) {
  * @return {string|null} 匹配到的动作名，无匹配返回 null
  */
 function matchCombo(e) {
+    const eventKey = normalizeComboKey(e.key);
     for (const combo of KEY_COMBOS) {
         if ((combo.ctrl === undefined || combo.ctrl === e.ctrlKey) &&
             (combo.alt === undefined || combo.alt === e.altKey) &&
             (combo.shift === undefined || combo.shift === e.shiftKey) &&
-            combo.key === e.key) {
+            normalizeComboKey(combo.key) === eventKey) {
             return combo.action;
         }
     }
     return null;
 }
 
-//  initialization 根据不同的部分分成单独的函数
 
 
 
@@ -206,19 +258,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // ── Keyboard handler ──
             document.addEventListener('keydown', (e) => {
-                // 焦点在 textarea/input 上时不拦截按键（正常输入模式）
-                if (e.target.closest('textarea, input')) return;
+                // 焦点在可编辑控件上时不拦截按键（正常输入模式）
+                if (isEditableTarget(e.target)) return;
                 // 焦点在 button 上时不拦截 Enter（让原生 button 处理）；Space 不在此列——空格键用于盲文输入
                 if (e.target.closest('button') && e.key === 'Enter') return;
 
                 // 欢迎遮罩键盘选择：Escape 跳过，其他任意键确认
                 if (_welcomeActive) {
                     e.preventDefault();
-                    if (e.key === 'Escape') {
-                        welcomeSkip();
-                    } else {
-                        welcomeConfirm();
-                    }
+                    if (e.key === 'Escape') { welcomeSkip(); }
+                    else { welcomeConfirm(); }
                     return;
                 }
 
@@ -433,6 +482,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
             window._kbOpenSeqBinding = _startSeqBinding;
             window._kbSpeak = speakText;
+            window._kbSpeakImmediate = speakImmediate;
+
+            window._kbSpeakAllBindings = function () {
+                const kb = SETTINGS.keyBindings.keyboard || {};
+                const nkb = SETTINGS.keyBindings.numpad || {};
+                const kbdParts = [];
+                const numParts = [];
+                for (let d = 1; d <= 6; d++) {
+                    if (kb[d]) kbdParts.push(_keyLabel(kb[d]));
+                    if (nkb[d]) numParts.push(_keyLabel(nkb[d]).replace('小键盘', ''));
+                }
+                const msg = '主键盘点位键：' + kbdParts.join('、') + '。小键盘点位键：' + numParts.join('、') + '。';
+                speakText(msg, SETTINGS.speechRate);
+            };
 
             window._kbApplyPreset = function (scope, name) {
                 const bindings = window._kbPresetToDotBindings && window._kbPresetToDotBindings(name);
@@ -483,6 +546,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 SETTINGS.actionKeyBindings = { ...akbDefault };
                 SETTINGS.speechRate = DEFAULT_SETTINGS.speechRate;
+                SETTINGS.debounceSpeech = DEFAULT_SETTINGS.debounceSpeech;
                 saveSettings();
                 applyKeyBindings();
                 applyActionKeyBindings();
@@ -517,6 +581,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     numDeleteKey: 'NumpadMultiply',
                     clearInputKey: SETTINGS.actionKeyBindings.clearInput,
                     numClearInputKey: 'NumpadDivide',
+                    functionKeys: ['q', 'w', 'e', 'r', 't', 'c'],
                 };
             }
             function syncKeyboard() {
@@ -526,9 +591,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 kbOverlay.classList.add('open');
                 syncKeyboard();
                 syncKbSettings();
+                speakText('打开键盘和设置');
             }
             function closeKbOverlay() {
                 kbOverlay.classList.remove('open');
+                speakText('关闭键盘和设置');
             }
             _toggleKbOverlay = function () {
                 kbOverlay.classList.contains('open') ? closeKbOverlay() : openKbOverlay();

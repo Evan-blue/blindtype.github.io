@@ -11,18 +11,38 @@ import {
 } from './loadMappings.js';
 
 
-export const pyinUtils = {
-    ChineseToSegedPinyin: (text, opts = {}) => {
-        if (!text || typeof text !== 'string') return opts.type === 'string' ? '' : [];
-        const pinyinPro = window.pinyinPro || getPinyinPro();
-        if (!pinyinPro) throw new Error('pinyin-pro 尚未加载，请先调用 loadPinyinPro()');
-        return pinyinPro.segment(text, {
-            toneType: opts.toneType || 'num',
-            format: opts.format || pinyinPro.OutputFormat.AllString,
-        });
-    }
+/**
+ * input: "早上好"
+ * @description: 
+ * @param {*} text
+ * @param {*} opts
+ * @return {Array} [
+ *      [{"origin":"早","result":"zao3"},{"origin":"上","result":"shang4"}],
+ *      [{"origin":"好","result":"hao3"}]
+ * ]
+ */
+export function chineseToSegedPinyin_pyp(text, opts = {}) {
+    const pinyinPro = window.pinyinPro || getPinyinPro();
+    if (!pinyinPro) throw new Error('pinyin-pro 尚未加载，请先调用 loadPinyinPro()');
+    return pinyinPro.segment(text, {
+        toneType: opts.toneType || 'num',
+        format: opts.format || pinyinPro.OutputFormat.AllArray,
+    });
 }
 
+export function chineseToSegedPinyin_my(text, opts = {}) {
+    // split Chinese text to segments
+    const segmentedChineseArr = splitText(text, 'zh-CN', 'word');
+    const result = segmentedChineseArr.map((chars) => {
+        const res = []
+        Array.from(chars).forEach((char) => {
+            const pinyin = chineseToPinyin(char, { type: 'string', separator: '', ...opts});
+            res.push({ origin: char, result: pinyin })
+        })
+        return res
+    })
+    return result
+}
 
 /**
  * @description: 将中文文本转为拼音数组(调用了pinyin-pro)
@@ -35,13 +55,10 @@ export const pyinUtils = {
  */
 export function chineseToPinyin(text, opts = {}) {
     if (!text || typeof text !== 'string') return opts.type === 'string' ? '' : [];
-    const pinyinPro = getPinyinPro();
-    if (!pinyinPro) return opts.type === 'string' ? '' : [];
-    return pinyinPro.pinyin(text, {
-        toneType: opts.toneType || 'num',
-        type: opts.type || 'array',
-        separator: opts.separator || ' ',
-    });
+    const default_opts = { toneType: 'num', type: 'array', separator: ' ', };
+    opts = Object.assign({}, default_opts, opts);
+    const pinyinPro = window.pinyinPro || getPinyinPro();
+    return pinyinPro.pinyin(text, opts);
 }
 
 /**
@@ -94,6 +111,9 @@ export function resolveSoloFinal(str) {
 
 // ── 文本分割 ──
 
+/**
+ * ['小明', '硕士', '毕业', '于', '哈尔滨', '佛', '学院', '，', '后', '在', '加里', '敦', '大学', '深造']
+ */
 export function splitText(text, locales = 'zh-CN', granularity = 'word') {
     const segObj = new Intl.Segmenter(locales, { granularity });
     return Array.from(segObj.segment(text)).map(seg => seg.segment);

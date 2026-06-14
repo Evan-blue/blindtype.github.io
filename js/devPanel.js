@@ -58,7 +58,8 @@ export function sleep(ms) {
  */
 export function initDevPanel() {
     const panel = document.getElementById('devPanel');
-    panel.style.display = 'none';  // 确保内联样式与 CSS 默认值一致，使键盘序列检测生效
+    // panel.style.display = 'none';  // 确保内联样式与 CSS 默认值一致，使键盘序列检测生效
+    panel.style.display = 'block';  // 确保内联样式与 CSS 默认值一致，使键盘序列检测生效
     const header = panel.querySelector('.dev-header');
 
     // ── 按钮不触发拖动 ──
@@ -126,6 +127,7 @@ export function initDevPanel() {
     function updateDevFlip() {
         const rect = header.getBoundingClientRect();
         panel.classList.toggle('flip', rect.top + rect.height / 2 < window.innerHeight / 2);
+        panel.classList.toggle('flip-h', rect.left + rect.width / 2 > window.innerWidth / 2);
     }
 
     // ── 拖动逻辑 ──

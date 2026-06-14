@@ -1,5 +1,7 @@
 // loadModule.js - 多CDN fallback加载外部模块
 
+import { chineseToSegedPinyin_pyp, chineseToSegedPinyin_my } from './utils-pinyin.js';
+
 let _pinyinPro = null;
 let _pinyinProPromise = null;
 
@@ -57,13 +59,34 @@ export async function _initPinyinPro() {
     const mod = await loadPinyinPro();
     for (const url of PINYIN_DICT_URLS) {
         try {
+            // 加载完成进行测试
             console.log(`pinyin-pro 完整字典从 ${url} 加载中...`);
             const dict = await import(url);
             mod.addDict(dict.default);
             const testStr = '小明硕士毕业于哈尔滨佛学院，后在加里敦大学深造';
-            const testResult = mod.segment(testStr, { toneType: 'num', format: mod.OutputFormat.AllString });
+            const testResult = mod.segment(testStr, { toneType: 'num', format: mod.OutputFormat.AllArray });
             console.log(testResult);
             console.log(`pinyin-pro 完整字典从 ${url} 加载成功`);
+
+            // ── 临时测试：对比两种分词拼音方案 ──
+            (function testTwoApproaches() {
+                const text = '早上好';
+
+                console.group('方案A - chineseToSegedPinyin_pyp');
+                try {
+                    const resultA = chineseToSegedPinyin_pyp(text);
+                    console.log('output:', JSON.stringify(resultA));
+                    console.log('type:', Array.isArray(resultA) ? `array[${resultA.length}]` : typeof resultA);
+                } catch (e) { console.error('方案A 报错:', e); }
+                console.groupEnd();
+
+                console.group('方案B - chineseToSegedPinyin_my');
+                try {
+                    const resultB = chineseToSegedPinyin_my(text);
+                    console.log('output:', JSON.stringify(resultB));
+                } catch (e) { console.error('方案B 报错:', e); }
+                console.groupEnd();
+            })();
             if (el) el.remove();
             window.pinyinPro = mod;
             return;

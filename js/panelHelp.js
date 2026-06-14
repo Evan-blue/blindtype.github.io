@@ -8,6 +8,7 @@ import {
     KEY_COMBOS,
     _isNumpadKey,
     SETTINGS,
+    keyIdToLabel,
 } from './config.js';
 import { playTutorial } from './tutorial.js';
 
@@ -25,8 +26,8 @@ export function renderHelpPanel() {
     for (const d of dotGridOrder) {
         const kbdEl = document.getElementById('helpDot' + d + 'L');
         const npEl = document.getElementById('helpDot' + d + 'Np');
-        if (kbdEl) kbdEl.textContent = _keyIdToLabel(DOT_TO_KEY[d] || '?');
-        if (npEl) npEl.textContent = _keyIdToLabel(DOT_TO_KEY_NUMPAD[d] || '?');
+        if (kbdEl) kbdEl.textContent = keyIdToLabel(DOT_TO_KEY[d] || '?');
+        if (npEl) npEl.textContent = keyIdToLabel(DOT_TO_KEY_NUMPAD[d] || '?');
     }
 
     const actionKeys = {};
@@ -46,13 +47,13 @@ export function renderHelpPanel() {
         const npKeys = keys.filter(k => _isNumpadKey(k));
         const kbdEl = document.getElementById(kbdId);
         const npEl = document.getElementById(npId);
-        if (kbdEl) kbdEl.textContent = kbdKeys.length ? kbdKeys.map(k => _keyIdToLabel(k)).join(' ') : '—';
-        if (npEl) npEl.textContent = npKeys.length ? npKeys.map(k => _keyIdToLabel(k)).join(' ') : '—';
+        if (kbdEl) kbdEl.textContent = kbdKeys.length ? kbdKeys.map(k => keyIdToLabel(k)).join(' ') : '—';
+        if (npEl) npEl.textContent = npKeys.length ? npKeys.map(k => keyIdToLabel(k)).join(' ') : '—';
     }
 
     const setKbd = (id, keys) => {
         const el = document.getElementById(id);
-        if (el && keys && keys.length) el.textContent = keys.map(k => _keyIdToLabel(k)).join(' / ');
+        if (el && keys && keys.length) el.textContent = keys.map(k => keyIdToLabel(k)).join(' / ');
     };
     setKbd('helpDeleteForward', actionKeys['deleteForward']);
     setKbd('helpClearOutput', actionKeys['clearOutput']);
@@ -88,25 +89,6 @@ export function renderHelpPanel() {
     if (selectAllRow) selectAllRow.style.display = SETTINGS.multiSelect ? '' : 'none';
     const shiftSelectRow = document.getElementById('helpRowShiftSelect');
     if (shiftSelectRow) shiftSelectRow.style.display = SETTINGS.multiSelect ? '' : 'none';
-}
-
-function _keyIdToLabel(keyId) {
-    if (!keyId) return '?';
-    if (/^Numpad\d$/.test(keyId)) return keyId.slice(6);
-    const numpadLabels = { NumpadAdd: '+', NumpadSubtract: '-', NumpadMultiply: '*', NumpadDivide: '/', NumpadDecimal: '.', NumpadEnter: 'Enter' };
-    if (numpadLabels[keyId]) return numpadLabels[keyId];
-    if (/^Digit\d$/.test(keyId)) return keyId.slice(5);
-    if (/^Key[A-Z]$/.test(keyId)) return keyId.slice(3);
-    const punctLabels = { Comma: ',', Period: '.', Semicolon: ';', Quote: "'", Slash: '/', Backslash: '\\', BracketLeft: '[', BracketRight: ']', Minus: '-', Equal: '=', Backquote: '`' };
-    if (punctLabels[keyId]) return punctLabels[keyId];
-    if (keyId === 'Space') return 'Space';
-    if (keyId === 'ArrowLeft') return '←';
-    if (keyId === 'ArrowRight') return '→';
-    if (keyId === 'ArrowUp') return '↑';
-    if (keyId === 'ArrowDown') return '↓';
-    if (keyId === 'Backspace') return '⌫';
-    if (keyId === 'Delete') return 'DEL';
-    return keyId;
 }
 
 export const helpPanel = createSlidePanel({

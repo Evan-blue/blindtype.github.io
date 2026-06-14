@@ -4,25 +4,40 @@
     display: none;
     position: fixed;
     top: 50px;
-    right: 26px;
+    left: 26px;
     z-index: 3500;
 }
 
 .dev-panel.flip .dev-sections-wrap {
     bottom: auto;
     top: 52px;
+}
+
+.dev-panel:not(.flip-h) .dev-sections-wrap {
+    left: 0;
+    align-items: flex-start;
+    transform-origin: bottom left;
+}
+.dev-panel:not(.flip-h).flip .dev-sections-wrap {
+    transform-origin: top left;
+}
+
+.dev-panel.flip-h .dev-sections-wrap {
+    left: auto;
+    right: 0;
+    align-items: flex-end;
+    transform-origin: bottom right;
+}
+.dev-panel.flip-h.flip .dev-sections-wrap {
     transform-origin: top right;
 }
 
 .dev-sections-wrap {
     position: absolute;
-    right: 0;
     bottom: 52px;
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
     gap: 8px;
-    transform-origin: bottom right;
     transition: transform .25s ease, opacity .25s ease;
 }
 
@@ -135,7 +150,6 @@
 
 .dev-tabs {
     position: absolute;
-    left: -120px;
     top: 50%;
     transform: translateY(-50%);
     display: flex;
@@ -143,6 +157,8 @@
     opacity: 0;
     transition: opacity .15s;
 }
+.dev-panel:not(.flip-h) .dev-tabs { left: 54px; }
+.dev-panel.flip-h .dev-tabs { left: auto; right: 54px; }
 
 .dev-header:hover .dev-tabs,
 .dev-panel.pinned .dev-tabs {

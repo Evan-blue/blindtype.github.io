@@ -5,10 +5,9 @@ import {
     cursor,
     getRenderSuppressed,
     pages,
+    computeItemMeta,
 } from './brailleState.js';
 import { SETTINGS } from './config.js';
-import { splitPinyinChars } from './utils-pinyin.js';
-import { _resolveOmittedTone } from './utils-pinyin.js';
 import { speakText } from './brailleSpeech.js';
 
 export const outputArea = document.getElementById('outputArea');
@@ -40,49 +39,6 @@ export function clearSelection() {
  *   返回值: itemMeta 数组，每项为 null（非分组项）或 { merged, isFirst, isLast }
  * @return {object[]}
  */
-export function computeItemMeta() {
-    const emptyIndices = [];
-    outputItems.forEach((item, i) => {
-        if (item.oneHot === '000000') emptyIndices.push(i);
-    });
-
-    const meta = new Array(outputItems.length).fill(null);
-    for (let g = 0; g <= emptyIndices.length; g++) {
-        const start = g === 0 ? 0 : emptyIndices[g - 1] + 1;
-        const end = g < emptyIndices.length ? emptyIndices[g] : outputItems.length;
-        // 跳过数字项和英文项：不参与拼音分组
-        if (outputItems.slice(start, end).some(it => it.isNumber || it.isEnglish)) continue;
-        if (end - start >= 2) {
-            const TONE_SYM_TO_NUM = { '¯': '1', '´': '2', 'ˇ': '3', '`': '4' };
-            const chars = outputItems.slice(start, end).map((it, ci, arr) => {
-                const ch = TONE_SYM_TO_NUM[it.char] || it.char || '';
-                if (ch !== 'e/o') return ch;
-                const prevCh = ci > 0 ? (TONE_SYM_TO_NUM[arr[ci - 1].char] || arr[ci - 1].char || '') : '';
-                if (prevCh === 'b' || prevCh === 'p' || prevCh === 'f') return 'o';
-                if (prevCh === 'm') return 'o';
-                return 'e';
-            });
-            const syllables = splitPinyinChars(chars);
-            if (syllables) {
-                let pos = start;
-                for (const syl of syllables) {
-                    let merged = syl.merged;
-                    // 若省写了声调（merged 无尾部数字），根据省写规则补充声调（受省写映射开关控制）
-                    if (SETTINGS.omitToneMapping !== false && !/\d$/.test(merged)) {
-                        const tone = _resolveOmittedTone(merged);
-                        if (tone) merged += tone;
-                    }
-                    for (let k = 0; k < syl.count; k++) {
-                        meta[pos + k] = { merged, isFirst: k === 0, isLast: k === syl.count - 1 };
-                    }
-                    pos += syl.count;
-                }
-            }
-        }
-    }
-    return meta;
-}
-
 /**
  * @description: 重新渲染输出区域，生成所有已确认的盲文字符单元
  *   支持分页：内容溢出时自动激活分页，只渲染当前页
