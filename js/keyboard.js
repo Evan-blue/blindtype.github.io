@@ -339,8 +339,9 @@
         'space': '空格', 'backspace': '退格',
     };
     const FUNC_LABEL = {
-        q: '盲文对照表', w: '键盘和设置', e: '设置',
+        q: '盲文对照表', w: '键盘和设置',
         r: '朗读', t: '切换主题', c: '清空输出区',
+        g: '上一节', h: '下一节',
     };
 
     function speakKey(keyEl) {

@@ -3,10 +3,10 @@
 import {
     outputItems,
     cursor,
-} from './brailleState.js';
+    SETTINGS,
+} from './state.js';
 import { invalidatePageCache, renderOutput } from './brailleOutput.js';
 import { speakText } from './brailleSpeech.js';
-import { SETTINGS } from './config.js';
 
 let _undoStack = [];
 let _redoStack = [];
@@ -67,4 +67,9 @@ export function redo() {
     _undoStack.push(_snapshot());
     _restore(_redoStack.pop());
     speakText('重做');
+}
+
+export function clearHistory() {
+    _undoStack.length = 0;
+    _redoStack.length = 0;
 }

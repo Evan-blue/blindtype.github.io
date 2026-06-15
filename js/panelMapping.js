@@ -1,7 +1,6 @@
 // panelMapping.js - 盲文对照表面板
 
-import { createSlidePanel } from './panelManager.js';
-import { speakText, speakBraille, speakImmediate } from './brailleSpeech.js';
+import { speakText, speakImmediate } from './brailleSpeech.js';
 import { oneHotToBrailleChar, onehotToIndex } from './utils-braille.js';
 import { ONEHOT_MAPPINGS } from './loadMappings.js';
 
@@ -69,7 +68,6 @@ export function renderMappingTable() {
                 '<span class="mc-braille">' + braille + '</span>' +
                 '<span class="mc-dots">' + dotsStr + '</span>' +
                 '<span class="mc-label">' + entry.label + '</span>';
-            const forceNum = catName === '数字';
             const speakText = (entry.audio || entry.label) + ', 键位' + onehotToIndex(entry.oneHot)
             card.addEventListener('click', () => { speakImmediate(speakText) });
             card.addEventListener('mouseenter', () => { _readingMode && speakImmediate(speakText) });
@@ -78,57 +76,97 @@ export function renderMappingTable() {
     });
 }
 
-export const mappingPanel = createSlidePanel({
-    slideId: 'mappingSlide',
-    overlayId: 'mappingOverlay',
-    btnId: 'btnMapping',
-    closeBtnId: 'mappingSlideClose',
-    pinId: 'pinToggle',
-    openSpeak: '打开盲文对照表',
-    closeSpeak: '关闭盲文对照表',
-});
+const _mappingSlide = document.getElementById('mappingSlide');
+const _mappingOverlay = document.getElementById('mappingOverlay');
+const _mappingBtn = document.getElementById('btnMapping');
+const _mappingCloseBtn = document.getElementById('mappingSlideClose');
+
+export const mappingPanel = {
+    slide: _mappingSlide,
+    overlay: _mappingOverlay,
+    btn: _mappingBtn,
+    closeBtn: _mappingCloseBtn,
+    pinToggle: null,
+    pinLit: false,
+
+    open() {
+        _mappingSlide.classList.add('open');
+        _mappingSlide.removeAttribute('inert');
+        _mappingOverlay.classList.add('open');
+        if (_mappingBtn) _mappingBtn.setAttribute('aria-expanded', 'true');
+        _mappingCloseBtn.focus();
+        speakText('打开盲文对照表', 1.5);
+    },
+
+    close() {
+        _mappingSlide.classList.remove('open');
+        _mappingSlide.setAttribute('inert', '');
+        _mappingOverlay.classList.remove('open');
+        if (_mappingBtn) _mappingBtn.setAttribute('aria-expanded', 'false');
+        if (_mappingBtn) _mappingBtn.focus();
+        speakText('关闭盲文对照表', 1.5);
+    },
+
+    toggle() {
+        if (_mappingSlide.classList.contains('open')) mappingPanel.close();
+        else mappingPanel.open();
+    },
+};
 
 export let toggleMapping = mappingPanel.toggle;
 
-(function _setupMappingToggle() {
-    const container = document.getElementById('mappingModeToggle');
-    if (!container) return;
-    container.addEventListener('click', (e) => {
+// ── 面板事件绑定 ──
+const _pinToggle = document.getElementById('pinToggle');
+if (_pinToggle) {
+    mappingPanel.pinToggle = _pinToggle;
+    _pinToggle.addEventListener('click', () => {
+        mappingPanel.pinLit = !mappingPanel.pinLit;
+        _pinToggle.classList.toggle('lit', mappingPanel.pinLit);
+        _pinToggle.setAttribute('aria-pressed', String(mappingPanel.pinLit));
+        _pinToggle.title = mappingPanel.pinLit ? '已锁定（仅可通过✕关闭）' : '锁定面板';
+    });
+}
+if (_mappingBtn) {
+    _mappingBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        mappingPanel.open();
+    });
+}
+_mappingOverlay.addEventListener('click', () => {
+    if (mappingPanel.pinLit) return;
+    mappingPanel.close();
+});
+_mappingCloseBtn.addEventListener('click', () => mappingPanel.close());
+_mappingSlide.addEventListener('click', (e) => { e.stopPropagation(); });
+
+// ── 阅读/书写模式切换 ──
+const _modeContainer = document.getElementById('mappingModeToggle');
+if (_modeContainer) {
+    _modeContainer.addEventListener('click', (e) => {
         const btn = e.target.closest('button[data-mode]');
         if (!btn) return;
-        const mode = btn.dataset.mode;
-        _readingMode = (mode === 'reading');
-        container.querySelectorAll('.mode-toggle-btn').forEach(b => b.classList.toggle('active', b === btn));
+        _readingMode = (btn.dataset.mode === 'reading');
+        _modeContainer.querySelectorAll('.mode-toggle-btn').forEach(b => b.classList.toggle('active', b === btn));
         renderMappingTable();
         speakText(_readingMode ? '阅读时' : '书写时');
     });
-})();
+}
 
 // ── 拖动改变面板宽度 ──
-(function _setupResize() {
-    const slide = document.getElementById('mappingSlide');
-    const handle = slide && slide.querySelector('.mapping-resize-handle');
-    if (!handle) return;
-
-    let _dragging = false;
-    let _startX = 0;
-    let _startW = 0;
-
-    handle.addEventListener('mousedown', (e) => {
+const _resizeHandle = _mappingSlide && _mappingSlide.querySelector('.mapping-resize-handle');
+if (_resizeHandle) {
+    let _dragging = false, _startX = 0, _startW = 0;
+    _resizeHandle.addEventListener('mousedown', (e) => {
         _dragging = true;
         _startX = e.clientX;
-        _startW = slide.offsetWidth;
+        _startW = _mappingSlide.offsetWidth;
         e.preventDefault();
     });
-
     document.addEventListener('mousemove', (e) => {
         if (!_dragging) return;
         const w = Math.min(810, Math.max(420, _startW + _startX - e.clientX));
-        slide.style.width = w + 'px';
-        slide.style.maxWidth = 'none';
+        _mappingSlide.style.width = w + 'px';
+        _mappingSlide.style.maxWidth = 'none';
     });
-
-    document.addEventListener('mouseup', () => {
-        _dragging = false;
-    });
-})();
+    document.addEventListener('mouseup', () => { _dragging = false; });
+}

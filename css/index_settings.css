@@ -1,101 +1,4 @@
-/* index_settings.css - 设置滑出面板 */
-
-.settings-overlay {
-    position: fixed;
-    inset: 0;
-    background: #00000055;
-    z-index: 1000;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s, visibility 0.3s;
-}
-
-.settings-overlay.open {
-    opacity: 1;
-    visibility: visible;
-}
-
-.settings-slide {
-    position: fixed;
-    top: 0;
-    right: 0;
-    /* width: 85vw; */
-    max-width: 420px;
-    height: 100vh;
-    z-index: 1001;
-    background: var(--bg);
-    box-shadow: -4px 0 24px #00000044;
-    transform: translateX(100%);
-    transition: transform 0.3s ease;
-    display: flex;
-    flex-direction: column;
-}
-
-.settings-slide.open {
-    transform: translateX(0);
-}
-
-.settings-slide-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 24px;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg-card);
-    flex-shrink: 0;
-}
-
-.settings-slide-header h2 {
-    font-size: 18px;
-    color: var(--text-sub);
-}
-
-.settings-slide-close {
-    min-width: 44px;
-    min-height: 44px;
-    border-radius: 50%;
-    border: 1px solid var(--border-light);
-    background: transparent;
-    color: var(--text);
-    font-size: 18px;
-    cursor: pointer;
-    transition: .15s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-    padding: 0;
-}
-
-.settings-slide-close:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-    background: var(--accent-light);
-}
-
-.settings-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px 24px;
-    margin: 0;
-}
-
-.settings-section {
-    padding: 20px 0;
-    border-bottom: 1px solid var(--border);
-}
-
-.settings-section h3 {
-    font-size: 14px;
-    color: var(--text-sub);
-    margin-bottom: 10px;
-}
-
-.kb-preset-label {
-    font-size: 12px;
-    color: var(--text-muted);
-    line-height: 24px;
-}
+/* index_settings.css — 设置相关控件、遮罩、徽章 */
 
 .kb-presets {
     display: flex;
@@ -103,114 +6,7 @@
     gap: 8px;
 }
 
-.kb-preset-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.kb-preset-cat {
-    font-size: 12px;
-    color: var(--text-muted);
-    min-width: 32px;
-    flex-shrink: 0;
-}
-
-.kb-preset {
-    padding: 4px 10px;
-    border: 1px solid var(--border-light);
-    border-radius: 4px;
-    background: var(--bg-toolbar);
-    color: var(--text);
-    font-size: 12px;
-    font-family: "Consolas", monospace;
-    cursor: pointer;
-    transition: .15s;
-}
-
-.kb-preset:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-    background: var(--accent-light);
-}
-
-.kb-preset:active {
-    transform: scale(0.95);
-}
-
-.key-bindings {
-    display: grid;
-    grid-template-columns: 48px 48px;
-    column-gap: 8px;
-    row-gap: 8px;
-    justify-content: center;
-    margin: 4px auto;
-}
-
-.kb-dual-bindings {
-    display: flex;
-    gap: 40px;
-    justify-content: center;
-    margin: 8px 0;
-}
-
-.kb-binding-group {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-}
-
-.kb-group-label {
-    font-size: 12px;
-    color: var(--text-muted);
-}
-
-.action-key-bindings {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.key-bindings .kb-badge {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    border: 2px solid var(--border-light);
-    background: transparent;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-family: inherit;
-    cursor: pointer;
-    position: relative;
-    padding: 0;
-    color: var(--text-muted);
-    transition: all .15s;
-    justify-self: center;
-}
-
-.key-bindings .kb-badge:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-}
-
-.key-bindings .kb-badge.listening {
-    border-color: var(--accent);
-    background: var(--accent);
-    color: #fff;
-    box-shadow: 0 0 12px var(--accent-glow);
-    animation: kb-pulse 1s ease-in-out infinite;
-}
-
-.kb-badge .dot-label { color: var(--text-muted); }
-
-.key-bindings .kb-badge .key-label {
-    font-size: 16px;
-    font-weight: bold;
-}
-
+/* ── 动作键位徽章（dev panel） ── */
 .kb-badge {
     padding: 4px 14px;
     border: 1px solid var(--border-light);
@@ -242,57 +38,7 @@
     50% { box-shadow: 0 0 16px var(--accent-glow); }
 }
 
-/* 恢复默认设置按钮 */
-.kb-reset-defaults {
-    display: block;
-    width: 100%;
-    margin: 0 0 16px;
-    padding: 8px 14px;
-    border: 1px solid var(--danger-border);
-    border-radius: 6px;
-    background: transparent;
-    color: var(--danger);
-    font-size: 13px;
-    font-family: inherit;
-    cursor: pointer;
-    transition: .15s;
-}
-
-.kb-reset-defaults:hover {
-    background: var(--danger);
-    color: #fff;
-}
-
-/* 一键重设按钮 */
-.kb-reset-btn {
-    display: block;
-    margin: 10px auto 0;
-    padding: 6px 18px;
-    border: 1px dashed var(--border-light);
-    border-radius: 4px;
-    background: transparent;
-    color: var(--text-sub);
-    font-size: 12px;
-    font-family: inherit;
-    cursor: pointer;
-    transition: .15s;
-}
-
-.kb-reset-btn kbd {
-    margin-left: 4px;
-    font-size: 10px;
-    line-height: 1;
-    opacity: 0.55;
-    font-family: inherit;
-}
-
-.kb-reset-btn:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-    background: var(--accent-light);
-}
-
-/* 键位绑定遮罩 —— 铺满整个页面 */
+/* ── 键位绑定遮罩 ── */
 .bind-mask {
     position: fixed;
     inset: 0;
@@ -333,7 +79,7 @@
     font-size: 12px;
 }
 
-/* 首次访问欢迎遮罩 */
+/* ── 首次访问欢迎遮罩 ── */
 .welcome-mask {
     position: fixed;
     inset: 0;
@@ -427,6 +173,7 @@
     background: var(--border);
 }
 
+/* ── dev panel 设置行 ── */
 .setting-row {
     display: flex;
     align-items: center;
@@ -489,7 +236,7 @@
     min-height: 24px;
 }
 
-#cursorJumpModeRow {
+.dev-radio-group {
     display: flex;
     gap: 16px;
 }

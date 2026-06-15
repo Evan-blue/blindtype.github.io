@@ -4,13 +4,16 @@ import {
     outputItems,
     cursor,
     computeItemMeta,
+    setRenderSuppressed,
     getRenderSuppressed,
-    isInNumberContext,
-    getNumberStartIdx,
-    isInEnglishContext,
-    getEnglishStartIdx,
-    getEnglishCase,
-} from './brailleState.js';
+    SETTINGS,
+    DOT_TO_KEY,
+    DOT_TO_KEY_NUMPAD,
+    activeKeyGroup,
+    setActiveKeyGroupRaw,
+    KEY_ACTIONS,
+} from './state.js';
+import { _isNumpadKey, KEY_COMBOS, keyIdToLabel } from './config.js';
 import {
     ONEHOT_MAPPINGS,
     REVERSE_ONEHOT_MAPPINGS,
@@ -28,7 +31,7 @@ import {
 import { dotsToBrailleChar, oneHotToBrailleChar } from './utils-braille.js';
 import {
     chineseToPinyin,
-    chineseToSegedPinyin_pyp,
+    chineseToSegedPinyin,
     pinyinToSpokenChar,
     _splitPinyinBase,
 } from './utils-pinyin.js';
@@ -43,11 +46,7 @@ import {
     invalidatePageCache,
     ensureCursorVisible,
 } from './brailleOutput.js';
-import { SETTINGS } from './config.js';
-import { setActiveKeyGroup } from './panelSettings.js';
-import { splitText } from './utils-pinyin.js';
 import { pushUndo } from './history.js';
-import { _batchInputOneHot } from './fileOperations.js';
 
 // dotInput.state按国标列序: [dot1, dot2, dot3, dot4, dot5, dot6]
 export const dotInput = {
@@ -158,14 +157,14 @@ export const dotCells = dotInput._cells;
 export const previewBox = dotInput._previewBox;
 
 function _getContextPreview(key) {
-    if (isInNumberContext()) {
+    if (outputItems.isInNumberContext(cursor.idx)) {
         const digit = ONEHOT_MAPPINGS.number[key];
         if (digit && digit.char !== '数号') return { char: digit.char, label: digit.label };
     }
-    if (isInEnglishContext()) {
+    if (outputItems.isInEnglishContext(cursor.idx)) {
         const letter = ONEHOT_MAPPINGS.letter[key];
         if (letter && letter.char && letter.char.length >= 2) {
-            const engCase = getEnglishCase();
+            const engCase = outputItems.getEnglishCase(cursor.idx);
             const ch = letter.char;
             return { char: engCase === 'upper' ? (ch[0] || '') : (ch[1] || ''), label: letter.label };
         }
@@ -431,10 +430,10 @@ function _handleNumberSign(oneHot, braille) {
 }
 
 function _handleNumberContext(oneHot, braille) {
-    if (!isInNumberContext()) return null;
+    if (!outputItems.isInNumberContext(cursor.idx)) return null;
     const digit = ONEHOT_MAPPINGS.number[oneHot];
     if (digit) {
-        const numItem = outputItems[getNumberStartIdx()];
+        const numItem = outputItems[outputItems.getNumberStartIdx(cursor.idx)];
         numItem.oneHot += '+' + oneHot;
         numItem.braille += braille;
         numItem.char += digit.char;
@@ -451,8 +450,8 @@ function _handleNumberContext(oneHot, braille) {
 function _handleCapitalSign(oneHot, braille) {
     if (oneHot !== CAPITAL_SIGN) return null;
     const signEntry = ONEHOT_MAPPINGS.letter[oneHot];
-    if (isInEnglishContext()) {
-        const engItem = outputItems[getEnglishStartIdx()];
+    if (outputItems.isInEnglishContext(cursor.idx)) {
+        const engItem = outputItems[outputItems.getEnglishStartIdx(cursor.idx)];
         if (engItem.letterCase === 'upper') {
             engItem.allCaps = true;
             engItem.oneHot += '+' + oneHot;
@@ -494,10 +493,10 @@ function _handleLowercaseSign(oneHot, braille) {
 }
 
 function _handleEnglishContext(oneHot, braille) {
-    if (!isInEnglishContext()) return null;
+    if (!outputItems.isInEnglishContext(cursor.idx)) return null;
     const letter = ONEHOT_MAPPINGS.letter[oneHot];
     if (letter && letter.char) {
-        const engItem = outputItems[getEnglishStartIdx()];
+        const engItem = outputItems[outputItems.getEnglishStartIdx(cursor.idx)];
         const isUpper = engItem.letterCase === 'upper';
         const ch = letter.char;
         const audioParts = (letter.audio || '').split(' ');
@@ -886,7 +885,7 @@ export function inputOneHot(oneHot) {
 export function numberToBraille(num) {
     _ensureDigitToOneHot();
     const oneHotList = [];
-    if (isInNumberContext()) {
+    if (outputItems.isInNumberContext(cursor.idx)) {
         oneHotList.push('000000');
     } else if (cursor.idx > 0 && outputItems[cursor.idx - 1].oneHot !== '000000') {
         // 不在数字上下文且不在开头/空方后，强制插入空方再进入数字上下文
@@ -919,7 +918,7 @@ export function englishToBraille(text, prevIsSpaceOverride = null) {
     const oneHotList = [];
     let localInEng = false;
     let prevIsSpace = prevIsSpaceOverride != null ? prevIsSpaceOverride : (cursor.idx === 0 || outputItems[cursor.idx - 1].oneHot === '000000');
-    if (isInEnglishContext()) {
+    if (outputItems.isInEnglishContext(cursor.idx)) {
         oneHotList.push('000000');
         prevIsSpace = true;
     }
@@ -1104,7 +1103,7 @@ export function chineseToBraille(chineseText) {
 
     // 分词流程：基于 chineseToSegedPinyin_pyp 的分词+注音结果
     // 输出格式：[[{origin,result}], [{origin,result}], ...] 每个子数组是一个分词片段
-    const segmentedPinyin = chineseToSegedPinyin_pyp(chineseText);
+    const segmentedPinyin = chineseToSegedPinyin(chineseText);
 
     // 合并连续破折号 — → ——（盲文映射中 —— 是组合码）
     for (let i = 0; i < segmentedPinyin.length - 1; i++) {
@@ -1183,6 +1182,33 @@ export function setInputMode(mode) {
 }
 
 /**
+ * @description: 分批插入oneHot编码，每批20个，批次间让出主线程避免UI卡死
+ * @param {string[]} list oneHot编码数组
+ * @param {number} [chunkSize=20] 每批数量
+ * @return {Promise<void>}
+ */
+export async function _batchInputOneHot(list, chunkSize = 20) {
+    setRenderSuppressed(true);
+    try {
+        for (let i = 0; i < list.length; i += chunkSize) {
+            const chunk = list.slice(i, i + chunkSize);
+            for (const oh of chunk) {
+                inputOneHot(oh);
+            }
+            setRenderSuppressed(false);
+            invalidatePageCache();
+            renderOutput();
+            await new Promise(r => setTimeout(r, 0));
+            setRenderSuppressed(true);
+        }
+    } finally {
+        setRenderSuppressed(false);
+    }
+    invalidatePageCache();
+    renderOutput();
+}
+
+/**
  * @description: 打字输入模式下确认内容，转为盲文并渲染
  * @return {void}
  */
@@ -1199,4 +1225,81 @@ export async function normalInputConfirm() {
     } else {
         speakText('无法转换输入内容');
     }
+}
+
+// ── 键位显示与输入组切换（原 panelSettings.js） ──
+
+export function applyActiveKeyGroup() {
+    const grid = document.getElementById('dotGrid');
+    if (!grid) return;
+    grid.classList.remove('active-group-keyboard', 'active-group-numpad');
+    grid.classList.add('active-group-' + activeKeyGroup);
+}
+
+export function setActiveKeyGroup(keyId) {
+    const group = _isNumpadKey(keyId) ? 'numpad' : 'keyboard';
+    if (group === activeKeyGroup) return;
+    setActiveKeyGroupRaw(group);
+    applyActiveKeyGroup();
+}
+
+export function updateKeyLabels() {
+    const dotCells = document.querySelectorAll('.dot-cell');
+    dotCells.forEach(cell => {
+        const idx = +cell.dataset.idx;
+        const label = cell.querySelector('.key-label');
+        if (!label) return;
+        const kbKey = DOT_TO_KEY[idx];
+        const npKey = DOT_TO_KEY_NUMPAD[idx];
+        if (kbKey !== undefined && npKey !== undefined) {
+            label.innerHTML = '<span class="kb-lbl">' + keyIdToLabel(kbKey) + '</span><span class="key-sep">/</span><span class="np-lbl">' + keyIdToLabel(npKey) + '</span>';
+        } else if (kbKey !== undefined) {
+            label.innerHTML = '<span class="kb-lbl">' + keyIdToLabel(kbKey) + '</span>';
+        } else if (npKey !== undefined) {
+            label.innerHTML = '<span class="np-lbl">' + keyIdToLabel(npKey) + '</span>';
+        }
+    });
+    applyActiveKeyGroup();
+}
+
+export function renderToolbarKeyLabels() {
+    function _labelForAction(action) {
+        for (const combo of KEY_COMBOS) {
+            if (combo.action === action) {
+                const parts = [];
+                if (combo.ctrl) parts.push('Ctrl');
+                if (combo.alt) parts.push('Alt');
+                if (combo.shift) parts.push('Shift');
+                parts.push(combo.key.length === 1 ? combo.key.toUpperCase() : combo.key);
+                return parts.join('+');
+            }
+        }
+        for (const [key, act] of Object.entries(KEY_ACTIONS)) {
+            if (act === action) return keyIdToLabel(key);
+        }
+        return '?';
+    }
+    const map = {
+        'tkbd-tutorial': 'tutorial',
+        'tkbd-readAloud': 'readAloud',
+        'tkbd-clearOutput': 'clearOutput',
+        'tkbd-openFile': 'openFile',
+        'tkbd-save': 'save',
+        'tkbd-toggleMapping': 'toggleMapping',
+        'tkbd-kbResetKeyBindings': 'customBind',
+    };
+    for (const [id, action] of Object.entries(map)) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = _labelForAction(action);
+    }
+}
+
+export function clearOutput() {
+    pushUndo();
+    outputItems.length = 0;
+    cursor.idx = 0;
+    cursor.selectedIndices.clear();
+    invalidatePageCache();
+    speakText('输出区已清除');
+    renderOutput();
 }

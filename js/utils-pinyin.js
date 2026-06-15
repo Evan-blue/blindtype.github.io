@@ -21,6 +21,19 @@ import {
  *      [{"origin":"好","result":"hao3"}]
  * ]
  */
+let _dictReady = false;
+export function _setDictReady() { _dictReady = true; }
+
+/**
+ * @description: 中文分词拼音统一入口——dict 加载前用 Intl.Segmenter 兜底，加载后用 pinyin-pro.segment
+ */
+export function chineseToSegedPinyin(text, opts = {}) {
+    const result = _dictReady ?
+        chineseToSegedPinyin_pyp(text, opts) :
+        chineseToSegedPinyin_my(text, opts);
+    return result
+}
+
 export function chineseToSegedPinyin_pyp(text, opts = {}) {
     const pinyinPro = window.pinyinPro || getPinyinPro();
     if (!pinyinPro) throw new Error('pinyin-pro 尚未加载，请先调用 loadPinyinPro()');
@@ -29,7 +42,6 @@ export function chineseToSegedPinyin_pyp(text, opts = {}) {
         format: opts.format || pinyinPro.OutputFormat.AllArray,
     });
 }
-
 export function chineseToSegedPinyin_my(text, opts = {}) {
     // split Chinese text to segments
     const segmentedChineseArr = splitText(text, 'zh-CN', 'word');

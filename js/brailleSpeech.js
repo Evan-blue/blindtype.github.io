@@ -1,11 +1,11 @@
 // brailleSpeech.js - 语音播报功能
 
 import {
-    isInNumberContext,
-    isInEnglishContext,
-    getEnglishStartIdx,
     outputItems,
-} from './brailleState.js';
+    cursor,
+    computeItemMeta,
+    SETTINGS,
+} from './state.js';
 import {
     ONEHOT_MAPPINGS,
     NUMBER_SIGN,
@@ -13,8 +13,6 @@ import {
 } from './loadMappings.js';
 import { pinyinToSpokenChar, resolveSoloFinal } from './utils-pinyin.js';
 import { indexToOnehot } from './utils-braille.js';
-import { SETTINGS } from './config.js';
-import { computeItemMeta } from './brailleState.js';
 
 // ── 双通道语音调度器 ──
 // 主通道（操作反馈/朗读）与教程通道各自维护独立队列，互不阻塞。
@@ -290,16 +288,16 @@ export function speakBraille(input, rate, opts = {}) {
         oneHot = indexToOnehot(input);
     }
 
-    if (isInNumberContext() || opts.forceNumber) {
+    if (outputItems.isInNumberContext(cursor.idx) || opts.forceNumber) {
         const digit = ONEHOT_MAPPINGS.number[oneHot];
         if (digit) {
             return speakText(digit.audio || digit.label, rate);
         }
     }
-    if (isInEnglishContext()) {
+    if (outputItems.isInEnglishContext(cursor.idx)) {
         const letter = ONEHOT_MAPPINGS.letter[oneHot];
         if (letter && letter.char) {
-            const engItem = outputItems[getEnglishStartIdx()];
+            const engItem = outputItems[outputItems.getEnglishStartIdx(cursor.idx)];
             const isUpper = engItem.letterCase === 'upper';
             const audioParts = (letter.audio || '').split(' ');
             return speakText(isUpper ? (audioParts[0] || letter.char[0]) : (audioParts[1] || letter.char[1]), rate);

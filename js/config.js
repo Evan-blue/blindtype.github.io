@@ -1,4 +1,4 @@
-// config.js - 全局配置、键位定义与持久化（无 UI 依赖）
+// config.js - 全局静态配置与纯工具函数（无运行时可变状态）
 //
 // 按键标识约定（统一使用 e.code）：
 //   - 小键盘数字：Numpad7, Numpad4, Numpad1, ...
@@ -7,27 +7,23 @@
 //   - 其他：Backspace, Space, ArrowLeft, ...
 
 // ── 各预设对应的键位位置描述（用于教程第三节进一步描述手指位置）──
-// 主键盘以键名串为 key（如 fdsjkl），小键盘以 numpad+数字串 为 key（如 numpad852741）
 export const PRESET_POSITION_TEXTS = {
-    keyboard:{
-        // 主键盘
+    keyboard: {
         'fdsjkl': '国际标准键位；左手食指、中指和无名指负责1、2、3点，右手食指、中指和无名指负责4、5、6点。',
         'ik,ujm': '纵向键位；右手中指从上到下就是i、k、逗号键，负责1、2、3点，食指从上到下就是u、j、m键，负责4、5、6点。',
         'ol.ik,': '纵向键位；右手无名指从上到下就是o、l、句号键，负责1、2、3点，中指从上到下就是i、k、逗号键，负责4、5、6点。',
         '.,mlkj': '横向键位；右手无名指、中指、食指下方的三个按键（句号、逗号、M键）负责1、2、3点，他们所在的L、K、J键负责4、5、6点。',
         'lkjoiu': '横向键位；右手无名指、中指、食指所在的L、K、J负责1、2、3点，他们上方的三个键（O、I、U）负责4、5、6点。',
     },
-    numpad:{
-        // 小键盘
+    numpad: {
         '852741': '',
         '963852': '',
         '654987': '',
         '321654': '',
     }
-
 };
 
-function _codeToKbdPresetChar(code) {
+export function _codeToKbdPresetChar(code) {
     if (code.startsWith('Key')) return code.slice(3).toLowerCase();
     if (code === 'Comma') return ',';
     if (code === 'Period') return '.';
@@ -36,31 +32,15 @@ function _codeToKbdPresetChar(code) {
     return '';
 }
 
-function _codeToNumpadPresetChar(code) {
+export function _codeToNumpadPresetChar(code) {
     const m = code.match(/^Numpad(\d)$/);
     return m ? m[1] : '';
-}
-
-// group: 'keyboard' | 'numpad'
-export function getCurrentPresetPositionText(group = 'keyboard') {
-    const bindings = SETTINGS.keyBindings?.[group];
-    if (!bindings) return '';
-    const chars = [];
-    for (let d = 1; d <= 6; d++) {
-        chars.push(group === 'numpad'
-            ? _codeToNumpadPresetChar(bindings[d] || '')
-            : _codeToKbdPresetChar(bindings[d] || ''));
-    }
-    const name = chars.join('');
-    return PRESET_POSITION_TEXTS[group]?.[name] || '';
 }
 
 // ── 默认盲文点位键组（两组并列，始终同时生效）──
 export const DOT_KEY_DEFAULTS = {
     keyboard: {
-        '1': 'KeyF', '2': 'KeyD', '3': 'KeyS', '4': 'KeyJ', '5': 'KeyK', '6': 'KeyL', 
-        // '1': 'KeyI', '2': 'KeyK', '3': 'Comma', '4': 'KeyU', '5': 'KeyJ', '6': 'KeyM', 
-        // '1': 'KeyL', '2': 'KeyK', '3': 'KeyJ', '4': 'KeyO', '5': 'KeyI', '6': 'KeyU',
+        '1': 'KeyF', '2': 'KeyD', '3': 'KeyS', '4': 'KeyJ', '5': 'KeyK', '6': 'KeyL',
     },
     numpad: {
         '4': 'Numpad7', '1': 'Numpad8',
@@ -69,54 +49,24 @@ export const DOT_KEY_DEFAULTS = {
     },
 };
 
-// 运行时点位映射：按键标识 → 点位索引 (1-6)
-export const KEY_TO_DOT = {};
-
-// 反向映射：点位索引 → 按键标识（keyboard 组）
-export const DOT_TO_KEY = {};
-
-// 反向映射：点位索引 → 按键标识（numpad 组）
-export const DOT_TO_KEY_NUMPAD = {};
-
-// 当前活跃键组：'keyboard' | 'numpad'
-export let activeKeyGroup = 'keyboard';
-export function setActiveKeyGroupRaw(group) { activeKeyGroup = group; }
-
 export function _isNumpadKey(keyId) {
     return keyId.startsWith('Numpad');
 }
 
-// ── 动作键：按键标识 → 动作名 ──
-export const KEY_ACTIONS = {
-    'Numpad0': 'space',
-    'NumpadDivide': 'clearInput',
-    'NumpadMultiply': 'delete',
-    'Backspace': 'delete',
-    'Delete': 'deleteForward',
-    'Space': 'space',
-    'ArrowLeft': 'cursorLeft',
-    'ArrowRight': 'cursorRight',
-    'ArrowUp': 'cursorUp',
-    'ArrowDown': 'cursorDown',
-    'KeyG': 'pageUp',
-    'KeyH': 'pageDown',
-    'KeyY': 'clearInput',
-    'KeyC': 'clearOutput',
-    'KeyR': 'readAloud',
-};
-
+// ── 可配置动作定义 ──
 export const CONFIGURABLE_ACTIONS = {
     clearInput: { defaultKey: 'KeyY', label: '清空当前输入' },
     clearOutput: { defaultKey: 'KeyC', label: '清空输出区' },
 };
 
+// ── 组合键配置 ──
 export const KEY_COMBOS = [
     { ctrl: true, key: 'a', action: 'selectAll' },
     { ctrl: true, key: 's', action: 'save' },
     { ctrl: true, key: 'z', action: 'undo' },
     { ctrl: true, key: 'y', action: 'redo' },
     { ctrl: true, shift: true, key: 'Z', action: 'redo' },
-    { ctrl: true, shift: true, key: 'K', action: 'resetKeyBindings' },
+    { ctrl: true, shift: true, key: 'K', action: 'customBind' },
     { ctrl: true, key: 'k', action: 'speakBindings' },
     { ctrl: true, key: 'o', action: 'openFile' },
     { ctrl: true, shift: true, key: 'H', action: 'tutorial' },
@@ -125,8 +75,6 @@ export const KEY_COMBOS = [
     { key: 'q', action: 'toggleMapping' },
     { key: 'w', action: 'toggleKeyboard' },
     { key: 't', action: 'toggleTheme' },
-    { key: 'e', action: 'toggleSettings' },  // 暂时注释
-    // { key: 't', action: 'toggleHelp' },  // 暂时注释
 ];
 
 const _defaultActionKeyBindings = {};
@@ -156,142 +104,13 @@ export const DEFAULT_SETTINGS = {
     omitToneMapping: true,
 };
 
-export let SETTINGS = {};
-
-SETTINGS = {
-    ...DEFAULT_SETTINGS,
-    keyBindings: {
-        keyboard: { ...DEFAULT_SETTINGS.keyBindings.keyboard },
-        numpad: { ...DEFAULT_SETTINGS.keyBindings.numpad },
-    },
-    actionKeyBindings: { ..._defaultActionKeyBindings },
-};
-
-function _migrateKeyId(keyId) {
-    if (/^[0-9]$/.test(keyId)) return 'Numpad' + keyId;
-    if (/^[a-zA-Z]$/.test(keyId)) return 'Key' + keyId.toUpperCase();
-    if (keyId === ',') return 'Comma';
-    if (keyId === '.') return 'Period';
-    if (keyId === ';') return 'Semicolon';
-    if (keyId === "'") return 'Quote';
-    if (keyId === '/') return 'NumpadDivide';
-    if (keyId === '*') return 'NumpadMultiply';
-    if (keyId === ' ') return 'Space';
-    return keyId;
-}
-
-function _migrateKeyIds(kb) {
-    for (const dot of Object.keys(kb)) {
-        const old = kb[dot];
-        const migrated = _migrateKeyId(old);
-        if (migrated !== old) kb[dot] = migrated;
-    }
-}
-
-function _migrateActionKeyIds(akb) {
-    for (const action of Object.keys(akb)) {
-        const old = akb[action];
-        if (!old) continue;
-        const migrated = _migrateKeyId(old);
-        if (migrated !== old) akb[action] = migrated;
-    }
-}
-
-export function loadSettings() {
-    const saved = localStorage.getItem('braille-settings');
-    if (saved) {
-        try {
-            SETTINGS = JSON.parse(saved);
-        } catch (_) {
-            SETTINGS = {};
-        }
-    } else {
-        SETTINGS = {};
-    }
-
-    if (!SETTINGS.keyBindings) SETTINGS.keyBindings = {};
-
-    if (SETTINGS.keyBindings['1'] && typeof SETTINGS.keyBindings['1'] === 'string') {
-        const oldKb = SETTINGS.keyBindings;
-        _migrateKeyIds(oldKb);
-        let numpadCount = 0;
-        for (const key of Object.values(oldKb)) {
-            if (_isNumpadKey(key)) numpadCount++;
-        }
-        SETTINGS.keyBindings = {
-            keyboard: numpadCount > 3 ? { ...DOT_KEY_DEFAULTS.keyboard } : { ...oldKb },
-            numpad: numpadCount > 3 ? { ...oldKb } : { ...DOT_KEY_DEFAULTS.numpad },
-        };
-    } else {
-        if (!SETTINGS.keyBindings.keyboard) SETTINGS.keyBindings.keyboard = { ...DOT_KEY_DEFAULTS.keyboard };
-        if (!SETTINGS.keyBindings.numpad) SETTINGS.keyBindings.numpad = { ...DOT_KEY_DEFAULTS.numpad };
-        _migrateKeyIds(SETTINGS.keyBindings.keyboard);
-        _migrateKeyIds(SETTINGS.keyBindings.numpad);
-    }
-
-    if (!SETTINGS.actionKeyBindings) SETTINGS.actionKeyBindings = { ..._defaultActionKeyBindings };
-    _migrateActionKeyIds(SETTINGS.actionKeyBindings);
-
-    for (const [action, key] of Object.entries(_defaultActionKeyBindings)) {
-        if (SETTINGS.actionKeyBindings[action] === undefined) SETTINGS.actionKeyBindings[action] = key;
-    }
-    // 迁移：F 清除点位 → Y，D 删除盲文 → 移除
-    if (SETTINGS.actionKeyBindings.clearInput === 'KeyF') SETTINGS.actionKeyBindings.clearInput = 'KeyY';
-    if (SETTINGS.actionKeyBindings.delete === 'KeyD') delete SETTINGS.actionKeyBindings.delete;
-    for (const key of Object.keys(DEFAULT_SETTINGS)) {
-        if (SETTINGS[key] === undefined) SETTINGS[key] = DEFAULT_SETTINGS[key];
-    }
-
-    localStorage.removeItem('braille-alt-groups');
-}
-
-export function saveSettings() {
-    localStorage.setItem('braille-settings', JSON.stringify(SETTINGS));
-}
-
-const _NON_CONFIGURABLE_KEYS = new Set([
+// 非可配置动作键集合
+export const _NON_CONFIGURABLE_KEYS = new Set([
     'Numpad0', 'NumpadDivide', 'NumpadMultiply',
     'Backspace', 'Delete', 'Space',
     'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
     'KeyG', 'KeyH',
 ]);
-
-export function applyKeyBindings() {
-    const kb = SETTINGS.keyBindings;
-    for (const k of Object.keys(KEY_TO_DOT)) delete KEY_TO_DOT[k];
-    for (const k of Object.keys(DOT_TO_KEY)) delete DOT_TO_KEY[k];
-    for (const k of Object.keys(DOT_TO_KEY_NUMPAD)) delete DOT_TO_KEY_NUMPAD[k];
-    for (const group of ['keyboard', 'numpad']) {
-        for (const [dotStr, key] of Object.entries(kb[group] || {})) {
-            if (key && !(key in KEY_TO_DOT)) {
-                KEY_TO_DOT[key] = parseInt(dotStr, 10);
-            }
-        }
-    }
-    for (const [dotStr, key] of Object.entries(kb.keyboard || {})) {
-        if (key) DOT_TO_KEY[parseInt(dotStr, 10)] = key;
-    }
-    for (const [dotStr, key] of Object.entries(kb.numpad || {})) {
-        if (key) DOT_TO_KEY_NUMPAD[parseInt(dotStr, 10)] = key;
-    }
-}
-
-export function applyActionKeyBindings() {
-    const akb = SETTINGS.actionKeyBindings;
-    const configurableActions = new Set(Object.keys(CONFIGURABLE_ACTIONS));
-    for (const [key, act] of Object.entries(KEY_ACTIONS)) {
-        if (configurableActions.has(act) && !_NON_CONFIGURABLE_KEYS.has(key)) {
-            delete KEY_ACTIONS[key];
-        }
-    }
-    for (const [action, key] of Object.entries(akb)) {
-        if (key) KEY_ACTIONS[key] = action;
-    }
-}
-
-export function applyBrailleFontSize() {
-    document.documentElement.style.setProperty('--braille-font-size', SETTINGS.brailleFontSize + 'px');
-}
 
 // ── 按键标识 → UI 显示名（短符号，用于面板 badge / 绑定状态）──
 export function keyIdToLabel(keyId) {

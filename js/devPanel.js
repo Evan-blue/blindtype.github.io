@@ -8,7 +8,6 @@ import {
     chineseToBraille,
     mixedToBraille,
 } from './brailleInput.js';
-import { SETTINGS, saveSettings } from './config.js';
 import { ONEHOT_MAPPINGS } from './loadMappings.js';
 
 /**

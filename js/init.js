@@ -7,7 +7,15 @@ import {
     outputItems,
     cursor,
     pages,
-} from './brailleState.js';
+    SETTINGS,
+    saveSettings,
+    loadSettings,
+    applyKeyBindings,
+    applyActionKeyBindings,
+    applyBrailleFontSize,
+    KEY_TO_DOT,
+    KEY_ACTIONS,
+} from './state.js';
 import {
     dotInput,
     inputSpace,
@@ -22,6 +30,10 @@ import {
     normalInputConfirm,
     dotCells,
     previewBox,
+    updateKeyLabels,
+    renderToolbarKeyLabels,
+    setActiveKeyGroup,
+    clearOutput,
 } from './brailleInput.js';
 import {
     outputArea,
@@ -37,16 +49,8 @@ import {
     speakImmediate,
 } from './brailleSpeech.js';
 import {
-    SETTINGS,
     DEFAULT_SETTINGS,
     CONFIGURABLE_ACTIONS,
-    saveSettings,
-    loadSettings,
-    applyKeyBindings,
-    applyActionKeyBindings,
-    applyBrailleFontSize,
-    KEY_TO_DOT,
-    KEY_ACTIONS,
     KEY_COMBOS,
     keyIdToLabel,
 } from './config.js';
@@ -54,17 +58,11 @@ import {
 window._keyIdToLabel = keyIdToLabel;
 import {
     renderActionKeyBindingsUI,
-    renderToolbarKeyLabels,
-    updateKeyLabels,
-    initSettingsPanel,
     handleKeyBindingCapture,
     _startSeqBinding,
-    settingsPanel,
-    clearOutput,
-    setActiveKeyGroup,
-    toggleSettings,
-} from './panelSettings.js';
-import { helpPanel, renderHelpPanel, toggleHelp } from './panelHelp.js';
+    resetToDefaults,
+    initSettings,
+} from './settings.js';
 import { mappingPanel, renderMappingTable, toggleMapping } from './panelMapping.js';
 import {
     playTutorial,
@@ -158,12 +156,10 @@ const ACTION_HANDLERS = {
     save: () => handleSaveContent(),
     openFile: () => handleOpenFile(),
     tutorial: () => playTutorial(),
-    toggleSettings: () => toggleSettings(),
-    toggleHelp: () => toggleHelp(),
     toggleMapping: () => toggleMapping(),
+    customBind: () => _startSeqBinding(),
     toggleKeyboard: () => { if (_toggleKbOverlay) _toggleKbOverlay(); },
     toggleTheme: () => { if (_toggleTheme) _toggleTheme(); },
-    resetKeyBindings: () => _startSeqBinding(),
     speechRateUp: () => _handleSpeechRateChange(1),
     speechRateDown: () => _handleSpeechRateChange(-1),
     speakBindings: () => { if (window._kbSpeakAllBindings) window._kbSpeakAllBindings(); },
@@ -247,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // ── Panel initialization ──
             renderMappingTable();
-            initSettingsPanel();
+            initSettings();
 
             // ── Init submodule event handlers ──
             initBrailleOutput();
@@ -279,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // 面板焦点陷阱：Tab 在打开的面板内循环
                 if (e.key === 'Tab') {
-                    const openPanel = document.querySelector('.settings-slide.open, .help-slide.open, .mapping-slide.open, .welcome-mask.active');
+                    const openPanel = document.querySelector('.mapping-slide.open, .welcome-mask.active');
                     if (openPanel) {
                         const focusable = openPanel.querySelectorAll(
                             'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -310,8 +306,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.key === 'Escape') {
                     if (kbOverlay.classList.contains('open')) { closeKbOverlay(); e.preventDefault(); return; }
                     if (handleTutorialEscape()) { e.preventDefault(); return; }
-                    if (settingsPanel.slide.classList.contains('open')) { settingsPanel.close(); e.preventDefault(); return; }
-                    if (helpPanel.slide.classList.contains('open')) { helpPanel.close(); e.preventDefault(); return; }
                     if (mappingPanel.slide.classList.contains('open') && !mappingPanel.pinLit) { mappingPanel.close(); e.preventDefault(); return; }
                 }
 
@@ -581,7 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     numDeleteKey: 'NumpadMultiply',
                     clearInputKey: SETTINGS.actionKeyBindings.clearInput,
                     numClearInputKey: 'NumpadDivide',
-                    functionKeys: ['q', 'w', 'e', 'r', 't', 'c'],
+                    functionKeys: ['q', 'w', 'r', 't', 'c', 'g', 'h'],
                 };
             }
             function syncKeyboard() {

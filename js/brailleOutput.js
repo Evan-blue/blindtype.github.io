@@ -6,8 +6,8 @@ import {
     getRenderSuppressed,
     pages,
     computeItemMeta,
-} from './brailleState.js';
-import { SETTINGS } from './config.js';
+    SETTINGS,
+} from './state.js';
 import { speakText } from './brailleSpeech.js';
 
 export const outputArea = document.getElementById('outputArea');

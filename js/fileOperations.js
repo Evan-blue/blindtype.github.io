@@ -1,38 +1,9 @@
 // fileOperations.js - 文件打开与保存
 
-import { outputItems, setRenderSuppressed } from './brailleState.js';
-import { inputOneHot, mixedToBraille } from './brailleInput.js';
+import { outputItems, SETTINGS } from './state.js';
+import { mixedToBraille, _batchInputOneHot } from './brailleInput.js';
 import { speakText } from './brailleSpeech.js';
-import { SETTINGS } from './config.js';
-import { clearOutput } from './panelSettings.js';
-import { invalidatePageCache, renderOutput } from './brailleOutput.js';
-
-/**
- * @description: 分批插入oneHot编码，每批20个，批次间让出主线程避免UI卡死
- * @param {string[]} list oneHot编码数组
- * @param {number} [chunkSize=20] 每批数量
- * @return {Promise<void>}
- */
-export async function _batchInputOneHot(list, chunkSize = 20) {
-    setRenderSuppressed(true);
-    try {
-        for (let i = 0; i < list.length; i += chunkSize) {
-            const chunk = list.slice(i, i + chunkSize);
-            for (const oh of chunk) {
-                inputOneHot(oh);
-            }
-            setRenderSuppressed(false);
-            invalidatePageCache();
-            renderOutput();
-            await new Promise(r => setTimeout(r, 0));
-            setRenderSuppressed(true);
-        }
-    } finally {
-        setRenderSuppressed(false);
-    }
-    invalidatePageCache();
-    renderOutput();
-}
+import { clearOutput } from './brailleInput.js';
 
 /**
  * @description: 读取文件内容并渲染到输出区

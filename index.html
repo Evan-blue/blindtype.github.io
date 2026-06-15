@@ -23,7 +23,7 @@
 
         <!-- Input Panel -->
         <section class="input-panel" aria-label="输入区">
-            <div class="mode-toggle-bar" id="modeToggleBar">
+            <div class="mode-toggle-bar">
                 <button class="mode-toggle-tab active" data-mode="braille">盲文输入</button>
                 <button class="mode-toggle-tab" data-mode="normal">打字输入</button>
             </div>
@@ -124,85 +124,6 @@
 
 
 
-    <!-- Settings Slide Panel -->
-    <div class="settings-overlay" id="settingsOverlay"></div>
-    <div class="settings-slide" id="settingsSlide" role="dialog" aria-modal="true" aria-label="设置面板" inert>
-        <div class="settings-slide-header">
-            <h2>设置</h2>
-            <button class="settings-slide-close" id="settingsSlideClose" aria-label="关闭设置">&times;</button>
-        </div>
-        <form class="settings-body" id="settingsForm">
-            <button type="button" class="kb-reset-defaults" id="btnResetDefaults"
-                aria-label="恢复所有设置为默认值">恢复默认设置</button>
-            <div class="settings-section">
-                <h3>点位键位</h3>
-                <span class="kb-preset-label">单击按钮以设置对应键位</span>
-                <div class="kb-dual-bindings">
-                    <div class="kb-binding-group">
-                        <span class="kb-group-label">主键盘</span>
-                        <div class="key-bindings rtl" id="keyBindings"></div>
-                    </div>
-                    <div class="kb-binding-group">
-                        <span class="kb-group-label">小键盘</span>
-                        <div class="key-bindings rtl" id="keyBindingsAlt"></div>
-                    </div>
-                </div>
-                <button type="button" class="kb-reset-btn" id="kbResetBtn">自定义键位<kbd
-                        id="tkbd-resetKeyBindings"></kbd></button>
-                <div class="kb-presets" id="kbPresets">
-                    <span class="kb-preset-label">常用键位预设</span>
-                    <div class="kb-preset-row">
-                        <span class="kb-preset-cat">纵向</span>
-                        <button type="button" class="kb-preset" data-preset="kbd">ik,ujm</button>
-                        <button type="button" class="kb-preset" data-preset="kbd">ol.ik,</button>
-                        <button type="button" class="kb-preset" data-preset="numpad">852741</button>
-                        <button type="button" class="kb-preset" data-preset="numpad">963852</button>
-                    </div>
-                    <div class="kb-preset-row">
-                        <span class="kb-preset-cat">横向</span>
-                        <button type="button" class="kb-preset" data-preset="kbd">lkjoiu</button>
-                        <button type="button" class="kb-preset" data-preset="kbd">.,mlkj</button>
-                        <button type="button" class="kb-preset" data-preset="numpad">654987</button>
-                        <button type="button" class="kb-preset" data-preset="numpad">321654</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="settings-section">
-                <h3>其他设置</h3>
-
-                <div class="setting-row">
-                    <label for="debounceSpeech">输入实时语音播报</label>
-                    <input type="checkbox" id="debounceSpeech" checked>
-                </div>
-
-                <div class="setting-row">
-                    <label for="speechRate">语音播报速度</label>
-                    <div class="setting-range-wrap">
-                        <input type="range" id="speechRate" min="0.5" max="4" step="0.05" value="0.9">
-                        <span class="setting-val" id="speechRateVal">0.9</span>
-                    </div>
-                </div>
-
-                <div class="setting-row">
-                    <label for="brailleFontSize">盲文字体大小</label>
-                    <div class="setting-range-wrap">
-                        <input type="range" id="brailleFontSize" min="6" max="30" step="1" value="10">
-                        <span class="setting-val" id="brailleFontSizeVal">22</span>
-                    </div>
-                </div>
-
-                <div class="setting-row">
-                    <label for="maxUndoHistory">最大撤销历史</label>
-                    <div class="setting-range-wrap">
-                        <input type="range" id="maxUndoHistory" min="1" max="50" step="1" value="10">
-                        <span class="setting-val" id="maxUndoHistoryVal">10</span>
-                    </div>
-                </div>
-            </div>
-        </form>
-    </div>
-
     <!-- 首次访问欢迎遮罩（body层级，避免受 settings-slide 的 transform 影响 fixed 定位） -->
     <div class="welcome-mask" id="welcomeMask" role="dialog" aria-modal="true" aria-label="欢迎">
         <div class="welcome-mask-content">
@@ -216,75 +137,10 @@
         </div>
     </div>
 
-    <!-- 键位绑定遮罩（body层级，避免受 settings-slide 的 transform 影响 fixed 定位） -->
+    <!-- 键位绑定遮罩（body层级，避免受 slide 的 transform 影响 fixed 定位） -->
     <div class="bind-mask" id="bindMask">
         <div class="bind-mask-text" id="bindMaskText"></div>
         <div class="bind-mask-hint">按 Esc 取消</div>
-    </div>
-
-    <!-- Help Slide Panel -->
-    <div class="help-overlay" id="helpOverlay"></div>
-    <div class="help-slide" id="helpSlide" role="dialog" aria-modal="true" aria-label="键位帮助面板" inert>
-        <div class="help-slide-header">
-            <h2>键位帮助</h2>
-            <button class="help-slide-close" id="helpSlideClose" aria-label="关闭帮助">&times;</button>
-        </div>
-        <div class="help-body" id="helpBody">
-            <div class="help-section">
-                <button class="help-tutorial-btn" id="helpTutorialBtn"
-                    aria-label="播放新手教程，也可按 Control+Shift+H 触发">播放新手教程<kbd id="tkbd-helpTutorial"></kbd></button>
-            </div>
-            <div class="help-section">
-                <h3>操作</h3>
-                <div class="help-table">
-                    <div class="ht-row ht-header"><span class="ht-label"></span><span class="ht-keys">主键盘</span><span
-                            class="ht-keys">小键盘</span></div>
-                    <div class="ht-row">
-                        <span class="ht-label">
-                            <span class="ht-dot-grid">
-                                <span>1</span><span>4</span><span>2</span><span>5</span><span>3</span><span>6</span>
-                            </span>
-                        </span>
-                        <span class="ht-keys"><span class="ht-dot-grid"><kbd id="helpDot1L">?</kbd><kbd
-                                    id="helpDot4L">?</kbd><kbd id="helpDot2L">?</kbd><kbd id="helpDot5L">?</kbd><kbd
-                                    id="helpDot3L">?</kbd><kbd id="helpDot6L">?</kbd></span></span><span
-                            class="ht-keys"><span class="ht-dot-grid"><kbd id="helpDot1Np">?</kbd><kbd
-                                    id="helpDot4Np">?</kbd><kbd id="helpDot2Np">?</kbd><kbd id="helpDot5Np">?</kbd><kbd
-                                    id="helpDot3Np">?</kbd><kbd id="helpDot6Np">?</kbd></span></span>
-                    </div>
-                    <div class="ht-row"><span class="ht-label">输入 盲文/空方</span><span class="ht-keys"><kbd
-                                id="htKbdSpace"></kbd></span><span class="ht-keys"><kbd id="htNpSpace"></kbd></span>
-                    </div>
-                    <div class="ht-row"><span class="ht-label">清空当前点位</span><span class="ht-keys"><kbd
-                                id="htKbdClearInput"></kbd></span><span class="ht-keys"><kbd
-                                id="htNpClearInput"></kbd></span></div>
-                    <div class="ht-row"><span class="ht-label">删除光标前的盲文</span><span class="ht-keys"><kbd
-                                id="htKbdDelete"></kbd></span><span class="ht-keys"><kbd id="htNpDelete"></kbd></span>
-                    </div>
-                </div>
-                <div class="help-row"><kbd id="helpDeleteForward"></kbd> 删除光标后的盲文</div>
-                <div class="help-row"><kbd id="helpClearOutput"></kbd> 清空输出区</div>
-                <div class="help-row"><kbd id="helpReadAloud"></kbd> 朗读</div>
-                <div class="help-row"><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> 调整光标</div>
-                <div class="help-row"><kbd id="helpPageUp"></kbd> / <kbd id="helpPageDown"></kbd> 翻页</div>
-                <div class="help-row" id="helpRowShiftSelect"><kbd>Shift</kbd>+<kbd>←</kbd> /
-                    <kbd>Shift</kbd>+<kbd>→</kbd> 范围选择
-                </div>
-            </div>
-            <div class="help-section">
-                <h3>组合键</h3>
-                <div class="help-row"><kbd id="helpComboUndo"></kbd> 撤销</div>
-                <div class="help-row"><kbd id="helpComboRedo"></kbd> 重做</div>
-                <div class="help-row" id="helpRowSelectAll"><kbd id="helpComboSelectAll"></kbd> 全选</div>
-                <div class="help-row"><kbd id="helpComboSave"></kbd> 保存</div>
-                <div class="help-row"><kbd id="helpComboOpenFile"></kbd> 打开文件</div>
-                <div class="help-row"><kbd id="helpComboResetKeyBindings"></kbd> 自定义键位</div>
-                <div class="help-row"><kbd id="helpComboToggleMapping"></kbd> 打开/关闭 盲文对照表</div>
-                <div class="help-row"><kbd id="helpComboToggleHelp"></kbd> 打开/关闭 帮助</div>
-                <div class="help-row"><kbd id="helpComboToggleSettings"></kbd> 打开/关闭 设置</div>
-
-            </div>
-        </div>
     </div>
 
     <!-- Mapping Slide Panel -->
@@ -384,16 +240,16 @@
                     <input type="checkbox" id="multiSelect">
                 </label>
                 <label class="dev-toggle-row">
+                    <span>合并连续换行</span>
+                    <input type="checkbox" id="mergeNewlines" checked>
+                </label>
+                <label class="dev-toggle-row">
                     <span>强制欢迎询问</span>
                     <input type="checkbox" id="forceWelcome">
                 </label>
                 <label class="dev-toggle-row">
                     <span>主键盘数字1-6盲文点位</span>
                     <input type="checkbox" id="mainKeyboardDigits" checked>
-                </label>
-                <label class="dev-toggle-row">
-                    <span>合并连续换行</span>
-                    <input type="checkbox" id="mergeNewlines" checked>
                 </label>
                 <label class="dev-toggle-row">
                     <span>开启省写规则</span>
@@ -415,7 +271,7 @@
                     </div>
                 </div>
                 <div class="dev-sep"></div>
-                <div class="dev-radio-group" id="cursorJumpModeRow" role="radiogroup" aria-label="上下箭头移动依据">
+                <div class="dev-radio-group" role="radiogroup" aria-label="上下箭头移动依据">
                     <span class="dev-radio-label">↑↓箭头</span>
                     <label class="dev-radio"><input type="radio" name="cursorJumpMode" value="emptyCell">空方</label>
                     <label class="dev-radio"><input type="radio" name="cursorJumpMode" value="newline">换行</label>
@@ -641,6 +497,7 @@
                 <div class="kb-ref-row" data-hl="ctrl s"><kbd>Ctrl</kbd>+<kbd>S</kbd> 保存</div>
                 <div class="kb-ref-row" data-hl="ctrl o"><kbd>Ctrl</kbd>+<kbd>O</kbd> 打开文件</div>
                 <div class="kb-ref-row" data-hl="ctrl k"><kbd>Ctrl</kbd>+<kbd>K</kbd> 播报盲文键位</div>
+                <div class="kb-ref-row" data-hl="ctrl shift k"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd> 自定义键位</div>
                 <div class="kb-ref-row" data-hl="ctrl shift h"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>H</kbd> 新手教程</div>
             </div>
             <div class="kb-ref-col">
@@ -653,11 +510,10 @@
             </div>
             <div class="kb-ref-col">
                 <h3 class="kb-ref-title">功能键位</h3>
-                <div class="kb-ref-row" data-hl="q"><kbd>Q</kbd> 盲文对照表</div>
-                <div class="kb-ref-row" data-hl="w"><kbd>W</kbd> 键盘和设置</div>
-                <div class="kb-ref-row" data-hl="e"><kbd>E</kbd> 设置</div>
-                <div class="kb-ref-row" data-hl="r"><kbd>R</kbd> 朗读</div>
-                <div class="kb-ref-row" data-hl="t"><kbd>T</kbd> 切换主题</div>
+                <div class="kb-ref-row" data-hl="q"><kbd>Q</kbd> 盲文对照表面板</div>
+                <div class="kb-ref-row" data-hl="w"><kbd>W</kbd> 键盘和设置面板</div>
+                <div class="kb-ref-row" data-hl="r"><kbd>R</kbd> 朗读输出区内容</div>
+                <div class="kb-ref-row" data-hl="t"><kbd>T</kbd> 切换主题色</div>
                 <div class="kb-ref-row" data-hl="c"><kbd>C</kbd> 清空输出区</div>
             </div>
             <div class="kb-ref-col">
