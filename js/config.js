@@ -6,6 +6,55 @@
 //   - 字母键：KeyA, KeyB, ...
 //   - 其他：Backspace, Space, ArrowLeft, ...
 
+// ── 各预设对应的键位位置描述（用于教程第三节进一步描述手指位置）──
+// 主键盘以键名串为 key（如 fdsjkl），小键盘以 numpad+数字串 为 key（如 numpad852741）
+export const PRESET_POSITION_TEXTS = {
+    keyboard:{
+        // 主键盘
+        'fdsjkl': '国际标准键位；左手食指、中指和无名指负责1、2、3点，右手食指、中指和无名指负责4、5、6点。',
+        'ik,ujm': '纵向键位；右手中指从上到下就是i、k、逗号键，负责1、2、3点，食指从上到下就是u、j、m键，负责4、5、6点。',
+        'ol.ik,': '纵向键位；右手无名指从上到下就是o、l、句号键，负责1、2、3点，中指从上到下就是i、k、逗号键，负责4、5、6点。',
+        '.,mlkj': '横向键位；右手无名指、中指、食指下方的三个按键（句号、逗号、M键）负责1、2、3点，他们所在的L、K、J键负责4、5、6点。',
+        'lkjoiu': '横向键位；右手无名指、中指、食指所在的L、K、J负责1、2、3点，他们上方的三个键（O、I、U）负责4、5、6点。',
+    },
+    numpad:{
+        // 小键盘
+        '852741': '',
+        '963852': '',
+        '654987': '',
+        '321654': '',
+    }
+
+};
+
+function _codeToKbdPresetChar(code) {
+    if (code.startsWith('Key')) return code.slice(3).toLowerCase();
+    if (code === 'Comma') return ',';
+    if (code === 'Period') return '.';
+    if (code === 'Semicolon') return ';';
+    if (code === 'Quote') return '\'';
+    return '';
+}
+
+function _codeToNumpadPresetChar(code) {
+    const m = code.match(/^Numpad(\d)$/);
+    return m ? m[1] : '';
+}
+
+// group: 'keyboard' | 'numpad'
+export function getCurrentPresetPositionText(group = 'keyboard') {
+    const bindings = SETTINGS.keyBindings?.[group];
+    if (!bindings) return '';
+    const chars = [];
+    for (let d = 1; d <= 6; d++) {
+        chars.push(group === 'numpad'
+            ? _codeToNumpadPresetChar(bindings[d] || '')
+            : _codeToKbdPresetChar(bindings[d] || ''));
+    }
+    const name = chars.join('');
+    return PRESET_POSITION_TEXTS[group]?.[name] || '';
+}
+
 // ── 默认盲文点位键组（两组并列，始终同时生效）──
 export const DOT_KEY_DEFAULTS = {
     keyboard: {

@@ -7,7 +7,7 @@ import {
     stopSpeech,
     isMainSpeechActive,
 } from './brailleSpeech.js';
-import { SETTINGS, saveSettings } from './config.js';
+import { SETTINGS, saveSettings, getCurrentPresetPositionText } from './config.js';
 
 // ── 按键标识 → 中文名称 ──
 export function _keyLabel(code) {
@@ -34,6 +34,8 @@ function _buildSections() {
     const nkb = SETTINGS.keyBindings.numpad || {};
     const clearInput = _keyLabel(SETTINGS.actionKeyBindings.clearInput);
     const clearOutput = _keyLabel(SETTINGS.actionKeyBindings.clearOutput);
+    const posText = getCurrentPresetPositionText('keyboard');
+    const numpadPosText = getCurrentPresetPositionText('numpad');
 
     return [
         {
@@ -48,17 +50,19 @@ function _buildSections() {
                 + '如果有小键盘，也可以选择把右手放在小键盘，中指放在小键盘上有突出点位的按键（数字5）上。',
         },
         {
-            title: '2、盲文点位简介',
+            title: '2、盲文简介',
             text: '盲文由六个点位组成，分左右两列，每列三个点。左列从上到下是1、2、3号点，右列从上到下是4、5、6号点。在键盘上，你可以用六个键分别控制这六个点位的亮灭。',
         },
         {
             title: '3、盲文点位的按键',
             text: '本工具在主键盘和小键盘各有一套与盲文6个点对应的6个键位。'
                 + `当前你的主键盘点位键1到6分别为：`
-                + [1, 2, 3, 4, 5, 6].map(d => _keyLabel(kb[d])).join('、')
-                + `。小键盘点位键1到6分别对应数字键：`
-                + [1, 2, 3, 4, 5, 6].map(d => _keyLabel(nkb[d]).replace('小键盘', '')).join('、')
-                + '两套键位同时生效，你可以任选其一使用。每个按键控制一个点位的亮灭，按下时该点位在亮和灭之间切换。如果想更换键位，可以按 Control+Shift+K 自定义一套自己的键位，后面会详细介绍。',
+                + [1, 2, 3, 4, 5, 6].map(d => _keyLabel(kb[d])).join('、') + '。'
+                + (posText ? '。' + posText : '')
+                + `小键盘点位键1到6分别对应数字键：`
+                + [1, 2, 3, 4, 5, 6].map(d => _keyLabel(nkb[d]).replace('小键盘', '')).join('、') + '。'
+                + (numpadPosText ? '。' + numpadPosText : '')
+                + '两套键位同时生效，你可以任选其一使用。每个按键控制一个点位的亮灭，按下时该点位在亮和灭之间切换。如果想更换键位，可以按 Control+Shift+K 自定义一套自己的键位，后面会详细介绍。'
         },
         {
             title: '4、输入流程',
