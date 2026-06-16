@@ -22,8 +22,17 @@ h1 {
 header {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 12px;
     margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
 }
 
 .header-btn {

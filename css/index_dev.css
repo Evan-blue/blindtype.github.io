@@ -161,7 +161,8 @@
 .dev-panel.flip-h .dev-tabs { left: auto; right: 54px; }
 
 .dev-header:hover .dev-tabs,
-.dev-panel.pinned .dev-tabs {
+.dev-panel.pinned .dev-tabs,
+.dev-panel:not(.collapsed) .dev-tabs {
     opacity: 1;
 }
 
@@ -246,6 +247,27 @@
 
 .dev-btn:active {
     transform: scale(0.97);
+}
+
+.dev-article-list {
+    margin-top: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.dev-article-item {
+    padding: 4px 8px;
+    font-size: 12px;
+    color: var(--text-sub);
+    cursor: pointer;
+    border-radius: 3px;
+    transition: .15s;
+}
+
+.dev-article-item:hover {
+    background: var(--bg-kbd);
+    color: var(--text);
 }
 
 .dev-sep {

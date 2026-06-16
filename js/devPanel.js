@@ -7,8 +7,10 @@ import {
     englishToBraille,
     chineseToBraille,
     mixedToBraille,
+    _batchInputOneHot,
 } from './brailleInput.js';
 import { ONEHOT_MAPPINGS } from './loadMappings.js';
+import { SETTINGS } from './state.js';
 
 /**
  * @description: 模拟盲文键盘逐键输入（走 toggleDot → confirmInput 流程，可视化反馈）
@@ -91,15 +93,19 @@ export function initDevPanel() {
     // ── hover 展开，离开收起（pin 时保持展开）──
     const pinBtn = document.getElementById('devPin');
     let devPinned = false;
+    let _leaveTimer = null;
 
     panel.addEventListener('mouseenter', () => {
+        clearTimeout(_leaveTimer);
         panel.classList.remove('collapsed');
         updateDevFlip();
     });
 
     panel.addEventListener('mouseleave', () => {
         if (!devPinned) {
-            panel.classList.add('collapsed');
+            _leaveTimer = setTimeout(() => {
+                panel.classList.add('collapsed');
+            }, 400);
         }
     });
 
@@ -253,12 +259,59 @@ export function initDevPanel() {
         execMode(list);
     });
 
+    // ── 内置文章 ──
+    const btnArticle = document.getElementById('devBuiltinArticle');
+    const articleList = document.getElementById('devArticleList');
+    let _articlesLoaded = false;
+    let _articleTimer = null;
+
+    function _showArticleList() {
+        clearTimeout(_articleTimer);
+        if (!_articlesLoaded) {
+            articleList.textContent = '加载中...';
+            fetch('./data/builtin_articles.json')
+                .then(res => res.json())
+                .then(articles => {
+                    _articlesLoaded = true;
+                    articleList.innerHTML = '';
+                    articles.forEach((a, i) => {
+                        const item = document.createElement('div');
+                        item.className = 'dev-article-item';
+                        item.textContent = (i + 1) + '. ' + a.title + '（' + (a.author || '') + '）';
+                        item.addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            articleList.style.display = 'none';
+                            let text = (a.title || '') + '\n' + a.text;
+                            text = text.replace(/\r\n/g, '\n');
+                            if (SETTINGS.mergeNewlines) text = text.replace(/(\s*\n)+\s*/g, '\n');
+                            text = text.replace(/\n/g, '  ');
+                            await _batchInputOneHot(mixedToBraille(text));
+                        });
+                        articleList.appendChild(item);
+                    });
+                })
+                .catch(() => { articleList.textContent = '加载失败'; });
+        }
+        articleList.style.display = '';
+    }
+
+    function _hideArticleList() {
+        _articleTimer = setTimeout(() => {
+            articleList.style.display = 'none';
+        }, 300);
+    }
+
+    btnArticle.addEventListener('mouseenter', _showArticleList);
+    articleList.addEventListener('mouseenter', () => clearTimeout(_articleTimer));
+    articleList.addEventListener('mouseleave', _hideArticleList);
+    btnArticle.addEventListener('mouseleave', _hideArticleList);
+
     // ── Tab 切换：高级设置 / 模拟输入 ──
     const devTabs = panel.querySelectorAll('.dev-tab');
     const devSections = panel.querySelectorAll('.dev-section');
     devTabs.forEach(tab => {
         tab.addEventListener('mousedown', e => e.stopPropagation());
-        tab.addEventListener('click', () => {
+        tab.addEventListener('mouseenter', () => {
             const targetId = tab.dataset.target;
             devTabs.forEach(t => t.classList.remove('active'));
             tab.classList.add('active');

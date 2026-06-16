@@ -20,9 +20,8 @@ let _readingMode = true;
 function _mirrorOneHot(oneHot) {
     const mirrorSegment = (seg) => {
         const arr = seg.split('');
-        [arr[0], arr[3]] = [arr[3], arr[0]];
-        [arr[1], arr[4]] = [arr[4], arr[1]];
-        [arr[2], arr[5]] = [arr[5], arr[2]];
+        [arr[0], arr[1], arr[2], arr[3], arr[4], arr[5]]
+            = [arr[3], arr[4], arr[5], arr[0], arr[1], arr[2]];
         return arr.join('');
     };
     if (oneHot.includes('+')) {

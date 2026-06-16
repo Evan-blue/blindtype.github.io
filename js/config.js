@@ -102,6 +102,7 @@ export const DEFAULT_SETTINGS = {
     mainKeyboardDigits: true,
     mergeNewlines: true,
     omitToneMapping: true,
+    showVisualizer: true,
 };
 
 // 非可配置动作键集合

@@ -1,6 +1,7 @@
 // loadMappings.js - 各类映射数据的定义与集中加载
 
-// ── 正向映射（oneHot → 盲文条目）──
+// ── 数据容器 ──
+
 export const ONEHOT_MAPPINGS = {
     pinyin: {},
     punc: {},
@@ -9,7 +10,6 @@ export const ONEHOT_MAPPINGS = {
     categories: [],
 };
 
-// ── 反向映射（字符/数字/字母/拼音 → oneHot，惰性构建）──
 export const REVERSE_ONEHOT_MAPPINGS = {
     charToHot: null,
     digitToHot: null,
@@ -17,25 +17,23 @@ export const REVERSE_ONEHOT_MAPPINGS = {
     solo: null,
 };
 
-// ── 拼音映射与规则数据 ──
 export const PINYIN_MAPPINGS = {
-    toChar: null,  // 拼音音节 → 汉字(播报用)
-    soloFinals: null,  // 自成音节的韵母和声母 → 标准拼音（如 "yi" → "i"）
-    omitRule: null,  // 标调省写规则
-}
+    toChar: null,      // 拼音音节 → 汉字（播报用）
+    soloFinals: null,  // 自成音节的韵母/声母 → 标准拼音（如 "yi" → "i"）
+    omitRule: null,    // 标调省写规则
+};
 
-// ── 拼音组件集合（从盲文映射分类中提取）──
 export let _validInitials = null;
 export let _validFinals = null;
 
 // ── 特殊符号常量 ──
+
 export const NUMBER_SIGN = '001111';
 export const CAPITAL_SIGN = '000001';
 export const LOWERCASE_SIGN = '000011';
 export const _TONE_NUM_TO_SYM = { '1': '¯', '2': '´', '3': 'ˇ', '4': '`' };
 
-
-// ── 反向映射构建函数 ──
+// ── 惰性构建 ──
 
 export function _buildValidComponents(categories) {
     if (!categories || !categories.length) return;
@@ -54,7 +52,7 @@ export function _buildValidComponents(categories) {
     }
 }
 
-export function ensureReverseSoloMap() {
+function ensureReverseSoloMap() {
     if (REVERSE_ONEHOT_MAPPINGS.solo || !PINYIN_MAPPINGS.soloFinals) return;
     REVERSE_ONEHOT_MAPPINGS.solo = {};
     const allSolo = {
@@ -94,29 +92,33 @@ export function _ensureLetterToOneHot() {
     REVERSE_ONEHOT_MAPPINGS.letterToHot = {};
     for (const [oh, entry] of Object.entries(ONEHOT_MAPPINGS.letter)) {
         if (entry.char && entry.char.length === 2) {
-            REVERSE_ONEHOT_MAPPINGS.letterToHot[entry.char[1]] = oh; // 小写字母 → oneHot
+            REVERSE_ONEHOT_MAPPINGS.letterToHot[entry.char[1]] = oh;
         }
     }
 }
 
-// ── 数据加载函数 ──
+// ── 数据加载 ──
 
-export async function loadSoloPinyinMapping(jsonPath) {
+export function _lookupBraille(oneHot) {
+    return ONEHOT_MAPPINGS.pinyin[oneHot] || ONEHOT_MAPPINGS.punc[oneHot];
+}
+
+async function loadSoloPinyinMapping(jsonPath) {
     const resp = await fetch(jsonPath);
     PINYIN_MAPPINGS.soloFinals = await resp.json();
 }
 
-export async function loadToneOmitRule(jsonPath) {
+async function loadToneOmitRule(jsonPath) {
     const resp = await fetch(jsonPath);
     PINYIN_MAPPINGS.omitRule = await resp.json();
 }
 
-export async function loadPinyinCharMapping(jsonPath) {
+async function loadPinyinCharMapping(jsonPath) {
     const resp = await fetch(jsonPath);
     PINYIN_MAPPINGS.toChar = await resp.json();
 }
 
-export async function loadBrailleCharMapping(jsonPath) {
+async function loadBrailleCharMapping(jsonPath) {
     const resp = await fetch(jsonPath);
     const data = await resp.json();
     ONEHOT_MAPPINGS.categories = data.categories;
@@ -126,7 +128,7 @@ export async function loadBrailleCharMapping(jsonPath) {
             const obj = { char: e.char, label: e.label, audio: e.audio || '' };
             if (cat.name === '数字') {
                 ONEHOT_MAPPINGS.number[oneHot] = obj;
-                return; // 数号不加入拼音映射，避免覆盖韵母eng
+                return; // 数号不加入拼音映射，避免覆盖韵母 eng
             }
             if (cat.name === '英文字母') {
                 ONEHOT_MAPPINGS.letter[oneHot] = obj;
@@ -140,10 +142,6 @@ export async function loadBrailleCharMapping(jsonPath) {
         });
     });
     _buildValidComponents(ONEHOT_MAPPINGS.categories);
-}
-
-export function _lookupBraille(oneHot) {
-    return ONEHOT_MAPPINGS.pinyin[oneHot] || ONEHOT_MAPPINGS.punc[oneHot];
 }
 
 export async function loadAllMappings() {

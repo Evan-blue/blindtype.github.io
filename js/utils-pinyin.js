@@ -46,12 +46,10 @@ export function chineseToSegedPinyin_my(text, opts = {}) {
     // split Chinese text to segments
     const segmentedChineseArr = splitText(text, 'zh-CN', 'word');
     const result = segmentedChineseArr.map((chars) => {
-        const res = []
-        Array.from(chars).forEach((char) => {
-            const pinyin = chineseToPinyin(char, { type: 'string', separator: '', ...opts});
-            res.push({ origin: char, result: pinyin })
-        })
-        return res
+        return Array.from(chars).map((char) => ({
+            origin: char,
+            result: chineseToPinyin(char, { type: 'string', separator: '', ...opts })
+        }))
     })
     return result
 }

@@ -48,6 +48,7 @@ import {
     readAloud,
     speakImmediate,
 } from './brailleSpeech.js';
+import { initAudioVisualizer, visualizerStart, visualizerStop } from './audioVisualizer.js';
 import {
     DEFAULT_SETTINGS,
     CONFIGURABLE_ACTIONS,
@@ -609,5 +610,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // ── Dev panel ──
             initDevPanel();
+
+            // ── Audio visualizer ──
+            if (SETTINGS.showVisualizer !== false) {
+                initAudioVisualizer();
+            } else {
+                const indicator = document.getElementById('speechIndicator');
+                if (indicator) indicator.style.display = 'none';
+            }
+            window.addEventListener('speech-visualizer-start', visualizerStart);
+            window.addEventListener('speech-visualizer-stop', visualizerStop);
         });
 });

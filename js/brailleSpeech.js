@@ -77,10 +77,19 @@ class SpeechQueue {
 }
 
 const queues = {
-    main: new SpeechQueue('main'),  // 主通道
+    main: new SpeechQueue('main', false),  // 主通道
     tutorial: new SpeechQueue('tutorial', true)  // 教程通道
 }
 
+
+// ── 声波可视化事件 ──
+function _notifyVisualizerStart() {
+    window.dispatchEvent(new CustomEvent('speech-visualizer-start'));
+}
+function _notifyVisualizerStop() {
+    if (queues.main.isActive() || queues.tutorial.isActive()) return;
+    window.dispatchEvent(new CustomEvent('speech-visualizer-stop'));
+}
 
 function _setReadAloudLabel(text) {
     const btn = document.getElementById('btnReadAloud');
@@ -125,12 +134,14 @@ function _playNext(queueName = 'main') {
         };
     }
 
+    u.onstart = () => { if (gen === q.gen) _notifyVisualizerStart(); };
     u.onend = () => {
         if (gen !== q.gen) return;
         q.isPlaying = false;
         SpeechQueue._activeChannel = null;
         if (queueName === 'tutorial') q.state.currentItem = null;
         if (item.onend) item.onend();
+        _notifyVisualizerStop();
         _playNext(queueName);
     };
     u.onerror = () => {
@@ -138,6 +149,7 @@ function _playNext(queueName = 'main') {
         q.isPlaying = false;
         SpeechQueue._activeChannel = null;
         if (queueName === 'tutorial') q.state.currentItem = null;
+        _notifyVisualizerStop();
         _playNext(queueName);
     };
     SpeechQueue._activeChannel = queueName;
@@ -188,13 +200,15 @@ export function speakImmediate(text, rate) {
     const u = new SpeechSynthesisUtterance(',' + text);
     u.lang = 'zh-CN';
     u.rate = rate;
+    u.onstart = () => _notifyVisualizerStart();
     u.onend = () => {
         SpeechQueue._activeChannel = null;
-        // 主通道空闲后尝试恢复教程
+        _notifyVisualizerStop();
         queues.tutorial.resumeIfNeeded();
     };
     u.onerror = () => {
         SpeechQueue._activeChannel = null;
+        _notifyVisualizerStop();
         queues.tutorial.resumeIfNeeded();
     };
     SpeechQueue._activeChannel = 'main';
@@ -214,6 +228,7 @@ export function stopSpeech() {
         if (SpeechQueue._activeChannel === 'main' || !SpeechQueue._activeChannel) {
             window.speechSynthesis.cancel();
         }
+        _notifyVisualizerStop();
         _playNext();
     }
 }
@@ -259,6 +274,7 @@ export function cancelAllSpeech() {
     }
     SpeechQueue._activeChannel = null;
     window.speechSynthesis.cancel();
+    _notifyVisualizerStop();
 }
 
 /**

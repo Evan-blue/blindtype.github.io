@@ -322,6 +322,17 @@ export function initSettings() {
             saveSettings();
         });
     }
+
+    const showVisualizerCheck = document.getElementById('showVisualizer');
+    if (showVisualizerCheck) {
+        showVisualizerCheck.checked = SETTINGS.showVisualizer !== false;
+        showVisualizerCheck.addEventListener('change', () => {
+            SETTINGS.showVisualizer = showVisualizerCheck.checked;
+            saveSettings();
+            const indicator = document.getElementById('speechIndicator');
+            if (indicator) indicator.style.display = SETTINGS.showVisualizer ? '' : 'none';
+        });
+    }
 }
 
 // 绑定遮罩点击取消

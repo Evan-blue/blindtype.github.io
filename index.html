@@ -14,9 +14,11 @@
 
     <header>
         <h1>盲文输入工具</h1>
-        <button class="header-btn" id="btnTutorial" title="新手教程" aria-label="新手教程">新手教程<kbd
-                id="tkbd-tutorial">?</kbd></button>
-        <button class="theme-toggle" id="themeToggle" title="切换主题" aria-label="切换主题">🌙</button>
+        <span class="header-actions">
+            <button class="header-btn" id="btnTutorial" title="新手教程" aria-label="新手教程">新手教程<kbd
+                    id="tkbd-tutorial">?</kbd></button>
+            <button class="theme-toggle" id="themeToggle" title="切换主题" aria-label="切换主题">🌙</button>
+        </span>
     </header>
 
     <main class="main-area">
@@ -65,8 +67,8 @@
                 <button class="help-btn" id="btnMapping" title="盲文对照表" aria-label="盲文对照表" aria-expanded="false">⠿<kbd
                         id="tkbd-toggleMapping"></kbd></button>
                 <span class="help-right-group">
-                    <button class="help-btn kb-toggle-btn" id="btnKbToggle" title="键盘和设置" aria-label="键盘和设置" aria-expanded="false">⚙<kbd
-                            id="tkbd-kbToggle"></kbd></button>
+                    <button class="help-btn kb-toggle-btn" id="btnKbToggle" title="键盘和设置" aria-label="键盘和设置"
+                        aria-expanded="false">⚙<kbd id="tkbd-kbToggle"></kbd></button>
                 </span>
             </div>
             <!-- Action buttons -->
@@ -87,6 +89,10 @@
         <!-- Output Area -->
         <section class="output-panel" aria-label="输出区">
             <div class="output-header">
+                <span class="speech-indicator" id="speechIndicator">
+                    <span class="speech-dot" id="speechDot" aria-hidden="true"></span>
+                    <span class="speech-label" id="speechLabel" aria-hidden="true">播报中...</span>
+                </span>
                 <div class="toolbar">
                     <button class="toolbar-btn" id="btnReadAloud" title="朗读内容">朗读<kbd
                             id="tkbd-readAloud"></kbd></button>
@@ -220,32 +226,36 @@
         <div class="dev-sections-wrap">
             <div class="dev-section dev-section-settings" id="devSectionSettings">
                 <label class="dev-toggle-row">
-                    <span>允许播报</span>
-                    <input type="checkbox" id="allowSpeech" checked>
-                </label>
-                <label class="dev-toggle-row">
-                    <span>播报空方</span>
-                    <input type="checkbox" id="announceEmptyCell">
-                </label>
-                <label class="dev-toggle-row">
-                    <span>插入空方进行分词</span>
-                    <input type="checkbox" id="wordSegmentation">
-                </label>
-                <label class="dev-toggle-row">
-                    <span>空方补全</span>
-                    <input type="checkbox" id="punctAutoSpacing" checked>
+                    <span>强制欢迎询问</span>
+                    <input type="checkbox" id="forceWelcome">
                 </label>
                 <label class="dev-toggle-row">
                     <span>启用多选</span>
                     <input type="checkbox" id="multiSelect">
                 </label>
                 <label class="dev-toggle-row">
-                    <span>合并连续换行</span>
-                    <input type="checkbox" id="mergeNewlines" checked>
+                    <span>播报空方</span>
+                    <input type="checkbox" id="announceEmptyCell">
                 </label>
                 <label class="dev-toggle-row">
-                    <span>强制欢迎询问</span>
-                    <input type="checkbox" id="forceWelcome">
+                    <span>允许播报</span>
+                    <input type="checkbox" id="allowSpeech" checked>
+                </label>
+                <label class="dev-toggle-row">
+                    <span>播报状态可视化</span>
+                    <input type="checkbox" id="showVisualizer" checked>
+                </label>
+                <label class="dev-toggle-row">
+                    <span>插入空方进行分词</span>
+                    <input type="checkbox" id="wordSegmentation">
+                </label>
+                <label class="dev-toggle-row">
+                    <span>空方自动补全</span>
+                    <input type="checkbox" id="punctAutoSpacing" checked>
+                </label>
+                <label class="dev-toggle-row">
+                    <span>合并连续换行</span>
+                    <input type="checkbox" id="mergeNewlines" checked>
                 </label>
                 <label class="dev-toggle-row">
                     <span>主键盘数字1-6盲文点位</span>
@@ -295,6 +305,8 @@
                 <button class="dev-btn" id="devNumber">123.456</button>
                 <button class="dev-btn" id="devEnglish">Can you type without looking?</button>
                 <button class="dev-btn" id="devRandom">随机若干字符</button>
+                <button class="dev-btn" id="devBuiltinArticle">内置文章</button>
+                <div class="dev-article-list" id="devArticleList" style="display:none;"></div>
 
             </div>
         </div>
@@ -316,239 +328,255 @@
         </div>
         <div class="kb-iframe-body">
 
-        <!-- 预设切换 -->
-        <div class="controls" id="kbControls">
-            <div class="kb-presets">
-                <div class="controls-row">
-                    <span class="controls-label">Perkins 标准</span>
-                    <button data-preset="fdsjkl">FDS JKL</button>
-                </div>
-                <div class="controls-row">
-                    <span class="controls-label">主键盘 Keyboard</span>
-                    <button data-preset="ik,ujm">IK, UJM</button>
-                    <button data-preset="ol.ik,">OL. IK,</button>
-                    <button data-preset="lkjoiu">LKJ OIU</button>
-                    <button data-preset=".,mlkj">., MLKJ</button>
-                </div>
-                <div class="controls-row">
-                    <span class="controls-label">小键盘 Numpad</span>
-                    <button data-preset="numpad852741">852741</button>
-                    <button data-preset="numpad963852">963852</button>
-                    <button data-preset="numpad654987">654987</button>
-                    <button data-preset="numpad321654">321654</button>
-                </div>
-            </div>
-            <div class="controls-right-group">
-                <div class="controls-binding-status" id="kbBindingStatus">
-                    <span class="binding-status-label" id="kbKbdLabel">主键盘</span>
-                    <span class="binding-status-rect" id="kbKbdRect" title="当前主键盘键位"></span>
-                    <span class="binding-status-label" id="kbNumpadLabel">小键盘</span>
-                    <span class="binding-status-rect" id="kbNumpadRect" title="当前小键盘键位"></span>
-                </div>
-                <span class="controls-actions">
-                    <button class="bind-btn" id="btnSpeakBindings" title="播报当前两套盲文键位">播报键位</button>
-                    <button class="bind-btn" id="btnCustomBind" title="打开自定义键位设置">自定义键位 <kbd id="tkbd-kbResetKeyBindings"></kbd></button>
-                    <button class="reset-btn" id="btnKbResetDefaults" title="恢复默认键位">恢复默认设置</button>
-                </span>
-            </div>
-        </div>
-
-        <!-- 键盘区域 -->
-        <div class="kb-section" id="kbSection">
-
-        <!-- 主键盘 -->
-        <div class="keyboard" id="kbKeyboard">
-
-            <!-- Row 1: 数字/功能 -->
-            <div class="kb-row">
-                <span class="kb-key"><span class="primary">`</span><span class="secondary">~</span></span>
-                <span class="kb-key"><span class="primary">1</span><span class="secondary">!</span></span>
-                <span class="kb-key"><span class="primary">2</span><span class="secondary">@</span></span>
-                <span class="kb-key"><span class="primary">3</span><span class="secondary">#</span></span>
-                <span class="kb-key"><span class="primary">4</span><span class="secondary">$</span></span>
-                <span class="kb-key"><span class="primary">5</span><span class="secondary">%</span></span>
-                <span class="kb-key"><span class="primary">6</span><span class="secondary">^</span></span>
-                <span class="kb-key"><span class="primary">7</span><span class="secondary">&amp;</span></span>
-                <span class="kb-key"><span class="primary">8</span><span class="secondary">*</span></span>
-                <span class="kb-key"><span class="primary">9</span><span class="secondary">(</span></span>
-                <span class="kb-key"><span class="primary">0</span><span class="secondary">)</span></span>
-                <span class="kb-key"><span class="primary">-</span><span class="secondary">_</span></span>
-                <span class="kb-key"><span class="primary">=</span><span class="secondary">+</span></span>
-                <span class="kb-key w2" data-key="backspace"><span class="primary primary-desk">Backspace</span><span class="primary primary-mobi">⌫</span></span>
-            </div>
-
-            <!-- Row 2: QWERTY -->
-            <div class="kb-row">
-                <span class="kb-key w15"><span class="primary">Tab</span></span>
-                <span class="kb-key" data-key="q"><span class="primary">Q</span></span>
-                <span class="kb-key" data-key="w"><span class="primary">W</span></span>
-                <span class="kb-key" data-key="e"><span class="primary">E</span></span>
-                <span class="kb-key" data-key="r"><span class="primary">R</span></span>
-                <span class="kb-key" data-key="t"><span class="primary">T</span></span>
-                <span class="kb-key" data-key="y"><span class="primary">Y</span></span>
-                <span class="kb-key" data-key="u"><span class="primary">U</span></span>
-                <span class="kb-key" data-key="i"><span class="primary">I</span></span>
-                <span class="kb-key" data-key="o"><span class="primary">O</span></span>
-                <span class="kb-key" data-key="p"><span class="primary">P</span></span>
-                <span class="kb-key"><span class="primary">[</span><span class="secondary">{</span></span>
-                <span class="kb-key"><span class="primary">]</span><span class="secondary">}</span></span>
-                <span class="kb-key w175"><span class="primary">\</span><span class="secondary">|</span></span>
-            </div>
-
-            <!-- Row 3: Home row -->
-            <div class="kb-row">
-                <span class="kb-key w225"><span class="primary">Caps</span></span>
-                <span class="kb-key" data-key="a"><span class="primary">A</span></span>
-                <span class="kb-key" data-key="s"><span class="primary">S</span></span>
-                <span class="kb-key" data-key="d"><span class="primary">D</span></span>
-                <span class="kb-key" data-key="f" data-bump><span class="primary">F</span></span>
-                <span class="kb-key" data-key="g"><span class="primary">G</span></span>
-                <span class="kb-key" data-key="h"><span class="primary">H</span></span>
-                <span class="kb-key" data-key="j" data-bump><span class="primary">J</span></span>
-                <span class="kb-key" data-key="k"><span class="primary">K</span></span>
-                <span class="kb-key" data-key="l"><span class="primary">L</span></span>
-                <span class="kb-key" data-key=";"><span class="primary">;</span><span class="secondary">:</span></span>
-                <span class="kb-key"><span class="primary">'</span><span class="secondary">"</span></span>
-                <span class="kb-key w275"><span class="primary">Enter</span></span>
-            </div>
-
-            <!-- Row 4: Bottom row -->
-            <div class="kb-row">
-                <span class="kb-key w275" data-key="shift"><span class="primary">Shift</span></span>
-                <span class="kb-key" data-key="z"><span class="primary">Z</span></span>
-                <span class="kb-key" data-key="x"><span class="primary">X</span></span>
-                <span class="kb-key" data-key="c"><span class="primary">C</span></span>
-                <span class="kb-key" data-key="v"><span class="primary">V</span></span>
-                <span class="kb-key" data-key="b"><span class="primary">B</span></span>
-                <span class="kb-key" data-key="n"><span class="primary">N</span></span>
-                <span class="kb-key" data-key="m"><span class="primary">M</span></span>
-                <span class="kb-key" data-key=","><span class="primary">,</span><span class="secondary">&lt;</span></span>
-                <span class="kb-key" data-key="."><span class="primary">.</span><span class="secondary">&gt;</span></span>
-                <span class="kb-key" data-key="/"><span class="primary">/</span><span class="secondary">?</span></span>
-                <span class="kb-key w275" data-key="shift"><span class="primary">Shift</span></span>
-            </div>
-
-            <!-- Row 5: Space row -->
-            <div class="kb-row">
-                <span class="kb-key w15" data-key="ctrl"><span class="primary">Ctrl</span></span>
-                <span class="kb-key w15"><span class="primary">Win</span></span>
-                <span class="kb-key w15"><span class="primary">Alt</span></span>
-                <span class="kb-key w625" data-key="space"><span class="primary">Space</span></span>
-                <span class="kb-key w15"><span class="primary">Alt</span></span>
-                <span class="kb-key w15"><span class="primary">Win</span></span>
-                <span class="kb-key w15" data-key="ctrl"><span class="primary">Ctrl</span></span>
-            </div>
-        </div>
-
-        <!-- 方向键区 + 小键盘 -->
-        <div class="kb-right">
-            <div class="nav-cluster">
-                <span class="kb-key" data-key="delete"><span class="primary">Del</span></span>
-                <span class="kb-key" data-key="arrowup"><span class="primary">↑</span></span>
-                <span class="kb-key" data-key="arrowdown"><span class="primary">↓</span></span>
-                <span class="kb-key" data-key="arrowleft"><span class="primary">←</span></span>
-                <span class="kb-key" data-key="arrowright"><span class="primary">→</span></span>
-            </div>
-
-            <!-- 小键盘 -->
-            <div class="numpad" id="kbNumpad">
-            <span class="kb-key" data-key="numlock"><span class="primary">Num</span></span>
-            <span class="kb-key" data-key="num/"><span class="primary">/</span></span>
-            <span class="kb-key" data-key="num*"><span class="primary">*</span></span>
-            <span class="kb-key" data-key="num-"><span class="primary">−</span></span>
-
-            <span class="kb-key" data-key="num7"><span class="primary">7</span></span>
-            <span class="kb-key" data-key="num8"><span class="primary">8</span></span>
-            <span class="kb-key" data-key="num9"><span class="primary">9</span></span>
-            <span class="kb-key span-row" data-key="num+"><span class="primary">+</span></span>
-
-            <span class="kb-key" data-key="num4"><span class="primary">4</span></span>
-            <span class="kb-key" data-key="num5" data-bump><span class="primary">5</span></span>
-            <span class="kb-key" data-key="num6"><span class="primary">6</span></span>
-
-            <span class="kb-key" data-key="num1"><span class="primary">1</span></span>
-            <span class="kb-key" data-key="num2"><span class="primary">2</span></span>
-            <span class="kb-key" data-key="num3"><span class="primary">3</span></span>
-            <span class="kb-key span-row" data-key="numenter"><span class="primary">Enter</span></span>
-
-            <span class="kb-key span-col" data-key="num0"><span class="primary">0</span></span>
-            <span class="kb-key" data-key="num."><span class="primary">.</span></span>
-        </div>
-        </div><!-- /kb-right -->
-
-        </div><!-- /kb-section -->
-
-        <!-- 图例 -->
-        <div class="legend" id="kbLegend" style="display:none;">
-            <span class="legend-item"><span class="legend-swatch" style="background:#0f26a9"></span> 功能键</span>
-            <span class="legend-item"><span class="legend-swatch" style="background:#7f5af0"></span> 盲文点位 1-6</span>
-            <span class="legend-item"><span class="legend-swatch" style="background:#4caf50"></span> 确认(<kbd>空格</kbd> / <kbd>0</kbd>)</span>
-            <span class="legend-item"><span class="legend-swatch" style="background:#f0a020"></span> 清空当前输入(<kbd>Y</kbd> / <kbd>/</kbd>)</span>
-            <span class="legend-item"><span class="legend-swatch" style="background:#e91e63"></span> 删除(<kbd>Backspace</kbd> / <kbd>*</kbd>)</span>
-        </div>
-
-        <!-- 参考面板 -->
-        <div class="kb-ref">
-            <div class="kb-ref-col">
-                <h3 class="kb-ref-title">组合键</h3>
-                <div class="kb-ref-row" data-hl="ctrl z"><kbd>Ctrl</kbd>+<kbd>Z</kbd> 撤销</div>
-                <div class="kb-ref-row"><span data-hl="ctrl y"><kbd>Ctrl</kbd>+<kbd>Y</kbd></span> / <span data-hl="ctrl shift z"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></span> 重做</div>
-                <div class="kb-ref-row" data-hl="ctrl a"><kbd>Ctrl</kbd>+<kbd>A</kbd> 全选</div>
-                <div class="kb-ref-row" data-hl="ctrl s"><kbd>Ctrl</kbd>+<kbd>S</kbd> 保存</div>
-                <div class="kb-ref-row" data-hl="ctrl o"><kbd>Ctrl</kbd>+<kbd>O</kbd> 打开文件</div>
-                <div class="kb-ref-row" data-hl="ctrl k"><kbd>Ctrl</kbd>+<kbd>K</kbd> 播报盲文键位</div>
-                <div class="kb-ref-row" data-hl="ctrl shift k"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd> 自定义键位</div>
-                <div class="kb-ref-row" data-hl="ctrl shift h"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>H</kbd> 新手教程</div>
-            </div>
-            <div class="kb-ref-col">
-                <h3 class="kb-ref-title">操作</h3>
-                <div class="kb-ref-row" data-hl="delete"><kbd>Delete</kbd> 向后删除</div>
-                <div class="kb-ref-row" data-hl="arrowleft arrowright arrowup arrowdown"><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> 移动光标</div>
-                <div class="kb-ref-row" data-hl="shift arrowleft arrowright"><kbd>Shift</kbd>+<kbd>←</kbd><kbd>→</kbd> 范围选择</div>
-                <div class="kb-ref-row" data-hl="ctrl arrowup arrowdown"><kbd>Ctrl</kbd>+<kbd>↑</kbd><kbd>↓</kbd> 调整语速</div>
-                <div class="kb-ref-row" data-hl="g h"><kbd>G</kbd> / <kbd>H</kbd> 翻页</div>
-            </div>
-            <div class="kb-ref-col">
-                <h3 class="kb-ref-title">功能键位</h3>
-                <div class="kb-ref-row" data-hl="q"><kbd>Q</kbd> 盲文对照表面板</div>
-                <div class="kb-ref-row" data-hl="w"><kbd>W</kbd> 键盘和设置面板</div>
-                <div class="kb-ref-row" data-hl="r"><kbd>R</kbd> 朗读输出区内容</div>
-                <div class="kb-ref-row" data-hl="t"><kbd>T</kbd> 切换主题色</div>
-                <div class="kb-ref-row" data-hl="c"><kbd>C</kbd> 清空输出区</div>
-            </div>
-            <div class="kb-ref-col">
-                <h3 class="kb-ref-title">其他设置</h3>
-                <label class="kb-ref-row kb-ref-check">
-                    <input type="checkbox" id="kbMultiSelect" tabindex="-1" onfocus="this.blur()">
-                    启用多选
-                </label>
-                <label class="kb-ref-row kb-ref-check">
-                    <input type="checkbox" id="kbDebounceSpeech" tabindex="-1" onfocus="this.blur()">
-                    输入实时语音播报
-                </label>
-                <div class="kb-ref-row">
-                    <span class="kb-ref-label">语音播报速度</span>
-                    <div class="kb-ref-range">
-                        <input type="range" id="kbSpeechRate" min="0.5" max="4" step="0.1" tabindex="-1">
-                        <span class="kb-ref-val" id="kbSpeechRateVal">1.2</span>
+            <!-- 预设切换 -->
+            <div class="controls" id="kbControls">
+                <div class="kb-presets">
+                    <div class="controls-row">
+                        <span class="controls-label">Perkins 标准</span>
+                        <button data-preset="fdsjkl">FDS JKL</button>
+                    </div>
+                    <div class="controls-row">
+                        <span class="controls-label">主键盘 Keyboard</span>
+                        <button data-preset="ik,ujm">IK, UJM</button>
+                        <button data-preset="ol.ik,">OL. IK,</button>
+                        <button data-preset="lkjoiu">LKJ OIU</button>
+                        <button data-preset=".,mlkj">., MLKJ</button>
+                    </div>
+                    <div class="controls-row">
+                        <span class="controls-label">小键盘 Numpad</span>
+                        <button data-preset="numpad852741">852741</button>
+                        <button data-preset="numpad963852">963852</button>
+                        <button data-preset="numpad654987">654987</button>
+                        <button data-preset="numpad321654">321654</button>
                     </div>
                 </div>
-                <div class="kb-ref-row">
-                    <span class="kb-ref-label">盲文字体大小</span>
-                    <div class="kb-ref-range">
-                        <input type="range" id="kbBrailleFontSize" min="6" max="30" step="1" tabindex="-1">
-                        <span class="kb-ref-val" id="kbBrailleFontSizeVal">12</span>
+                <div class="controls-right-group">
+                    <div class="controls-binding-status" id="kbBindingStatus">
+                        <span class="binding-status-label" id="kbKbdLabel">主键盘</span>
+                        <span class="binding-status-rect" id="kbKbdRect" title="当前主键盘键位"></span>
+                        <span class="binding-status-label" id="kbNumpadLabel">小键盘</span>
+                        <span class="binding-status-rect" id="kbNumpadRect" title="当前小键盘键位"></span>
+                    </div>
+                    <span class="controls-actions">
+                        <button class="bind-btn" id="btnSpeakBindings" title="播报当前两套盲文键位">播报键位</button>
+                        <button class="bind-btn" id="btnCustomBind" title="打开自定义键位设置">自定义键位 <kbd
+                                id="tkbd-kbResetKeyBindings"></kbd></button>
+                        <button class="reset-btn" id="btnKbResetDefaults" title="恢复默认键位">恢复默认设置</button>
+                    </span>
+                </div>
+            </div>
+
+            <!-- 键盘区域 -->
+            <div class="kb-section" id="kbSection">
+
+                <!-- 主键盘 -->
+                <div class="keyboard" id="kbKeyboard">
+
+                    <!-- Row 1: 数字/功能 -->
+                    <div class="kb-row">
+                        <span class="kb-key"><span class="primary">`</span><span class="secondary">~</span></span>
+                        <span class="kb-key"><span class="primary">1</span><span class="secondary">!</span></span>
+                        <span class="kb-key"><span class="primary">2</span><span class="secondary">@</span></span>
+                        <span class="kb-key"><span class="primary">3</span><span class="secondary">#</span></span>
+                        <span class="kb-key"><span class="primary">4</span><span class="secondary">$</span></span>
+                        <span class="kb-key"><span class="primary">5</span><span class="secondary">%</span></span>
+                        <span class="kb-key"><span class="primary">6</span><span class="secondary">^</span></span>
+                        <span class="kb-key"><span class="primary">7</span><span class="secondary">&amp;</span></span>
+                        <span class="kb-key"><span class="primary">8</span><span class="secondary">*</span></span>
+                        <span class="kb-key"><span class="primary">9</span><span class="secondary">(</span></span>
+                        <span class="kb-key"><span class="primary">0</span><span class="secondary">)</span></span>
+                        <span class="kb-key"><span class="primary">-</span><span class="secondary">_</span></span>
+                        <span class="kb-key"><span class="primary">=</span><span class="secondary">+</span></span>
+                        <span class="kb-key w2" data-key="backspace"><span
+                                class="primary primary-desk">Backspace</span><span
+                                class="primary primary-mobi">⌫</span></span>
+                    </div>
+
+                    <!-- Row 2: QWERTY -->
+                    <div class="kb-row">
+                        <span class="kb-key w15"><span class="primary">Tab</span></span>
+                        <span class="kb-key" data-key="q"><span class="primary">Q</span></span>
+                        <span class="kb-key" data-key="w"><span class="primary">W</span></span>
+                        <span class="kb-key" data-key="e"><span class="primary">E</span></span>
+                        <span class="kb-key" data-key="r"><span class="primary">R</span></span>
+                        <span class="kb-key" data-key="t"><span class="primary">T</span></span>
+                        <span class="kb-key" data-key="y"><span class="primary">Y</span></span>
+                        <span class="kb-key" data-key="u"><span class="primary">U</span></span>
+                        <span class="kb-key" data-key="i"><span class="primary">I</span></span>
+                        <span class="kb-key" data-key="o"><span class="primary">O</span></span>
+                        <span class="kb-key" data-key="p"><span class="primary">P</span></span>
+                        <span class="kb-key"><span class="primary">[</span><span class="secondary">{</span></span>
+                        <span class="kb-key"><span class="primary">]</span><span class="secondary">}</span></span>
+                        <span class="kb-key w175"><span class="primary">\</span><span class="secondary">|</span></span>
+                    </div>
+
+                    <!-- Row 3: Home row -->
+                    <div class="kb-row">
+                        <span class="kb-key w225"><span class="primary">Caps</span></span>
+                        <span class="kb-key" data-key="a"><span class="primary">A</span></span>
+                        <span class="kb-key" data-key="s"><span class="primary">S</span></span>
+                        <span class="kb-key" data-key="d"><span class="primary">D</span></span>
+                        <span class="kb-key" data-key="f" data-bump><span class="primary">F</span></span>
+                        <span class="kb-key" data-key="g"><span class="primary">G</span></span>
+                        <span class="kb-key" data-key="h"><span class="primary">H</span></span>
+                        <span class="kb-key" data-key="j" data-bump><span class="primary">J</span></span>
+                        <span class="kb-key" data-key="k"><span class="primary">K</span></span>
+                        <span class="kb-key" data-key="l"><span class="primary">L</span></span>
+                        <span class="kb-key" data-key=";"><span class="primary">;</span><span
+                                class="secondary">:</span></span>
+                        <span class="kb-key"><span class="primary">'</span><span class="secondary">"</span></span>
+                        <span class="kb-key w275"><span class="primary">Enter</span></span>
+                    </div>
+
+                    <!-- Row 4: Bottom row -->
+                    <div class="kb-row">
+                        <span class="kb-key w275" data-key="shift"><span class="primary">Shift</span></span>
+                        <span class="kb-key" data-key="z"><span class="primary">Z</span></span>
+                        <span class="kb-key" data-key="x"><span class="primary">X</span></span>
+                        <span class="kb-key" data-key="c"><span class="primary">C</span></span>
+                        <span class="kb-key" data-key="v"><span class="primary">V</span></span>
+                        <span class="kb-key" data-key="b"><span class="primary">B</span></span>
+                        <span class="kb-key" data-key="n"><span class="primary">N</span></span>
+                        <span class="kb-key" data-key="m"><span class="primary">M</span></span>
+                        <span class="kb-key" data-key=","><span class="primary">,</span><span
+                                class="secondary">&lt;</span></span>
+                        <span class="kb-key" data-key="."><span class="primary">.</span><span
+                                class="secondary">&gt;</span></span>
+                        <span class="kb-key" data-key="/"><span class="primary">/</span><span
+                                class="secondary">?</span></span>
+                        <span class="kb-key w275" data-key="shift"><span class="primary">Shift</span></span>
+                    </div>
+
+                    <!-- Row 5: Space row -->
+                    <div class="kb-row">
+                        <span class="kb-key w15" data-key="ctrl"><span class="primary">Ctrl</span></span>
+                        <span class="kb-key w15"><span class="primary">Win</span></span>
+                        <span class="kb-key w15"><span class="primary">Alt</span></span>
+                        <span class="kb-key w625" data-key="space"><span class="primary">Space</span></span>
+                        <span class="kb-key w15"><span class="primary">Alt</span></span>
+                        <span class="kb-key w15"><span class="primary">Win</span></span>
+                        <span class="kb-key w15" data-key="ctrl"><span class="primary">Ctrl</span></span>
                     </div>
                 </div>
-                <div class="kb-ref-row">
-                    <span class="kb-ref-label">最大撤销历史</span>
-                    <div class="kb-ref-range">
-                        <input type="range" id="kbMaxUndoHistory" min="1" max="50" step="1" tabindex="-1">
-                        <span class="kb-ref-val" id="kbMaxUndoHistoryVal">10</span>
+
+                <!-- 方向键区 + 小键盘 -->
+                <div class="kb-right">
+                    <div class="nav-cluster">
+                        <span class="kb-key" data-key="delete"><span class="primary">Del</span></span>
+                        <span class="kb-key" data-key="arrowup"><span class="primary">↑</span></span>
+                        <span class="kb-key" data-key="arrowdown"><span class="primary">↓</span></span>
+                        <span class="kb-key" data-key="arrowleft"><span class="primary">←</span></span>
+                        <span class="kb-key" data-key="arrowright"><span class="primary">→</span></span>
+                    </div>
+
+                    <!-- 小键盘 -->
+                    <div class="numpad" id="kbNumpad">
+                        <span class="kb-key" data-key="numlock"><span class="primary">Num</span></span>
+                        <span class="kb-key" data-key="num/"><span class="primary">/</span></span>
+                        <span class="kb-key" data-key="num*"><span class="primary">*</span></span>
+                        <span class="kb-key" data-key="num-"><span class="primary">−</span></span>
+
+                        <span class="kb-key" data-key="num7"><span class="primary">7</span></span>
+                        <span class="kb-key" data-key="num8"><span class="primary">8</span></span>
+                        <span class="kb-key" data-key="num9"><span class="primary">9</span></span>
+                        <span class="kb-key span-row" data-key="num+"><span class="primary">+</span></span>
+
+                        <span class="kb-key" data-key="num4"><span class="primary">4</span></span>
+                        <span class="kb-key" data-key="num5" data-bump><span class="primary">5</span></span>
+                        <span class="kb-key" data-key="num6"><span class="primary">6</span></span>
+
+                        <span class="kb-key" data-key="num1"><span class="primary">1</span></span>
+                        <span class="kb-key" data-key="num2"><span class="primary">2</span></span>
+                        <span class="kb-key" data-key="num3"><span class="primary">3</span></span>
+                        <span class="kb-key span-row" data-key="numenter"><span class="primary">Enter</span></span>
+
+                        <span class="kb-key span-col" data-key="num0"><span class="primary">0</span></span>
+                        <span class="kb-key" data-key="num."><span class="primary">.</span></span>
+                    </div>
+                </div><!-- /kb-right -->
+
+            </div><!-- /kb-section -->
+
+            <!-- 图例 -->
+            <div class="legend" id="kbLegend" style="display:none;">
+                <span class="legend-item"><span class="legend-swatch" style="background:#0f26a9"></span> 功能键</span>
+                <span class="legend-item"><span class="legend-swatch" style="background:#7f5af0"></span> 盲文点位 1-6</span>
+                <span class="legend-item"><span class="legend-swatch" style="background:#4caf50"></span>
+                    确认(<kbd>空格</kbd> / <kbd>0</kbd>)</span>
+                <span class="legend-item"><span class="legend-swatch" style="background:#f0a020"></span>
+                    清空当前输入(<kbd>Y</kbd> / <kbd>/</kbd>)</span>
+                <span class="legend-item"><span class="legend-swatch" style="background:#e91e63"></span>
+                    删除(<kbd>Backspace</kbd> / <kbd>*</kbd>)</span>
+            </div>
+
+            <!-- 参考面板 -->
+            <div class="kb-ref">
+                <div class="kb-ref-col">
+                    <h3 class="kb-ref-title">组合键</h3>
+                    <div class="kb-ref-row" data-hl="ctrl z"><kbd>Ctrl</kbd>+<kbd>Z</kbd> 撤销</div>
+                    <div class="kb-ref-row"><span data-hl="ctrl y"><kbd>Ctrl</kbd>+<kbd>Y</kbd></span> / <span
+                            data-hl="ctrl shift z"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></span> 重做</div>
+                    <div class="kb-ref-row" data-hl="ctrl a"><kbd>Ctrl</kbd>+<kbd>A</kbd> 全选</div>
+                    <div class="kb-ref-row" data-hl="ctrl s"><kbd>Ctrl</kbd>+<kbd>S</kbd> 保存</div>
+                    <div class="kb-ref-row" data-hl="ctrl o"><kbd>Ctrl</kbd>+<kbd>O</kbd> 打开文件</div>
+                    <div class="kb-ref-row" data-hl="ctrl k"><kbd>Ctrl</kbd>+<kbd>K</kbd> 播报盲文键位</div>
+                    <div class="kb-ref-row" data-hl="ctrl shift k"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd> 自定义键位
+                    </div>
+                    <div class="kb-ref-row" data-hl="ctrl shift h"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>H</kbd> 新手教程
+                    </div>
+                </div>
+                <div class="kb-ref-col">
+                    <h3 class="kb-ref-title">操作</h3>
+                    <div class="kb-ref-row" data-hl="delete"><kbd>Delete</kbd> 向后删除</div>
+                    <div class="kb-ref-row" data-hl="arrowleft arrowright arrowup arrowdown">
+                        <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> 移动光标</div>
+                    <div class="kb-ref-row" data-hl="shift arrowleft arrowright">
+                        <kbd>Shift</kbd>+<kbd>←</kbd><kbd>→</kbd> 范围选择</div>
+                    <div class="kb-ref-row" data-hl="ctrl arrowup arrowdown"><kbd>Ctrl</kbd>+<kbd>↑</kbd><kbd>↓</kbd>
+                        调整语速</div>
+                    <div class="kb-ref-row" data-hl="g h"><kbd>G</kbd> / <kbd>H</kbd> 翻页</div>
+                </div>
+                <div class="kb-ref-col">
+                    <h3 class="kb-ref-title">功能键位</h3>
+                    <div class="kb-ref-row" data-hl="q"><kbd>Q</kbd> 盲文对照表面板</div>
+                    <div class="kb-ref-row" data-hl="w"><kbd>W</kbd> 键盘和设置面板</div>
+                    <div class="kb-ref-row" data-hl="r"><kbd>R</kbd> 朗读输出区内容</div>
+                    <div class="kb-ref-row" data-hl="t"><kbd>T</kbd> 切换主题色</div>
+                    <div class="kb-ref-row" data-hl="c"><kbd>C</kbd> 清空输出区</div>
+                </div>
+                <div class="kb-ref-col">
+                    <h3 class="kb-ref-title">其他设置</h3>
+                    <label class="kb-ref-row kb-ref-check">
+                        <input type="checkbox" id="kbMultiSelect" tabindex="-1" onfocus="this.blur()">
+                        启用多选
+                    </label>
+                    <label class="kb-ref-row kb-ref-check">
+                        <input type="checkbox" id="kbDebounceSpeech" tabindex="-1" onfocus="this.blur()">
+                        输入实时语音播报
+                    </label>
+                    <div class="kb-ref-row">
+                        <span class="kb-ref-label">语音播报速度</span>
+                        <div class="kb-ref-range">
+                            <input type="range" id="kbSpeechRate" min="0.5" max="4" step="0.1" tabindex="-1">
+                            <span class="kb-ref-val" id="kbSpeechRateVal">1.2</span>
+                        </div>
+                    </div>
+                    <div class="kb-ref-row">
+                        <span class="kb-ref-label">盲文字体大小</span>
+                        <div class="kb-ref-range">
+                            <input type="range" id="kbBrailleFontSize" min="6" max="30" step="1" tabindex="-1">
+                            <span class="kb-ref-val" id="kbBrailleFontSizeVal">12</span>
+                        </div>
+                    </div>
+                    <div class="kb-ref-row">
+                        <span class="kb-ref-label">最大撤销历史</span>
+                        <div class="kb-ref-range">
+                            <input type="range" id="kbMaxUndoHistory" min="1" max="50" step="1" tabindex="-1">
+                            <span class="kb-ref-val" id="kbMaxUndoHistoryVal">10</span>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
             <div class="kb-close-strip kb-close-strip-left" id="kbCloseStripLeft"></div>
             <div class="kb-close-strip kb-close-strip-right" id="kbCloseStripRight"></div>
@@ -559,4 +587,4 @@
     <script type="module" src="./js/init.js"></script>
 </body>
 
-</html> 
+</html>
