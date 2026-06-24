@@ -103,6 +103,7 @@ export const DEFAULT_SETTINGS = {
     mergeNewlines: true,
     omitToneMapping: true,
     showVisualizer: true,
+    dotFeedbackSpeak: false,
 };
 
 // 非可配置动作键集合

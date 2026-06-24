@@ -265,6 +265,10 @@
                     <span>开启省写规则</span>
                     <input type="checkbox" id="omitToneMapping" checked>
                 </label>
+                <label class="dev-toggle-row">
+                    <span>点位语音播报（替代蜂鸣）</span>
+                    <input type="checkbox" id="dotFeedbackSpeak">
+                </label>
                 <div class="dev-sep"></div>
                 <div class="dev-action-keys" id="actionKeyBindings">
                     <div class="dev-toggle-row">
@@ -358,8 +362,8 @@
                         <span class="binding-status-rect" id="kbNumpadRect" title="当前小键盘键位"></span>
                     </div>
                     <span class="controls-actions">
-                        <button class="bind-btn" id="btnSpeakBindings" title="播报当前两套盲文键位">播报键位</button>
-                        <button class="bind-btn" id="btnCustomBind" title="打开自定义键位设置">自定义键位 <kbd
+                        <button class="bind-btn" id="btnSpeakBindings" title="播报当前盲文键位">播报键位</button>
+                        <button class="bind-btn" id="btnCustomBind" title="自定义键位">自定义键位 <kbd
                                 id="tkbd-kbResetKeyBindings"></kbd></button>
                         <button class="reset-btn" id="btnKbResetDefaults" title="恢复默认键位">恢复默认设置</button>
                     </span>
@@ -529,7 +533,7 @@
                     <h3 class="kb-ref-title">操作</h3>
                     <div class="kb-ref-row" data-hl="delete"><kbd>Delete</kbd> 向后删除</div>
                     <div class="kb-ref-row" data-hl="arrowleft arrowright arrowup arrowdown">
-                        <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> 移动光标</div>
+                        <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> 移动光标</div>
                     <div class="kb-ref-row" data-hl="shift arrowleft arrowright">
                         <kbd>Shift</kbd>+<kbd>←</kbd><kbd>→</kbd> 范围选择</div>
                     <div class="kb-ref-row" data-hl="ctrl arrowup arrowdown"><kbd>Ctrl</kbd>+<kbd>↑</kbd><kbd>↓</kbd>

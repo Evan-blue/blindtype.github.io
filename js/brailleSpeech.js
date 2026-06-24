@@ -29,13 +29,13 @@ class SpeechQueue {
         this.gen = 0; // 生成器，用于取消时使过期的回调失效
         if (recordState) {
             this.state = {
-                interruptState: null, // 教程中断状态 { text, rate, onend, charIndex }
+                interruptState: null, // 播报中断状态 { text, rate, onend, charIndex }
                 currentItem: null,    // 当前教程项 { text, rate, onend }
                 charIndex: 0,         // 当前教程项的字符位置
                 resume_back: 5,          // 恢复时倒退的字符数
 
             }
-            // 中断/恢复 操作（暂时仅教程通道使用）
+            // 中断/恢复 操作
             this.interrupt = function () {
                 if (!this.state.currentItem) return;
                 this.state.interruptState = {
@@ -62,7 +62,9 @@ class SpeechQueue {
                 _playNext(this.name);
             }
             this.clearInterruptState = function () {
-                this.state.interruptState = null; this.state.currentItem = null; this.state.charIndex = 0;
+                this.state.interruptState = null;
+                this.state.currentItem = null;
+                this.state.charIndex = 0;
             }
         }
     }
@@ -77,18 +79,21 @@ class SpeechQueue {
 }
 
 const queues = {
-    main: new SpeechQueue('main', false),  // 主通道
+    main: new SpeechQueue('main', true),  // 主通道
     tutorial: new SpeechQueue('tutorial', true)  // 教程通道
 }
 
 
 // ── 声波可视化事件 ──
-function _notifyVisualizerStart() {
-    window.dispatchEvent(new CustomEvent('speech-visualizer-start'));
+function _notifyVisualizerStart(text) {
+    window.dispatchEvent(new CustomEvent('speech-visualizer-start', { detail: text }));
 }
 function _notifyVisualizerStop() {
     if (queues.main.isActive() || queues.tutorial.isActive()) return;
     window.dispatchEvent(new CustomEvent('speech-visualizer-stop'));
+}
+function _notifyVisualizerUpdate(text) {
+    window.dispatchEvent(new CustomEvent('speech-visualizer-update', { detail: text }));
 }
 
 function _setReadAloudLabel(text) {
@@ -98,12 +103,13 @@ function _setReadAloudLabel(text) {
     if (tn && tn.nodeType === Node.TEXT_NODE) tn.textContent = text;
 }
 
-function _playNext(queueName = 'main') {
+function _playNext(queueName) {
     const q = queues[queueName];
     if (q.isPlaying || q.length === 0) {
         if (!q.isPlaying && q.length === 0) {
             if (queueName === 'main') {
                 _setReadAloudLabel('朗读');
+                queues.main.resumeIfNeeded();
                 queues.tutorial.resumeIfNeeded();
             }
         }
@@ -112,12 +118,11 @@ function _playNext(queueName = 'main') {
     q.isPlaying = true;
     const gen = ++q.gen;
     const item = q.shift();
+    const itemText = item.text;
 
-    // 记录当前教程 utterance，供中断时保存状态
-    if (queueName === 'tutorial') {
-        q.state.currentItem = item;
-        q.state.charIndex = 0;
-    }
+    // 记录当前 utterance，供中断时保存状态
+    q.state.currentItem = item;
+    q.state.charIndex = 0;
 
     if (window.speechSynthesis.paused && typeof window.speechSynthesis.resume === 'function') {
         window.speechSynthesis.resume();
@@ -127,19 +132,20 @@ function _playNext(queueName = 'main') {
     u.lang = 'zh-CN';
     u.rate = item.rate;
 
-    // 跟踪教程播报的字符位置，用于中断后恢复
-    if (queueName === 'tutorial') {
-        u.onboundary = (e) => {
-            if (e.charIndex !== undefined) q.state.charIndex = e.charIndex;
-        };
-    }
+    u.onboundary = (e) => {
+        if (queueName === 'main' && gen !== q.gen) return;
+        if (e.charIndex !== undefined) {
+            q.state.charIndex = e.charIndex;
+            if (queueName === 'main') _notifyVisualizerUpdate(itemText.substring(e.charIndex));
+        }
+    };
 
-    u.onstart = () => { if (gen === q.gen) _notifyVisualizerStart(); };
+    u.onstart = () => { if (gen === q.gen) _notifyVisualizerStart(itemText); };
     u.onend = () => {
         if (gen !== q.gen) return;
         q.isPlaying = false;
         SpeechQueue._activeChannel = null;
-        if (queueName === 'tutorial') q.state.currentItem = null;
+        q.state.currentItem = null;
         if (item.onend) item.onend();
         _notifyVisualizerStop();
         _playNext(queueName);
@@ -148,7 +154,7 @@ function _playNext(queueName = 'main') {
         if (gen !== q.gen) return;
         q.isPlaying = false;
         SpeechQueue._activeChannel = null;
-        if (queueName === 'tutorial') q.state.currentItem = null;
+        q.state.currentItem = null;
         _notifyVisualizerStop();
         _playNext(queueName);
     };
@@ -171,14 +177,17 @@ export function speakText(text, rate) {
     rate = rate || SETTINGS.speechRate;
 
 
-    // 教程正在播放时，打断教程并保存恢复点
+    // 教程/朗读正在播放时，打断并保存恢复点
     if (SpeechQueue._activeChannel === 'tutorial' && !queues.tutorial.state.interruptState) {
         queues.tutorial.interrupt();
+    }
+    if (SpeechQueue._activeChannel === 'main' && !queues.main.state.interruptState) {
+        queues.main.interrupt();
     }
 
     queues.main.length = 0; // 新主通道请求替换旧请求
     queues.main.push({ 'text': ',' + text, 'rate': rate });
-    _playNext();
+    _playNext('main');
     return true;
 }
 
@@ -192,15 +201,24 @@ export function speakImmediate(text, rate) {
     if (!SETTINGS.allowSpeech || !window.speechSynthesis) return;
     rate = rate || SETTINGS.speechRate;
 
+    // 教程正在播放时，保存断点后打断
+    if (SpeechQueue._activeChannel === 'tutorial' && !queues.tutorial.state.interruptState) {
+        queues.tutorial.interrupt();
+    }
     // 清空主通道队列，取消当前语音
     queues.main.clear();
-    queues.tutorial.clearInterruptState();
     window.speechSynthesis.cancel();
 
-    const u = new SpeechSynthesisUtterance(',' + text);
+    const utteranceText = ',' + text;
+    const u = new SpeechSynthesisUtterance(utteranceText);
     u.lang = 'zh-CN';
     u.rate = rate;
-    u.onstart = () => _notifyVisualizerStart();
+    u.onboundary = (e) => {
+        if (e.charIndex !== undefined) {
+            _notifyVisualizerUpdate(utteranceText.substring(e.charIndex));
+        }
+    };
+    u.onstart = () => _notifyVisualizerStart(utteranceText);
     u.onend = () => {
         SpeechQueue._activeChannel = null;
         _notifyVisualizerStop();
@@ -222,15 +240,13 @@ export function speakImmediate(text, rate) {
 export function stopSpeech() {
     // 清除教程中断恢复状态——用户主动停止主通道意味着不需要恢复
     queues.tutorial.clearInterruptState();
-    queues.main.length = 0;
-    if (queues.main.isPlaying) {
-        queues.main.isPlaying = false;
-        if (SpeechQueue._activeChannel === 'main' || !SpeechQueue._activeChannel) {
-            window.speechSynthesis.cancel();
-        }
-        _notifyVisualizerStop();
-        _playNext();
+    queues.main.clearInterruptState();
+    queues.main.clear();
+    if (SpeechQueue._activeChannel === 'main' || !SpeechQueue._activeChannel) {
+        window.speechSynthesis.cancel();
     }
+    _notifyVisualizerStop();
+    _playNext('main');
 }
 
 /**
@@ -254,8 +270,8 @@ export function speakTutorialText(text, rate, onend) {
  * @return {void}
  */
 export function stopTutorialSpeech(forceStop = false) {
-    queues.tutorial.clear();
     queues.tutorial.clearInterruptState();
+    queues.tutorial.clear();
     if (forceStop) {
         if (SpeechQueue._activeChannel === 'tutorial' || !SpeechQueue._activeChannel) {
             window.speechSynthesis.cancel();

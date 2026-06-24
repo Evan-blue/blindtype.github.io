@@ -333,6 +333,15 @@ export function initSettings() {
             if (indicator) indicator.style.display = SETTINGS.showVisualizer ? '' : 'none';
         });
     }
+
+    const dotFeedbackSpeakCheck = document.getElementById('dotFeedbackSpeak');
+    if (dotFeedbackSpeakCheck) {
+        dotFeedbackSpeakCheck.checked = SETTINGS.dotFeedbackSpeak === true;
+        dotFeedbackSpeakCheck.addEventListener('change', () => {
+            SETTINGS.dotFeedbackSpeak = dotFeedbackSpeakCheck.checked;
+            saveSettings();
+        });
+    }
 }
 
 // 绑定遮罩点击取消

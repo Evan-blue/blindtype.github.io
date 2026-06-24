@@ -38,8 +38,8 @@ import {
 import {
     speakText,
     speakBraille,
+    speakImmediate,
     playBeep,
-    stopSpeech,
 } from './brailleSpeech.js';
 import {
     renderOutput,
@@ -115,7 +115,11 @@ export const dotInput = {
         const turningOn = !this.state[i];
         this.state[i] = this.state[i] ? 0 : 1;
         this.renderDots();
-        playBeep(turningOn ? 880 : 440, 50);
+        if (SETTINGS.dotFeedbackSpeak) {
+            if (turningOn) speakImmediate(String(idx));
+        } else {
+            playBeep(turningOn ? 880 : 440, 50);
+        }
 
         clearTimeout(this.debounceTimer);
         this.debounceTimer = setTimeout(() => {
@@ -610,7 +614,6 @@ export function deleteLast() {
             target.braille = Array.from(target.braille).slice(0, -1).join('');
             target.char = target.char.slice(0, -1);
             target.audio = target.char || '数号';
-            stopSpeech();
             speakText('删除' + (removedDigit || '数号'));
             renderOutput();
             return;
@@ -620,7 +623,6 @@ export function deleteLast() {
         cursor.idx = cursor.idx - 1;
         const meta = computeItemMeta();
         cursor.idx = cursor.snapToBoundary(cursor.idx, outputItems.length, meta, -1);
-        stopSpeech();
         speakText('删除数号');
         renderOutput();
         return;
@@ -645,7 +647,6 @@ export function deleteLast() {
                     target.letterCase = 'upper';
                 }
             }
-            stopSpeech();
             speakText('删除' + (removedChar || '字母符号'));
             renderOutput();
             return;
@@ -655,7 +656,6 @@ export function deleteLast() {
         cursor.idx = cursor.idx - 1;
         const meta = computeItemMeta();
         cursor.idx = cursor.snapToBoundary(cursor.idx, outputItems.length, meta, -1);
-        stopSpeech();
         speakText('删除字母符号');
         renderOutput();
         return;
@@ -669,7 +669,6 @@ export function deleteLast() {
     const meta = computeItemMeta();
     cursor.idx = cursor.snapToBoundary(cursor.idx, outputItems.length, meta, -1);
 
-    stopSpeech();
     speakText('删除' + (deleted.audio || deleted.pinyin.trim() || '空方'));
     renderOutput();
 }
@@ -688,7 +687,6 @@ export function deleteForward() {
         const meta = computeItemMeta();
         cursor.idx = cursor.snapToBoundary(cursor.idx, outputItems.length, meta, 1);
 
-        stopSpeech();
         speakText('删除' + (deleted.audio || deleted.pinyin.trim() || '空方'));
         renderOutput();
     }
@@ -712,7 +710,6 @@ export function deleteSelected() {
     const meta = computeItemMeta();
     cursor.idx = cursor.snapToBoundary(cursor.idx, outputItems.length, meta, -1);
     cursor.clearSelection();
-    stopSpeech();
     speakText('批量选定删除');
     renderOutput();
 }
@@ -1044,6 +1041,7 @@ export function mixedToBraille(text) {
                 numStr += text[i];
                 i++;
             }
+            if (!prevIsSpace && oneHotList.length > 0) oneHotList.push('000000');
             oneHotList.push(...numberToBraille(numStr));
             prevIsSpace = false;
             continue;
@@ -1056,7 +1054,8 @@ export function mixedToBraille(text) {
                 engStr += text[i];
                 i++;
             }
-            oneHotList.push(...englishToBraille(engStr, prevIsSpace));
+            if (!prevIsSpace && oneHotList.length > 0) oneHotList.push('000000');
+            oneHotList.push(...englishToBraille(engStr, true));
             prevIsSpace = false;
             continue;
         }
@@ -1068,6 +1067,10 @@ export function mixedToBraille(text) {
             i++;
         }
         if (cnStr) {
+            // 前一段是英文/数字时，插入空方分隔
+            if (!prevIsSpace && oneHotList.length > 0) {
+                oneHotList.push('000000');
+            }
             oneHotList.push(...chineseToBraille(cnStr));
             prevIsSpace = false;
         }

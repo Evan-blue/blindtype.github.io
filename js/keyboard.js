@@ -314,11 +314,31 @@
         if (window._kbApplyPreset) window._kbApplyPreset(scope, name);
     });
 
+    // ── 预设按钮悬停播报 ──
+    const _PUNCT_SPEAK = { '.': '句号', ',': '逗号', ';': '分号', '/': '斜杠' };
+    controls.addEventListener('mouseover', (e) => {
+        const btn = e.target.closest('button[data-preset]');
+        if (!btn || !window._kbSpeakImmediate) return;
+        const text = btn.textContent.trim();
+        let spoken;
+        if (/^\d+$/.test(text)) {
+            // 小键盘数字：每个数字之间插入空格，让TTS逐位读出
+            spoken = text.split('').join(' ');
+        } else {
+            spoken = text.replace(/[.,;/]/g, c => _PUNCT_SPEAK[c] || c);
+        }
+        spoken = '键盘预设，' + spoken
+        window._kbSpeakImmediate(spoken);
+    });
+
     // ── 播报盲文键位按钮 ──
     const btnSpeakBindings = document.getElementById('btnSpeakBindings');
     if (btnSpeakBindings) {
         btnSpeakBindings.addEventListener('click', () => {
             if (window._kbSpeakAllBindings) window._kbSpeakAllBindings();
+        });
+        btnSpeakBindings.addEventListener('mouseover', () => {
+            if (window._kbSpeakImmediate) window._kbSpeakImmediate('播报当前盲文键位');
         });
     }
 
@@ -327,6 +347,9 @@
     if (btnCustomBind) {
         btnCustomBind.addEventListener('click', () => {
             if (window._kbOpenSeqBinding) window._kbOpenSeqBinding();
+        });
+        btnCustomBind.addEventListener('mouseover', () => {
+            if (window._kbSpeakImmediate) window._kbSpeakImmediate('自定义键位');
         });
     }
 
@@ -382,6 +405,9 @@
     if (btnResetDefaults) {
         btnResetDefaults.addEventListener('click', () => {
             if (window._kbResetDefaults) window._kbResetDefaults();
+        });
+        btnResetDefaults.addEventListener('mouseover', () => {
+            if (window._kbSpeakImmediate) window._kbSpeakImmediate('恢复默认键位');
         });
     }
 
@@ -455,6 +481,11 @@
             keys.forEach(k => {
                 kbSection.querySelectorAll(`.kb-key[data-key="${CSS.escape(k)}"]`).forEach(el => el.classList.add('highlight'));
             });
+            // 语音播报键位说明
+            const row = el.closest('.kb-ref-row');
+            if (row && window._kbSpeakImmediate) {
+                window._kbSpeakImmediate(row.textContent.trim());
+            }
         });
         kbRef.addEventListener('mouseout', (e) => {
             const el = e.target.closest('[data-hl]');

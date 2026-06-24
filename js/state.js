@@ -97,9 +97,9 @@ function _getCtxStartIdx(target, idx, key) {
 export const outputItems = new Proxy(_outputItems, {
     get(target, prop) {
         // ── 上下文判断方法 ──
-        if (prop === 'isInNumberContext')  return (idx) => _isInCtx(target, idx, 'isNumber');
+        if (prop === 'isInNumberContext') return (idx) => _isInCtx(target, idx, 'isNumber');
         if (prop === 'isInEnglishContext') return (idx) => _isInCtx(target, idx, 'isEnglish');
-        if (prop === 'getNumberStartIdx')  return (idx) => _getCtxStartIdx(target, idx, 'isNumber');
+        if (prop === 'getNumberStartIdx') return (idx) => _getCtxStartIdx(target, idx, 'isNumber');
         if (prop === 'getEnglishStartIdx') return (idx) => _getCtxStartIdx(target, idx, 'isEnglish');
         if (prop === 'getEnglishCase') {
             return (idx) => {

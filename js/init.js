@@ -48,7 +48,7 @@ import {
     readAloud,
     speakImmediate,
 } from './brailleSpeech.js';
-import { initAudioVisualizer, visualizerStart, visualizerStop } from './audioVisualizer.js';
+import { initAudioVisualizer, visualizerStart, visualizerStop, updateSpeechLabel } from './audioVisualizer.js';
 import {
     DEFAULT_SETTINGS,
     CONFIGURABLE_ACTIONS,
@@ -459,17 +459,34 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('btnPrevPage').addEventListener('click', () => switchToPage(pages.idx - 1));
             document.getElementById('btnNextPage').addEventListener('click', () => switchToPage(pages.idx + 1));
 
-            // ── Resize observer for page recalculation ──
+            // ── 分页重检：仅在窗口缩放时触发 ──
             let _resizeTimer = null;
-            new ResizeObserver(() => {
+            window.addEventListener('resize', () => {
                 clearTimeout(_resizeTimer);
                 _resizeTimer = setTimeout(() => {
                     if (pages.isActive || outputArea.scrollHeight > outputArea.clientHeight + 2) {
                         invalidatePageCache();
                         renderOutput();
                     }
-                }, 200);
-            }).observe(outputArea);
+                }, 300);
+            });
+
+            // ── 分页重检：字体大小调整结束后触发（防快速拖拽）──
+            let _fontSizeTimer = null;
+            window._kbUpdateSetting = function (key, value) {
+                SETTINGS[key] = value;
+                if (key === 'brailleFontSize') {
+                    applyBrailleFontSize();
+                    clearTimeout(_fontSizeTimer);
+                    _fontSizeTimer = setTimeout(() => {
+                        if (pages.isActive || outputArea.scrollHeight > outputArea.clientHeight + 2) {
+                            invalidatePageCache();
+                            renderOutput();
+                        }
+                    }, 500);
+                }
+                saveSettings();
+            };
 
             // ── Keyboard overlay ──
             const kbOverlay = document.getElementById('kbIframeOverlay');
@@ -514,12 +531,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     else labels.push(code);
                 }
                 speakText('启用' + groupLabel + '键位预设，' + labels.join(' '), SETTINGS.speechRate);
-            };
-
-            window._kbUpdateSetting = function (key, value) {
-                SETTINGS[key] = value;
-                if (key === 'brailleFontSize') applyBrailleFontSize();
-                saveSettings();
             };
 
             window._kbOnDotDrop = function (scope, dot, code) {
@@ -618,7 +629,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const indicator = document.getElementById('speechIndicator');
                 if (indicator) indicator.style.display = 'none';
             }
-            window.addEventListener('speech-visualizer-start', visualizerStart);
+            window.addEventListener('speech-visualizer-start', (e) => visualizerStart(e.detail));
             window.addEventListener('speech-visualizer-stop', visualizerStop);
+            window.addEventListener('speech-visualizer-update', (e) => updateSpeechLabel(e.detail));
         });
 });
