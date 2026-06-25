@@ -4,141 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>盲文输入工具 — 开发迭代时间线</title>
-<style>
-  :root {
-    --bg: #0f0f1a;
-    --card: #1a1a2e;
-    --text: #e0e0e0;
-    --text-sub: #a0a0b8;
-    --accent: #7c6ff7;
-    --accent2: #5eead4;
-    --tag-bg: #252540;
-    --line: #2a2a45;
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: "PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;
-    line-height: 1.6;
-    min-height: 100vh;
-  }
-  .header {
-    text-align: center;
-    padding: 60px 20px 40px;
-    background: linear-gradient(135deg, #1a1a35 0%, #0f0f1a 100%);
-    border-bottom: 1px solid var(--line);
-  }
-  .header h1 {
-    font-size: 2.2em;
-    font-weight: 700;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  .header p {
-    color: var(--text-sub);
-    margin-top: 8px;
-    font-size: 1.05em;
-  }
-  .stats {
-    display: flex;
-    justify-content: center;
-    gap: 40px;
-    margin-top: 24px;
-    flex-wrap: wrap;
-  }
-  .stat-item { text-align: center; }
-  .stat-num { font-size: 2em; font-weight: 700; color: var(--accent2); }
-  .stat-label { font-size: 0.85em; color: var(--text-sub); }
-
-  .timeline {
-    max-width: 860px;
-    margin: 0 auto;
-    padding: 40px 24px 80px;
-    position: relative;
-  }
-  .timeline::before {
-    content: '';
-    position: absolute;
-    left: 48px; top: 0; bottom: 0;
-    width: 2px;
-    background: var(--line);
-  }
-  .entry {
-    position: relative;
-    padding-left: 80px;
-    margin-bottom: 40px;
-  }
-  .entry::before {
-    content: '';
-    position: absolute;
-    left: 39px; top: 6px;
-    width: 20px; height: 20px;
-    border-radius: 50%;
-    background: var(--card);
-    border: 3px solid var(--accent);
-    z-index: 1;
-  }
-  .entry.milestone::before {
-    background: var(--accent);
-    box-shadow: 0 0 12px rgba(124,111,247,.5);
-    width: 22px; height: 22px;
-    left: 38px; top: 5px;
-  }
-  .entry-date {
-    font-size: 0.85em;
-    color: var(--accent2);
-    font-weight: 600;
-    letter-spacing: .5px;
-  }
-  .entry h2 {
-    font-size: 1.25em;
-    margin: 4px 0 6px;
-    color: #ececff;
-  }
-  .entry p {
-    color: var(--text-sub);
-    font-size: 0.95em;
-    max-width: 640px;
-  }
-  .tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 10px;
-  }
-  .tag {
-    font-size: 0.78em;
-    padding: 2px 10px;
-    border-radius: 10px;
-    background: var(--tag-bg);
-    color: var(--text-sub);
-  }
-  .tag.hl {
-    background: rgba(124,111,247,.18);
-    color: #b4a7ff;
-  }
-  .footer {
-    text-align: center;
-    padding: 24px;
-    color: var(--text-sub);
-    font-size: 0.82em;
-    border-top: 1px solid var(--line);
-  }
-  .footer a { color: var(--accent); text-decoration: none; }
-
-  @media (max-width: 600px) {
-    .timeline { padding: 24px 12px 60px; }
-    .timeline::before { left: 24px; }
-    .entry { padding-left: 52px; }
-    .entry::before { left: 15px; width: 16px; height: 16px; }
-    .entry.milestone::before { left: 14px; width: 18px; height: 18px; }
-    .header h1 { font-size: 1.5em; }
-    .stats { gap: 20px; }
-  }
-</style>
+<link rel="stylesheet" href="./index.css"></link>
 </head>
 <body>
 
@@ -153,7 +19,12 @@
   </div>
 </div>
 
-<div class="timeline" id="timeline"></div>
+<div class="main-wrap">
+  <nav class="side-nav" id="sideNav">
+    <span class="side-nav-title">PHASES</span>
+  </nav>
+  <div class="timeline" id="timeline"></div>
+</div>
 
 <div class="footer">
   <p>盲文输入工具 &copy; 2026 · <a href="../../">返回主页</a> · 持续迭代中</p>
@@ -163,11 +34,14 @@
 <script>
 (function () {
   var timeline = document.getElementById('timeline');
+  var sideNav = document.getElementById('sideNav');
   var html = '';
+  var phaseIdx = 0;
 
   TIMELINE_ENTRIES.forEach(function (e) {
+    var id = e.milestone ? ' id="phase-' + phaseIdx + '"' : '';
     var cls = e.milestone ? 'entry milestone' : 'entry';
-    html += '<div class="' + cls + '">';
+    html += '<div' + id + ' class="' + cls + '">';
     html += '<div class="entry-date">' + e.date + '</div>';
     html += '<h2>' + e.title + '</h2>';
     html += '<p>' + e.desc + '</p>';
@@ -180,6 +54,17 @@
       html += '</div>';
     }
     html += '</div>';
+
+    // 为里程碑生成侧边导航链接
+    if (e.milestone) {
+      var label = e.title.replace(/^Phase \d+ — /, '');
+      var link = document.createElement('a');
+      link.href = '#phase-' + phaseIdx;
+      link.textContent = 'Phase ' + (phaseIdx + 1) + ' — ' + label;
+      link.dataset.phase = phaseIdx;
+      sideNav.appendChild(link);
+      phaseIdx++;
+    }
   });
 
   timeline.innerHTML = html;
@@ -188,8 +73,56 @@
   document.getElementById('statDays').textContent = '39';
   document.getElementById('statCommits').textContent = '55+';
   document.getElementById('statModules').textContent = '20+';
-  var phases = TIMELINE_ENTRIES.filter(function (e) { return e.milestone; }).length;
-  document.getElementById('statPhases').textContent = phases;
+  document.getElementById('statPhases').textContent = phaseIdx;
+
+  // ── 侧边导航点击：JS 平滑滚动 + 到达后高亮目标 ──
+  navLinks.forEach(function (link) {
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      var target = document.getElementById('phase-' + link.dataset.phase);
+      if (!target) return;
+      // 先手动设置 active（不等 observer 滞后触发）
+      navLinks.forEach(function (a) { a.classList.remove('active'); });
+      link.classList.add('active');
+      // 平滑滚动
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // 到达后短暂闪动目标
+      setTimeout(function () {
+        target.classList.add('flash');
+        setTimeout(function () { target.classList.remove('flash'); }, 700);
+      }, 500);
+    });
+  });
+  var navLinks = sideNav.querySelectorAll('a');
+  var milestones = timeline.querySelectorAll('.milestone');
+
+  var phaseObserver = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (!entry.isIntersecting) return;
+      var idx = Number(entry.target.id.replace('phase-', ''));
+      navLinks.forEach(function (a, i) {
+        a.classList.toggle('active', i === idx);
+      });
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+
+  milestones.forEach(function (el) { phaseObserver.observe(el); });
+
+  // ── 统计数字跳动 ──
+  var statNums = document.querySelectorAll('.stat-num');
+  statNums.forEach(function (el) {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(10px)';
+    el.style.transition = 'opacity .5s ease, transform .5s ease';
+  });
+  setTimeout(function () {
+    statNums.forEach(function (el, i) {
+      setTimeout(function () {
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+      }, i * 120);
+    });
+  }, 150);
 })();
 </script>
 
