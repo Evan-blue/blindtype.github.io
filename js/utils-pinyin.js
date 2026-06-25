@@ -186,6 +186,72 @@ export function _resolveOmittedTone(merged) {
 }
 
 /**
+ * @description: 判断某拼音音节的声调是否可根据省写规则省略（正向：全拼→省写盲文）
+ *   依次检查：强制保留 → 声母规则 → 韵母自成音节规则
+ * @param {string} base 拼音音节（无声调），如 'ba'、'zhi'、'yi'、'an'
+ * @param {string} tone 声调数字 '1'~'4'
+ * @return {boolean} 是否应省写（不输出声调盲文方）
+ */
+export function _shouldOmitTone(base, tone) {
+    if (!PINYIN_MAPPINGS.omitRule || !tone) return false;
+
+    const omitRule = PINYIN_MAPPINGS.omitRule;
+
+    // 1. 强制保留检查（_force_keep 音节绝不省写声调）
+    const forceKeep = omitRule._force_keep;
+    if (forceKeep && forceKeep.syllables_num && forceKeep.syllables_num.includes(base + tone)) {
+        return false;
+    }
+
+    // 2. 声母+韵母 → 查 initials 表
+    const split = _splitPinyinBase(base);
+    if (split) {
+        return omitRule.initials[split.initial] === tone;
+    }
+
+    // 3. 韵母自成音节 → 查 solo 表
+    const solo = omitRule.solo;
+    if (!solo) return false;
+
+    const resolvedBase = (REVERSE_ONEHOT_MAPPINGS.solo && REVERSE_ONEHOT_MAPPINGS.solo[base])
+        || base;
+
+    if (solo.exceptions && resolvedBase in solo.exceptions) {
+        const val = solo.exceptions[resolvedBase];
+        if (val === 'none') return false;
+        return val === tone;
+    }
+
+    if (_validFinals && _validFinals.has(resolvedBase)) {
+        return solo.default === tone;
+    }
+
+    return false;
+}
+
+/**
+ * @description: 检查上下文规则——当前音节是否因后邻音节而必须保留声调
+ *   规则：声母自成音节后紧连韵母自成音节时，前音节不省写声调
+ *   如 "慈爱" cí+ài → cí 不可省写第二声
+ * @param {string} prevPy 前一音节完整拼音（带声调数字），如 'ci2'
+ * @param {string} nextPy 后一音节完整拼音（带声调数字），如 'ai4'
+ * @return {boolean} 前一音节是否强制保留声调
+ */
+export function _isContextKeep(prevPy, nextPy) {
+    const prevBase = prevPy.replace(/\d$/, '');
+    const nextBase = nextPy.replace(/\d$/, '');
+
+    // 前一音节为声母自成音节（zhi/chi/shi/ri/zi/ci/si）
+    const _soloInitials = new Set(['zhi', 'chi', 'shi', 'ri', 'zi', 'ci', 'si']);
+    if (!_soloInitials.has(prevBase)) return false;
+
+    // 后一音节为韵母自成音节（无辅音声母）
+    if (_splitPinyinBase(nextBase) !== null) return false;
+
+    return true;
+}
+
+/**
  * @description: 检查字符串是否为合法拼音音节
  *   支持五种组合：声母+韵母+声调、韵母+声调、声母+声调、声母单独、声母+韵母
  * @param {string} str 拼音字符串，如 'ni3'、'hao'、'n'、'zhong1'

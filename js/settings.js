@@ -334,12 +334,25 @@ export function initSettings() {
         });
     }
 
-    const dotFeedbackSpeakCheck = document.getElementById('dotFeedbackSpeak');
-    if (dotFeedbackSpeakCheck) {
-        dotFeedbackSpeakCheck.checked = SETTINGS.dotFeedbackSpeak === true;
-        dotFeedbackSpeakCheck.addEventListener('change', () => {
-            SETTINGS.dotFeedbackSpeak = dotFeedbackSpeakCheck.checked;
-            saveSettings();
+    const dotFeedbackRadios = document.querySelectorAll('input[name="dotFeedbackMode"]');
+    if (dotFeedbackRadios.length) {
+        const current = SETTINGS.dotFeedbackMode || 'beep';
+        dotFeedbackRadios.forEach(r => {
+            r.checked = (r.value === current);
+            r.addEventListener('change', () => {
+                if (r.checked) { SETTINGS.dotFeedbackMode = r.value; saveSettings(); }
+            });
+        });
+    }
+
+    const textConvRadios = document.querySelectorAll('input[name="textConversionDisplay"]');
+    if (textConvRadios.length) {
+        const current = SETTINGS.textConversionDisplay || 'pinyin';
+        textConvRadios.forEach(r => {
+            r.checked = (r.value === current);
+            r.addEventListener('change', () => {
+                if (r.checked) { SETTINGS.textConversionDisplay = r.value; saveSettings(); renderOutput(); }
+            });
         });
     }
 }

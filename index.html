@@ -160,7 +160,7 @@
                     <button class="mode-toggle-btn active" data-mode="reading">阅读时</button>
                     <button class="mode-toggle-btn" data-mode="writing">书写时</button>
                 </div>
-                <span class="mode-toggle-help tooltip-help" aria-label="书写从右到左，阅读从左到右">?</span>
+                <span class="mode-toggle-help tooltip-help" data-help="mapping-mode">?</span>
             </div>
 
             <div class="mapping-header-right">
@@ -196,10 +196,9 @@
                 <div class="mapping-grid"></div>
             </section>
             <section class="category" data-cat="数字">
-                <div class="category-title">
+                <div class="category-title" data-help="number-braille">
                     <h2>数字</h2>
-                    <span class="mode-toggle-help tooltip-help"
-                        aria-label="除了数号是3456以外，所有数字字符都只用上方四个点位，即1245实现">?</span>
+                    <span class="mode-toggle-help tooltip-help">?</span>
                 </div>
                 <div class="mapping-grid"></div>
             </section>
@@ -210,10 +209,9 @@
                 <div class="mapping-grid"></div>
             </section>
             <section class="category" data-cat="英文字母">
-                <div class="category-title">
+                <div class="category-title" data-help="english-braille">
                     <h2>英文字母</h2>
-                    <span class="mode-toggle-help tooltip-help"
-                        aria-label="A-J只有上面四个点位, K-T在此基础上增加了点位5，U-Z增加了点位56（W例外）">?</span>
+                    <span class="mode-toggle-help tooltip-help">?</span>
                 </div>
                 <div class="mapping-grid"></div>
             </section>
@@ -265,10 +263,6 @@
                     <span>开启省写规则</span>
                     <input type="checkbox" id="omitToneMapping" checked>
                 </label>
-                <label class="dev-toggle-row">
-                    <span>点位语音播报（替代蜂鸣）</span>
-                    <input type="checkbox" id="dotFeedbackSpeak">
-                </label>
                 <div class="dev-sep"></div>
                 <div class="dev-action-keys" id="actionKeyBindings">
                     <div class="dev-toggle-row">
@@ -286,11 +280,22 @@
                 </div>
                 <div class="dev-sep"></div>
                 <div class="dev-radio-group" role="radiogroup" aria-label="上下箭头移动依据">
-                    <span class="dev-radio-label">↑↓箭头</span>
+                    <span class="dev-radio-label">↑↓箭头跳转</span>
                     <label class="dev-radio"><input type="radio" name="cursorJumpMode" value="emptyCell">空方</label>
                     <label class="dev-radio"><input type="radio" name="cursorJumpMode" value="newline">换行</label>
                     <label class="dev-radio"><input type="radio" name="cursorJumpMode" value="sentenceEnd"
                             checked>句子</label>
+                </div>
+                <div class="dev-radio-group" role="radiogroup" aria-label="点位反馈方式">
+                    <span class="dev-radio-label">点位反馈</span>
+                    <label class="dev-radio"><input type="radio" name="dotFeedbackMode" value="beep" checked>蜂鸣</label>
+                    <label class="dev-radio"><input type="radio" name="dotFeedbackMode" value="speak">即时播报</label>
+                </div>
+                <div class="dev-sep"></div>
+                <div class="dev-radio-group" role="radiogroup" aria-label="文本转化显示">
+                    <span class="dev-radio-label">文本转化显示</span>
+                    <label class="dev-radio"><input type="radio" name="textConversionDisplay" value="pinyin" checked>拼音</label>
+                    <label class="dev-radio"><input type="radio" name="textConversionDisplay" value="char">汉字</label>
                 </div>
             </div>
             <div class="dev-section dev-section-main" id="devSectionMain">

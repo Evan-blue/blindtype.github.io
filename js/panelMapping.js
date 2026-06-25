@@ -25,7 +25,7 @@ function _mirrorOneHot(oneHot) {
         return arr.join('');
     };
     if (oneHot.includes('+')) {
-        return oneHot.split('+').map(mirrorSegment).join('+');
+        return oneHot.split('+').map(mirrorSegment).reverse().join('+');
     }
     return mirrorSegment(oneHot);
 }
@@ -75,97 +75,93 @@ export function renderMappingTable() {
     });
 }
 
-const _mappingSlide = document.getElementById('mappingSlide');
-const _mappingOverlay = document.getElementById('mappingOverlay');
-const _mappingBtn = document.getElementById('btnMapping');
-const _mappingCloseBtn = document.getElementById('mappingSlideClose');
-
 export const mappingPanel = {
-    slide: _mappingSlide,
-    overlay: _mappingOverlay,
-    btn: _mappingBtn,
-    closeBtn: _mappingCloseBtn,
+    slide: document.getElementById('mappingSlide'),
+    overlay: document.getElementById('mappingOverlay'),
+    btn: document.getElementById('btnMapping'),
+    closeBtn: document.getElementById('mappingSlideClose'),
     pinToggle: null,
     pinLit: false,
 
     open() {
-        _mappingSlide.classList.add('open');
-        _mappingSlide.removeAttribute('inert');
-        _mappingOverlay.classList.add('open');
-        if (_mappingBtn) _mappingBtn.setAttribute('aria-expanded', 'true');
-        _mappingCloseBtn.focus();
+        this.slide.classList.add('open');
+        this.slide.removeAttribute('inert');
+        this.overlay.classList.add('open');
+        if (this.btn) this.btn.setAttribute('aria-expanded', 'true');
+        this.closeBtn.focus();
         speakText('打开盲文对照表', 1.5);
     },
 
     close() {
-        _mappingSlide.classList.remove('open');
-        _mappingSlide.setAttribute('inert', '');
-        _mappingOverlay.classList.remove('open');
-        if (_mappingBtn) _mappingBtn.setAttribute('aria-expanded', 'false');
-        if (_mappingBtn) _mappingBtn.focus();
+        this.slide.classList.remove('open');
+        this.slide.setAttribute('inert', '');
+        this.overlay.classList.remove('open');
+        if (this.btn) this.btn.setAttribute('aria-expanded', 'false');
+        if (this.btn) this.btn.focus();
         speakText('关闭盲文对照表', 1.5);
     },
 
     toggle() {
-        if (_mappingSlide.classList.contains('open')) mappingPanel.close();
-        else mappingPanel.open();
+        if (this.slide.classList.contains('open')) this.close();
+        else this.open();
+    },
+
+    init() {
+        const pt = document.getElementById('pinToggle');
+        if (pt) {
+            this.pinToggle = pt;
+            pt.addEventListener('click', () => {
+                this.pinLit = !this.pinLit;
+                pt.classList.toggle('lit', this.pinLit);
+                pt.setAttribute('aria-pressed', String(this.pinLit));
+                pt.title = this.pinLit ? '已锁定（仅可通过✕关闭）' : '锁定面板';
+            });
+        }
+        if (this.btn) {
+            this.btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.open();
+            });
+        }
+        this.overlay.addEventListener('click', () => {
+            if (this.pinLit) return;
+            this.close();
+        });
+        this.closeBtn.addEventListener('click', () => this.close());
+        this.slide.addEventListener('click', (e) => { e.stopPropagation(); });
+
+        // 阅读/书写模式切换
+        const modeContainer = document.getElementById('mappingModeToggle');
+        if (modeContainer) {
+            modeContainer.addEventListener('click', (e) => {
+                const btn = e.target.closest('button[data-mode]');
+                if (!btn) return;
+                _readingMode = (btn.dataset.mode === 'reading');
+                modeContainer.querySelectorAll('.mode-toggle-btn').forEach(b => b.classList.toggle('active', b === btn));
+                renderMappingTable();
+                speakText(_readingMode ? '阅读时' : '书写时');
+            });
+        }
+
+        // 拖动改变面板宽度
+        const handle = this.slide.querySelector('.mapping-resize-handle');
+        if (handle) {
+            let dragging = false, startX = 0, startW = 0;
+            handle.addEventListener('mousedown', (e) => {
+                dragging = true;
+                startX = e.clientX;
+                startW = this.slide.offsetWidth;
+                e.preventDefault();
+            });
+            document.addEventListener('mousemove', (e) => {
+                if (!dragging) return;
+                const w = Math.min(810, Math.max(420, startW + startX - e.clientX));
+                this.slide.style.width = w + 'px';
+                this.slide.style.maxWidth = 'none';
+            });
+            document.addEventListener('mouseup', () => { dragging = false; });
+        }
     },
 };
 
-export let toggleMapping = mappingPanel.toggle;
-
-// ── 面板事件绑定 ──
-const _pinToggle = document.getElementById('pinToggle');
-if (_pinToggle) {
-    mappingPanel.pinToggle = _pinToggle;
-    _pinToggle.addEventListener('click', () => {
-        mappingPanel.pinLit = !mappingPanel.pinLit;
-        _pinToggle.classList.toggle('lit', mappingPanel.pinLit);
-        _pinToggle.setAttribute('aria-pressed', String(mappingPanel.pinLit));
-        _pinToggle.title = mappingPanel.pinLit ? '已锁定（仅可通过✕关闭）' : '锁定面板';
-    });
-}
-if (_mappingBtn) {
-    _mappingBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        mappingPanel.open();
-    });
-}
-_mappingOverlay.addEventListener('click', () => {
-    if (mappingPanel.pinLit) return;
-    mappingPanel.close();
-});
-_mappingCloseBtn.addEventListener('click', () => mappingPanel.close());
-_mappingSlide.addEventListener('click', (e) => { e.stopPropagation(); });
-
-// ── 阅读/书写模式切换 ──
-const _modeContainer = document.getElementById('mappingModeToggle');
-if (_modeContainer) {
-    _modeContainer.addEventListener('click', (e) => {
-        const btn = e.target.closest('button[data-mode]');
-        if (!btn) return;
-        _readingMode = (btn.dataset.mode === 'reading');
-        _modeContainer.querySelectorAll('.mode-toggle-btn').forEach(b => b.classList.toggle('active', b === btn));
-        renderMappingTable();
-        speakText(_readingMode ? '阅读时' : '书写时');
-    });
-}
-
-// ── 拖动改变面板宽度 ──
-const _resizeHandle = _mappingSlide && _mappingSlide.querySelector('.mapping-resize-handle');
-if (_resizeHandle) {
-    let _dragging = false, _startX = 0, _startW = 0;
-    _resizeHandle.addEventListener('mousedown', (e) => {
-        _dragging = true;
-        _startX = e.clientX;
-        _startW = _mappingSlide.offsetWidth;
-        e.preventDefault();
-    });
-    document.addEventListener('mousemove', (e) => {
-        if (!_dragging) return;
-        const w = Math.min(810, Math.max(420, _startW + _startX - e.clientX));
-        _mappingSlide.style.width = w + 'px';
-        _mappingSlide.style.maxWidth = 'none';
-    });
-    document.addEventListener('mouseup', () => { _dragging = false; });
-}
+export let toggleMapping = () => mappingPanel.toggle();

@@ -1,4 +1,5 @@
 .claude
+.vscode
 docs
 data/test*.txt
 test_files

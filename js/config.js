@@ -103,7 +103,8 @@ export const DEFAULT_SETTINGS = {
     mergeNewlines: true,
     omitToneMapping: true,
     showVisualizer: true,
-    dotFeedbackSpeak: false,
+    dotFeedbackMode: 'beep',
+    textConversionDisplay: 'pinyin',
 };
 
 // 非可配置动作键集合

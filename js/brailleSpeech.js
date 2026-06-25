@@ -44,7 +44,7 @@ class SpeechQueue {
                 };
                 this.state.currentItem = null;
                 window.speechSynthesis.cancel();
-                this.gen++;
+                this.nextGen();
                 this.play(false);
                 SpeechQueue._activeChannel = null;
             }
@@ -74,8 +74,11 @@ class SpeechQueue {
     shift() { return this._queue.shift(); }
     push(textObject) { this._queue.push(textObject); }
     play(boolVal) { this.isPlaying = boolVal; }
-    clear() { this._queue.length = 0; this.isPlaying = false; this.gen++; }
+    clear() { this._queue.length = 0; this.isPlaying = false; this.nextGen(); }
     isActive() { return this.isPlaying || this.length > 0; }
+    // 代际管理：每次清空或中断时升级 gen，使旧回调失效
+    nextGen() { return ++this.gen; }
+    isExpired(g) { return g !== this.gen; }
 }
 
 const queues = {
@@ -85,15 +88,17 @@ const queues = {
 
 
 // ── 声波可视化事件 ──
-function _notifyVisualizerStart(text) {
-    window.dispatchEvent(new CustomEvent('speech-visualizer-start', { detail: text }));
-}
-function _notifyVisualizerStop() {
-    if (queues.main.isActive() || queues.tutorial.isActive()) return;
-    window.dispatchEvent(new CustomEvent('speech-visualizer-stop'));
-}
-function _notifyVisualizerUpdate(text) {
-    window.dispatchEvent(new CustomEvent('speech-visualizer-update', { detail: text }));
+const notifyVisualizer = {
+    start(text) {
+        window.dispatchEvent(new CustomEvent('speech-visualizer-start', { detail: text }));
+    },
+    stop() {
+        if (queues.main.isActive() || queues.tutorial.isActive()) return;
+        window.dispatchEvent(new CustomEvent('speech-visualizer-stop'));
+    },
+    update(text) {
+        window.dispatchEvent(new CustomEvent('speech-visualizer-update', { detail: text }));
+    },
 }
 
 function _setReadAloudLabel(text) {
@@ -116,7 +121,7 @@ function _playNext(queueName) {
         return;
     }
     q.isPlaying = true;
-    const gen = ++q.gen;
+    const gen = q.nextGen();
     const item = q.shift();
     const itemText = item.text;
 
@@ -133,29 +138,29 @@ function _playNext(queueName) {
     u.rate = item.rate;
 
     u.onboundary = (e) => {
-        if (queueName === 'main' && gen !== q.gen) return;
+        if (queueName === 'main' && q.isExpired(gen)) return;
         if (e.charIndex !== undefined) {
             q.state.charIndex = e.charIndex;
-            if (queueName === 'main') _notifyVisualizerUpdate(itemText.substring(e.charIndex));
+            if (queueName === 'main') notifyVisualizer.update(itemText.substring(e.charIndex));
         }
     };
 
-    u.onstart = () => { if (gen === q.gen) _notifyVisualizerStart(itemText); };
+    u.onstart = () => { if (!q.isExpired(gen)) notifyVisualizer.start(itemText); };
     u.onend = () => {
-        if (gen !== q.gen) return;
+        if (q.isExpired(gen)) return;
         q.isPlaying = false;
         SpeechQueue._activeChannel = null;
         q.state.currentItem = null;
         if (item.onend) item.onend();
-        _notifyVisualizerStop();
+        notifyVisualizer.stop();
         _playNext(queueName);
     };
     u.onerror = () => {
-        if (gen !== q.gen) return;
+        if (q.isExpired(gen)) return;
         q.isPlaying = false;
         SpeechQueue._activeChannel = null;
         q.state.currentItem = null;
-        _notifyVisualizerStop();
+        notifyVisualizer.stop();
         _playNext(queueName);
     };
     SpeechQueue._activeChannel = queueName;
@@ -215,18 +220,18 @@ export function speakImmediate(text, rate) {
     u.rate = rate;
     u.onboundary = (e) => {
         if (e.charIndex !== undefined) {
-            _notifyVisualizerUpdate(utteranceText.substring(e.charIndex));
+            notifyVisualizer.update(utteranceText.substring(e.charIndex));
         }
     };
-    u.onstart = () => _notifyVisualizerStart(utteranceText);
+    u.onstart = () => notifyVisualizer.start(utteranceText);
     u.onend = () => {
         SpeechQueue._activeChannel = null;
-        _notifyVisualizerStop();
+        notifyVisualizer.stop();
         queues.tutorial.resumeIfNeeded();
     };
     u.onerror = () => {
         SpeechQueue._activeChannel = null;
-        _notifyVisualizerStop();
+        notifyVisualizer.stop();
         queues.tutorial.resumeIfNeeded();
     };
     SpeechQueue._activeChannel = 'main';
@@ -245,7 +250,7 @@ export function stopSpeech() {
     if (SpeechQueue._activeChannel === 'main' || !SpeechQueue._activeChannel) {
         window.speechSynthesis.cancel();
     }
-    _notifyVisualizerStop();
+    notifyVisualizer.stop();
     _playNext('main');
 }
 
@@ -290,7 +295,7 @@ export function cancelAllSpeech() {
     }
     SpeechQueue._activeChannel = null;
     window.speechSynthesis.cancel();
-    _notifyVisualizerStop();
+    notifyVisualizer.stop();
 }
 
 /**

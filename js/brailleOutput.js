@@ -298,7 +298,7 @@ export function renderPageRange(startIdx, endIdx, container) {
 
             const pinyinLabel = document.createElement('span');
             pinyinLabel.className = 'bu-group-pinyin';
-            pinyinLabel.textContent = meta.merged;
+            pinyinLabel.textContent = (SETTINGS.textConversionDisplay === 'char' && meta.sourceChar) ? meta.sourceChar : meta.merged;
             group.appendChild(dotsRow);
             group.appendChild(pinyinLabel);
             container.appendChild(group);

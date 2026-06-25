@@ -34,6 +34,8 @@ import {
     chineseToSegedPinyin,
     pinyinToSpokenChar,
     _splitPinyinBase,
+    _shouldOmitTone,
+    _isContextKeep,
 } from './utils-pinyin.js';
 import {
     speakText,
@@ -115,7 +117,7 @@ export const dotInput = {
         const turningOn = !this.state[i];
         this.state[i] = this.state[i] ? 0 : 1;
         this.renderDots();
-        if (SETTINGS.dotFeedbackSpeak) {
+        if (SETTINGS.dotFeedbackMode === 'speak') {
             if (turningOn) speakImmediate(String(idx));
         } else {
             playBeep(turningOn ? 880 : 440, 50);
@@ -525,13 +527,14 @@ function _handleEnglishContext(oneHot, braille) {
     return null;
 }
 
-function _handlePinyinInput(oneHot, braille) {
+function _handlePinyinInput(oneHot, braille, sourceChar) {
     const entry = _lookupBraille(oneHot);
     const pinyin = entry ? entry.label : '';
     const audio = entry ? entry.audio : '';
     const char = entry ? (_resolveEo(oneHot, cursor.idx) || entry.char) : '';
 
     const item = { braille, pinyin, char, audio, oneHot };
+    if (sourceChar) item._sourceChar = sourceChar;
     if (AMBIG_INITIALS[oneHot]) item._ambigInitial = true;
     outputItems.splice(cursor.idx, 0, item);
     cursor.idx = cursor.idx + 1;
@@ -552,6 +555,8 @@ function _handlePinyinInput(oneHot, braille) {
                     audio: combinedEntry.audio,
                     oneHot: combinedKey
                 });
+                if (prev._sourceChar) outputItems[cursor.idx - 1]._sourceChar = prev._sourceChar;
+                if (curr._sourceChar) outputItems[cursor.idx - 1]._sourceChar = curr._sourceChar;
                 cursor.idx = cursor.idx - 1;
                 merged = true;
             }
@@ -562,7 +567,7 @@ function _handlePinyinInput(oneHot, braille) {
     return { speakBrailleArg: merged ? outputItems[cursor.idx - 1].oneHot : oneHot };
 }
 
-function _commitOneHot(oneHot, { silent = false, clearDots = false } = {}) {
+function _commitOneHot(oneHot, { silent = false, clearDots = false, sourceChar = undefined } = {}) {
     const braille = oneHotToBrailleChar(oneHot);
 
     _resolveDeferredPunct(oneHot);
@@ -573,7 +578,7 @@ function _commitOneHot(oneHot, { silent = false, clearDots = false } = {}) {
         || _handleCapitalSign(oneHot, braille)
         || _handleLowercaseSign(oneHot, braille)
         || _handleEnglishContext(oneHot, braille)
-        || _handlePinyinInput(oneHot, braille);
+        || _handlePinyinInput(oneHot, braille, sourceChar);
 
     _finalizeCommit(result, { silent, clearDots });
 }
@@ -869,7 +874,9 @@ export function moveCursorDown() { _moveCursorVertical(1); }
 export function inputOneHot(oneHot) {
     pushUndo();
     if (!getRenderSuppressed()) invalidatePageCache();
-    _commitOneHot(oneHot, { silent: true, clearDots: false });
+    const oh = typeof oneHot === 'string' ? oneHot : oneHot.oneHot;
+    const sc = typeof oneHot === 'string' ? undefined : oneHot.sourceChar;
+    _commitOneHot(oh, { silent: true, clearDots: false, sourceChar: sc });
 }
 
 // ── 数字输入 ──
@@ -970,13 +977,19 @@ export function englishToBraille(text, prevIsSpaceOverride = null) {
 /**
  * @description: 将单个拼音转为 oneHot 编码数组
  * @param {string} py 拼音字符串（可带声调数字）
+ * @param {boolean} [forceKeepTone=false] 强制保留声调（用于上下文规则覆盖）
  * @return {string[]} oneHot数组
  */
-function _pinyinToOneHot(py) {
+function _pinyinToOneHot(py, forceKeepTone) {
     const result = [];
     let base = py;
     let tone = '';
     if (/\d$/.test(py)) { tone = py.slice(-1); base = py.slice(0, -1); }
+
+    // 省写规则：检查是否应省略声调盲文方
+    if (SETTINGS.omitToneMapping && tone && !forceKeepTone && _shouldOmitTone(base, tone)) {
+        tone = '';
+    }
 
     // j/q/x 后紧接 u 时才是 ü（如 ju→jü, que→qüe）；jiu 中的 u 不是韵母开头，不替换
     if (/^[jqx]/.test(base) && base.charAt(1) === 'u') {
@@ -1020,7 +1033,7 @@ function _pinyinToOneHot(py) {
 export function mixedToBraille(text) {
     _ensureBrailleReverseMaps();
 
-    const oneHotList = [];
+    const result = [];
     let prevIsSpace = (cursor.idx === 0 || outputItems[cursor.idx - 1].oneHot === '000000');
     let i = 0;
     while (i < text.length) {
@@ -1028,7 +1041,7 @@ export function mixedToBraille(text) {
 
         // 空白字符 → 空方
         if (/\s/.test(ch)) {
-            oneHotList.push('000000');
+            result.push({ oneHot: '000000' });
             prevIsSpace = true;
             i++;
             continue;
@@ -1041,8 +1054,8 @@ export function mixedToBraille(text) {
                 numStr += text[i];
                 i++;
             }
-            if (!prevIsSpace && oneHotList.length > 0) oneHotList.push('000000');
-            oneHotList.push(...numberToBraille(numStr));
+            if (!prevIsSpace && result.length > 0) result.push({ oneHot: '000000' });
+            for (const oh of numberToBraille(numStr)) result.push({ oneHot: oh });
             prevIsSpace = false;
             continue;
         }
@@ -1054,29 +1067,26 @@ export function mixedToBraille(text) {
                 engStr += text[i];
                 i++;
             }
-            if (!prevIsSpace && oneHotList.length > 0) oneHotList.push('000000');
-            oneHotList.push(...englishToBraille(engStr, true));
+            if (!prevIsSpace && result.length > 0) result.push({ oneHot: '000000' });
+            for (const oh of englishToBraille(engStr, true)) result.push({ oneHot: oh });
             prevIsSpace = false;
             continue;
         }
 
-        // 中文及标点 → 累积到下一个非中文/标点字符，整段走 chineseToBraille
+        // 中文及标点
         let cnStr = '';
         while (i < text.length && !/[\s\d.a-zA-Z]/.test(text[i])) {
             cnStr += text[i];
             i++;
         }
         if (cnStr) {
-            // 前一段是英文/数字时，插入空方分隔
-            if (!prevIsSpace && oneHotList.length > 0) {
-                oneHotList.push('000000');
-            }
-            oneHotList.push(...chineseToBraille(cnStr));
+            if (!prevIsSpace && result.length > 0) result.push({ oneHot: '000000' });
+            result.push(...chineseToBraille(cnStr));
             prevIsSpace = false;
         }
     }
 
-    return oneHotList;
+    return result;
 }
 
 /**
@@ -1085,30 +1095,35 @@ export function mixedToBraille(text) {
  * @param {string} chineseText 汉字文本
  * @return {string[]} oneHot数组
  */
+/**
+ * @description: 将汉字文本转为盲文 oneHot 序列（含源汉字追踪）
+ *   返回 Array<{oneHot: string, sourceChar?: string}>，sourceChar 仅在每组第一个 oneHot 上有值
+ */
 export function chineseToBraille(chineseText) {
     _ensureBrailleReverseMaps();
 
-    // 不分词：逐字转拼音 → oneHot，直接返回
+    // 不分词：逐字转拼音 → oneHot
     if (!SETTINGS.wordSegmentation) {
-        const pinyinArr = chineseToPinyin(chineseText, { toneType: 'num', type: 'array' });
-        // 合并连续破折号 — → ——（盲文映射中 —— 是组合码）
-        for (let i = 0; i < pinyinArr.length - 1; i++) {
-            if (pinyinArr[i] === '—' && pinyinArr[i + 1] === '—') {
-                pinyinArr.splice(i, 2, '——');
+        const chars = Array.from(chineseText);
+        // 先收集所有拼音，以便检测上下文规则
+        const items = [];
+        for (let i = 0; i < chars.length; i++) {
+            const ch = chars[i];
+            if (ch === '—' && i + 1 < chars.length && chars[i + 1] === '—') {
+                items.push({ py: '——', src: '——' });
+                i++;
+            } else {
+                const py = chineseToPinyin(ch, { toneType: 'num', type: 'string' });
+                items.push({ py, src: ch });
             }
         }
-        const oneHotList = [];
-        for (const py of pinyinArr) {
-            oneHotList.push(..._pinyinToOneHot(py));
-        }
-        return oneHotList;
+        return _pinyinItemsToOneHot(items);
     }
 
-    // 分词流程：基于 chineseToSegedPinyin_pyp 的分词+注音结果
-    // 输出格式：[[{origin,result}], [{origin,result}], ...] 每个子数组是一个分词片段
+    // 分词流程
     const segmentedPinyin = chineseToSegedPinyin(chineseText);
 
-    // 合并连续破折号 — → ——（盲文映射中 —— 是组合码）
+    // 合并连续破折号 — → ——
     for (let i = 0; i < segmentedPinyin.length - 1; i++) {
         const cur = segmentedPinyin[i];
         const nxt = segmentedPinyin[i + 1];
@@ -1118,7 +1133,7 @@ export function chineseToBraille(chineseText) {
         }
     }
 
-    const oneHotList = [];
+    const result = [];
     const PUNCT_RE = /^[\s，。！？；：""''（）【】《》、…—～,\.!\?;:'"()\[\]{}]+$/;
 
     for (let i = 0; i < segmentedPinyin.length; i++) {
@@ -1128,29 +1143,57 @@ export function chineseToBraille(chineseText) {
 
         if (isPunct) {
             const oh = REVERSE_ONEHOT_MAPPINGS.charToHot?.[head.origin];
-            if (oh) oneHotList.push(oh);
+            if (oh) result.push({ oneHot: oh });
         } else {
-            for (const ch of seg) {
-                oneHotList.push(..._pinyinToOneHot(ch.result));
-            }
+            // 词内逐字转拼音 → oneHot，含上下文规则检测
+            const wordItems = seg.map(ch => ({ py: ch.result, src: ch.origin }));
+            const brailleEntries = _pinyinItemsToOneHot(wordItems);
+            result.push(...brailleEntries);
         }
 
         if (i + 1 < segmentedPinyin.length) {
             const nextHead = segmentedPinyin[i + 1][0];
             const nextIsPunct = segmentedPinyin[i + 1].length === 1 && PUNCT_RE.test(nextHead.origin);
-            if (!isPunct && !nextIsPunct && oneHotList[oneHotList.length - 1] !== '000000') {
-                oneHotList.push('000000');
+            if (!isPunct && !nextIsPunct && result.length && result[result.length - 1].oneHot !== '000000') {
+                result.push({ oneHot: '000000' });
             }
         }
     }
 
     // 去重连续空方
     const deduped = [];
-    for (const oh of oneHotList) {
-        if (oh === '000000' && deduped[deduped.length - 1] === '000000') continue;
-        deduped.push(oh);
+    for (const entry of result) {
+        if (entry.oneHot === '000000' && deduped.length && deduped[deduped.length - 1].oneHot === '000000') continue;
+        deduped.push(entry);
     }
     return deduped;
+}
+
+/**
+ * @description: 将拼音项列表转为 oneHot 数组，含上下文省写规则检测
+ *   在词/连续文本范围内检测"声母自成音节→韵母自成音节"的上下文规则
+ * @param {Array<{py: string, src: string}>} pinyinItems 拼音项列表
+ * @return {Array<{oneHot: string, sourceChar?: string}>}
+ */
+function _pinyinItemsToOneHot(pinyinItems) {
+    // 检测上下文强制保留位置
+    const forceKeep = new Set();
+    if (SETTINGS.omitToneMapping) {
+        for (let i = 0; i < pinyinItems.length - 1; i++) {
+            if (_isContextKeep(pinyinItems[i].py, pinyinItems[i + 1].py)) {
+                forceKeep.add(i);
+            }
+        }
+    }
+
+    const result = [];
+    for (let i = 0; i < pinyinItems.length; i++) {
+        const items = _pinyinToOneHot(pinyinItems[i].py, forceKeep.has(i));
+        for (let k = 0; k < items.length; k++) {
+            result.push({ oneHot: items[k], sourceChar: k === 0 ? pinyinItems[i].src : undefined });
+        }
+    }
+    return result;
 }
 
 // ── 打字输入模式 ──

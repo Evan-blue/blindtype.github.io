@@ -20,7 +20,8 @@ import { SETTINGS } from './state.js';
  */
 export async function simulateKeyInput(oneHotList, charDelay = 400) {
     for (let i = 0; i < oneHotList.length; i++) {
-        const dots = oneHotList[i].split('').map(Number);
+        const oh = typeof oneHotList[i] === 'string' ? oneHotList[i] : oneHotList[i].oneHot;
+        const dots = oh.split('').map(Number);
 
         clearTimeout(dotInput.debounceTimer); // 防止上一轮的防抖定时器干扰
         // 逐一点亮/关闭对应点位（toggleDot 使用1-based索引）

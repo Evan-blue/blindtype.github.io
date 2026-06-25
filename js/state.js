@@ -167,8 +167,12 @@ export function computeItemMeta() {
                         const tone = _resolveOmittedTone(merged);
                         if (tone) merged += tone;
                     }
+                    let sourceChar = undefined;
                     for (let k = 0; k < syl.count; k++) {
-                        meta[pos + k] = { merged, isFirst: k === 0, isLast: k === syl.count - 1 };
+                        if (outputItems[pos + k]._sourceChar) sourceChar = outputItems[pos + k]._sourceChar;
+                    }
+                    for (let k = 0; k < syl.count; k++) {
+                        meta[pos + k] = { merged, sourceChar, isFirst: k === 0, isLast: k === syl.count - 1 };
                     }
                     pos += syl.count;
                 }

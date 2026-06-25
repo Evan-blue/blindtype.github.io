@@ -65,6 +65,7 @@ import {
     initSettings,
 } from './settings.js';
 import { mappingPanel, renderMappingTable, toggleMapping } from './panelMapping.js';
+import { initHelpTooltips } from './helpTooltip.js';
 import {
     playTutorial,
     handleTutorialNavigation,
@@ -243,7 +244,9 @@ document.addEventListener('DOMContentLoaded', () => {
             updateKeyLabels();
 
             // ── Panel initialization ──
+            mappingPanel.init();
             renderMappingTable();
+            initHelpTooltips();
             initSettings();
 
             // ── Init submodule event handlers ──
@@ -271,7 +274,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 键位设置捕获优先（监听模式下拦截所有按键）
                 if (handleKeyBindingCapture(e)) return;
 
-                // 教程播放中：G/H 切换章节（优先于普通键位分发）
+                // 组合键优先（须在教程G/H导航之前，避免Ctrl+Shift+H被H拦截）
+                const comboAction = matchCombo(e);
+                if (comboAction) {
+                    e.preventDefault();
+                    dispatchAction(comboAction);
+                    return;
+                }
+
+                // 教程播放中：G/H 切换章节
                 if (handleTutorialNavigation(e.code)) { e.preventDefault(); return; }
 
                 // 面板焦点陷阱：Tab 在打开的面板内循环
@@ -298,24 +309,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                // Shift+Esc 直接结束教程
-                if (e.shiftKey && e.key === 'Escape') {
-                    if (stopTutorial()) { e.preventDefault(); return; }
-                }
-
                 // Esc 关闭面板 / 暂停教程
                 if (e.key === 'Escape') {
                     if (kbOverlay.classList.contains('open')) { closeKbOverlay(); e.preventDefault(); return; }
                     if (handleTutorialEscape()) { e.preventDefault(); return; }
                     if (mappingPanel.slide.classList.contains('open') && !mappingPanel.pinLit) { mappingPanel.close(); e.preventDefault(); return; }
-                }
-
-                // 组合键优先
-                const comboAction = matchCombo(e);
-                if (comboAction) {
-                    e.preventDefault();
-                    dispatchAction(comboAction);
-                    return;
                 }
 
                 // Shift+方向键：范围选择

@@ -40,7 +40,7 @@ function _buildSections() {
     return [
         {
             title: '欢迎',
-            text: '欢迎使用盲文输入工具。接下来，我将用约两分钟带你熟悉核心操作。教程播放期间，你可以按 G 键回到上一节，按 H 键跳到下一节。随时按 Escape 键暂停或继续，Shift+Escape 退出教程。按 Control+Shift+H 可以随时虫听本教程。',
+            text: '欢迎使用盲文输入工具。接下来，我将用约两分钟带你熟悉核心操作。教程播放期间，你可以按 G 键回到上一节，按 H 键跳到下一节。随时按 Escape 键暂停或继续。按 Control+Shift+H 结束。',
         },
         {
             title: '1、手在键盘上的位置',
@@ -110,22 +110,15 @@ function _buildSections() {
 }
 
 const welcomeText = '欢迎使用盲文输入工具。这是一个面向视障人士的盲文输入工具，支持拼音、数字、英文的盲文输入，并提供语音播报反馈。是否需要开始新手教程？';
-const welcomeSkipText = '祝你使用愉快！快捷键 Control+Shift+H 随时打开新手教程。';
-const tutorialEndText = '教程已结束，快捷键 Control+Shift+H 随时虫听本教程。';
+const tutorialEndText = '祝你使用愉快！快捷键 Control+Shift+H 随时打开新手教程。';
 
 let _tutorialActive = false;
 let _tutorialPaused = false;
 let _tutorialIdx = 0;
 
 export function playTutorial() {
-    if (_tutorialActive && !_tutorialPaused) {
-        _tutorialPaused = true;
-        stopTutorialSpeech(true);
-        return;
-    }
-    if (_tutorialPaused) {
-        _tutorialPaused = false;
-        _speakTutorialSection();
+    if (_tutorialActive) {
+        stopTutorial();
         return;
     }
     _tutorialActive = true;
@@ -256,7 +249,7 @@ export function welcomeSkip() {
     _markWelcomed();
     _stopWelcomeLoop();
     stopSpeech();
-    speakText(welcomeSkipText);
+    speakText(tutorialEndText);
 }
 
 export function initWelcome() {
