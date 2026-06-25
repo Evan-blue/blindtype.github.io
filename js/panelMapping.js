@@ -67,9 +67,9 @@ export function renderMappingTable() {
                 '<span class="mc-braille">' + braille + '</span>' +
                 '<span class="mc-dots">' + dotsStr + '</span>' +
                 '<span class="mc-label">' + entry.label + '</span>';
-            const speakText = (entry.audio || entry.label) + ', 键位' + onehotToIndex(entry.oneHot)
-            card.addEventListener('click', () => { speakImmediate(speakText) });
-            card.addEventListener('mouseenter', () => { _readingMode && speakImmediate(speakText) });
+            const speakText = (entry.audio || entry.label) + ', 点位' + onehotToIndex(entry.oneHot)
+            card.addEventListener('click', () => { speakImmediate(speakText, undefined, false) });
+            card.addEventListener('mouseenter', () => { _readingMode && speakImmediate(speakText, undefined, false) });
             grid.appendChild(card);
         });
     });

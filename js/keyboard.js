@@ -484,7 +484,8 @@
             // 语音播报键位说明
             const row = el.closest('.kb-ref-row');
             if (row && window._kbSpeakImmediate) {
-                window._kbSpeakImmediate(row.textContent.trim());
+                const spoken = row.textContent.trim().replace(/[↑↓←→]/g, m => ({'↑':'上','↓':'下','←':'左','→':'右'})[m]);
+                window._kbSpeakImmediate(spoken);
             }
         });
         kbRef.addEventListener('mouseout', (e) => {

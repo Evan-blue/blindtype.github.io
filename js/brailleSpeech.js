@@ -38,6 +38,7 @@ class SpeechQueue {
             // 中断/恢复 操作
             this.interrupt = function () {
                 if (!this.state.currentItem) return;
+                if (this.state.currentItem.resumable === false) return;
                 this.state.interruptState = {
                     ...this.state.currentItem,
                     charIndex: Math.max(0, this.state.charIndex - this.state.resume_back),
@@ -174,7 +175,7 @@ function _playNext(queueName) {
  * @param {number} rate  播报速度
  * @return {boolean}
  */
-export function speakText(text, rate) {
+export function speakText(text, rate, resumable = true) {
     // 基础检查：用户设置和浏览器支持
     if (!SETTINGS.allowSpeech) return false;
     if (!window.speechSynthesis) return false;
@@ -182,16 +183,18 @@ export function speakText(text, rate) {
     rate = rate || SETTINGS.speechRate;
 
 
-    // 教程/朗读正在播放时，打断并保存恢复点
-    if (SpeechQueue._activeChannel === 'tutorial' && !queues.tutorial.state.interruptState) {
-        queues.tutorial.interrupt();
-    }
-    if (SpeechQueue._activeChannel === 'main' && !queues.main.state.interruptState) {
-        queues.main.interrupt();
+    // 教程/朗读正在播放时，打断并保存恢复点（resumable=false 时不保存）
+    if (resumable !== false) {
+        if (SpeechQueue._activeChannel === 'tutorial' && !queues.tutorial.state.interruptState) {
+            queues.tutorial.interrupt();
+        }
+        if (SpeechQueue._activeChannel === 'main' && !queues.main.state.interruptState) {
+            queues.main.interrupt();
+        }
     }
 
     queues.main.length = 0; // 新主通道请求替换旧请求
-    queues.main.push({ 'text': ',' + text, 'rate': rate });
+    queues.main.push({ 'text': ',' + text, 'rate': rate, resumable });
     _playNext('main');
     return true;
 }
@@ -202,13 +205,15 @@ export function speakText(text, rate) {
  * @param {number} [rate] 播报速度
  * @return {void}
  */
-export function speakImmediate(text, rate) {
+export function speakImmediate(text, rate, resumable = true) {
     if (!SETTINGS.allowSpeech || !window.speechSynthesis) return;
     rate = rate || SETTINGS.speechRate;
 
-    // 教程正在播放时，保存断点后打断
-    if (SpeechQueue._activeChannel === 'tutorial' && !queues.tutorial.state.interruptState) {
-        queues.tutorial.interrupt();
+    // 教程正在播放时，保存断点后打断（resumable=false 时不保存）
+    if (resumable !== false) {
+        if (SpeechQueue._activeChannel === 'tutorial' && !queues.tutorial.state.interruptState) {
+            queues.tutorial.interrupt();
+        }
     }
     // 清空主通道队列，取消当前语音
     queues.main.clear();

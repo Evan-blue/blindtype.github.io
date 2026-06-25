@@ -49,20 +49,13 @@ button {
     color: var(--text-muted);
     flex-shrink: 0;
     user-select: none;
-    transition: background 0.15s, color 0.15s;
-}
-/* 独立 ? 图标自身 hover */
-.mode-toggle-help[data-help]:hover,
-.mode-toggle-help[data-help]:focus-visible {
-    background: var(--accent);
-    color: #fff;
+    transition: color 0.15s;
 }
 
 /* category-title 整体 hover/active，子级 ? 跟随变色 */
 .category-title[data-help] {
     cursor: help;
     border-radius: 6px;
-    transition: background 0.15s;
 }
 .category-title[data-help]:hover .mode-toggle-help {
     color: #fff;

@@ -395,7 +395,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (tkbdKbToggle) tkbdKbToggle.textContent = 'W';
 
             // ── Header tutorial button ──
-            document.getElementById('btnTutorial').addEventListener('click', () => playTutorial());
+            const btnTutorial = document.getElementById('btnTutorial');
+            btnTutorial.addEventListener('click', () => playTutorial());
+            btnTutorial.addEventListener('mouseenter', () => speakImmediate('打开、关闭新手教程'));
 
             // ── Read aloud ──
             const btnReadAloud = document.getElementById('btnReadAloud');

@@ -7,9 +7,32 @@ import { speakText } from './brailleSpeech.js';
 
 export const HELP_TEXTS = {
     'mapping-mode':          '书写从右向左，阅读从左向右',
-    'number-braille':        '除了数号的点位是3 4 5 6以外，所有数字字符都只用上方四个点位，即1 2 4 5实现。1是1点位，2是1 2点位，小数点是2点位；3、4、5是在1的基础上叠加了4、4 5、5点位。6、7、8是在2的基础上叠加了4、4 5、5点位。9和0是在小数点的基础上上叠加了4、4 5点位。',
-    'english-braille':       '字母A到J只有上面四个点位。A的点位是1，B的点位是2。C、D、E是在A的基础上叠加了4、4 5、5点位。F、G、H是在B的基础上叠加了4、4 5、5点位。I和J是在点位2的基础上叠加了4和4 5点位。K到T在此基础上增加了点位5。U到Z增加了点位5和6，W例外。我们只需记忆A、K、U和例外的W，其余的按此规律就能推到。',
+    'initial-braille':       'g、k、h 与 j、q、x 的判断方法：前者韵母起头字母为：a、o、e、u；后者韵母起头字母为：i、ü',
+    'number-braille':        '数字记忆方法：除了数号的点位是3 4 5 6以外，所有数字字符都只用上方四个点位，即1 2 4 5实现。1是点位1，2是点位1 2，小数点是点位2；数字3、4、5是在1的基础上叠加了4、4 5、5点位。数字6、7、8是在2的基础上叠加了4、4 5、5点位。数字9和0是在小数点的基础上叠加了4、4 5点位。',
+    'english-braille':       '英文字母记忆方法：字母A到J只有上面四个点位。A的点位是1，B的点位是2。C、D、E是在A的基础上叠加了4、4 5、5点位。F、G、H是在B的基础上叠加了4、4 5、5点位。I和J是在点位2的基础上叠加了4和4 5点位。K到T在此基础上增加了点位5。U到Z增加了点位5和6，W例外。我们只需记忆A、K、U和例外的W，其余的按此规律就能推到。',
 };
+
+// ── 拼音字母播报转换 ──
+// 帮助文本中的单字母拼音需先转为汉字再播报，否则读屏会读成英文字母
+
+const PINYIN_LETTER_TO_CHAR = {
+    // 声母
+    'b': '玻', 'p': '坡', 'm': '摸', 'f': '佛',
+    'd': '得', 't': '特', 'n': '讷', 'l': '勒',
+    'g': '哥', 'k': '科', 'h': '喝',
+    'j': '基', 'q': '七', 'x': '西',
+    'zh': '知', 'ch': '吃', 'sh': '诗',
+    'r': '日', 'z': '资', 'c': '雌', 's': '思',
+    // 韵母
+    'a': '啊', 'o': '哦', 'e': '鹅',
+    'i': '衣', 'u': '乌', 'ü': '迂',
+};
+
+function _toSpeakable(text) {
+    return text.replace(/(?<![a-züA-Z])(zh|ch|sh|[bpmfdtnlgkhjqxrzcs]|[aoeiuü])(?![a-züA-Z])/g, (m) => {
+        return PINYIN_LETTER_TO_CHAR[m] || m;
+    });
+}
 
 // ── 浮层工具提示 ──
 
@@ -77,11 +100,12 @@ function _bindTrigger(el, text) {
 }
 
 function _bindSpeak(el, text) {
+    const spoken = _toSpeakable(text);
     const speak = (e) => {
         e.preventDefault();
         e.stopPropagation();
         _showTooltip(el, text);
-        speakText(text);
+        speakText(spoken);
     };
     el.addEventListener('click', speak);
     el.addEventListener('keydown', (e) => {
