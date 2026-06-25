@@ -397,7 +397,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // ── Header tutorial button ──
             const btnTutorial = document.getElementById('btnTutorial');
             btnTutorial.addEventListener('click', () => playTutorial());
-            btnTutorial.addEventListener('mouseenter', () => speakImmediate('打开、关闭新手教程'));
+            btnTutorial.addEventListener('mouseenter', () => speakImmediate('打开/关闭新手教程'));
 
             // ── Read aloud ──
             const btnReadAloud = document.getElementById('btnReadAloud');
