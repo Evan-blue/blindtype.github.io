@@ -6,7 +6,7 @@ import {
     SETTINGS,
 } from './state.js';
 import { invalidatePageCache, renderOutput } from './brailleOutput.js';
-import { speakText } from './brailleSpeech.js';
+import { speak } from './brailleSpeech.js';
 
 let _undoStack = [];
 let _redoStack = [];
@@ -55,7 +55,7 @@ export function undo() {
     if (_undoStack.length === 0) return;
     _redoStack.push(_snapshot());
     _restore(_undoStack.pop());
-    speakText('撤销');
+    speak.text('撤销');
 }
 
 /**
@@ -66,7 +66,7 @@ export function redo() {
     if (_redoStack.length === 0) return;
     _undoStack.push(_snapshot());
     _restore(_redoStack.pop());
-    speakText('重做');
+    speak.text('重做');
 }
 
 export function clearHistory() {

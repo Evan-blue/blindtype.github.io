@@ -43,10 +43,8 @@ import {
     initBrailleOutput,
 } from './brailleOutput.js';
 import {
-    speakText,
-    speakBraille,
+    speak,
     readAloud,
-    speakImmediate,
 } from './brailleSpeech.js';
 import { initAudioVisualizer, visualizerStart, visualizerStop, updateSpeechLabel } from './audioVisualizer.js';
 import {
@@ -85,6 +83,7 @@ import {
     initFileOperations,
 } from './fileOperations.js';
 import { initDevPanel } from './devPanel.js';
+import { togglePractice, isPracticeActive, handlePracticeKey } from './practice.js';
 
 let _toggleKbOverlay = null;
 let _toggleTheme = null;
@@ -115,7 +114,7 @@ function _handleSelectAll() {
     cursor.selAnchor = 0;
     cursor.idx = outputItems.length;
     renderOutput();
-    speakText('已全选');
+    speak.text('已全选');
 }
 
 /**
@@ -130,7 +129,7 @@ function _handleSpeechRateChange(delta) {
     SETTINGS.speechRate = newRate;
     saveSettings();
     if (window._kbSyncSettings) window._kbSyncSettings({ speechRate: SETTINGS.speechRate });
-    speakText('语速' + SETTINGS.speechRate, SETTINGS.speechRate);
+    speak.text('语速' + SETTINGS.speechRate, SETTINGS.speechRate);
 }
 
 /**
@@ -167,6 +166,10 @@ const ACTION_HANDLERS = {
     speakBindings: () => { if (window._kbSpeakAllBindings) window._kbSpeakAllBindings(); },
     pageUp: () => { if (pages.isActive) switchToPage(pages.idx - 1); },
     pageDown: () => { if (pages.isActive) switchToPage(pages.idx + 1); },
+    togglePractice: () => {
+        if (kbOverlay.classList.contains('open')) closeKbOverlay();
+        togglePractice();
+    },
 };
 
 function dispatchAction(action) {
@@ -274,6 +277,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 键位设置捕获优先（监听模式下拦截所有按键）
                 if (handleKeyBindingCapture(e)) return;
 
+                // 练习快捷键 Ctrl+Shift+E（直接检测，避免IME/浏览器拦截）
+                if (e.ctrlKey && e.shiftKey && e.code === 'KeyE') {
+                    e.preventDefault();
+                    if (kbOverlay.classList.contains('open')) closeKbOverlay();
+                    togglePractice();
+                    return;
+                }
+
                 // 组合键优先（须在教程G/H导航之前，避免Ctrl+Shift+H被H拦截）
                 const comboAction = matchCombo(e);
                 if (comboAction) {
@@ -281,6 +292,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     dispatchAction(comboAction);
                     return;
                 }
+
+                // 练习模式：拦截点位键和动作键
+                if (isPracticeActive() && handlePracticeKey(e)) { e.preventDefault(); return; }
 
                 // 教程播放中：G/H 切换章节
                 if (handleTutorialNavigation(e.code)) { e.preventDefault(); return; }
@@ -367,7 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // ── Preview click/keyboard to speak ──
             previewBox.addEventListener('click', () => {
-                if (dotInput.isLit) speakBraille(dotInput.onehot);
+                if (dotInput.isLit) speak.braille(dotInput.onehot);
             });
 
             // ── Theme toggle ──
@@ -397,7 +411,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // ── Header tutorial button ──
             const btnTutorial = document.getElementById('btnTutorial');
             btnTutorial.addEventListener('click', () => playTutorial());
-            btnTutorial.addEventListener('mouseenter', () => speakImmediate('打开/关闭新手教程'));
+            btnTutorial.addEventListener('mouseenter', () => speak.immediate('打开/关闭新手教程'));
+
+            // ── Header practice button ──
+            const btnPractice = document.getElementById('btnPractice');
+            btnPractice.addEventListener('click', () => togglePractice());
+            btnPractice.addEventListener('mouseenter', () => speak.immediate('打开练习面板'));
 
             // ── Read aloud ──
             const btnReadAloud = document.getElementById('btnReadAloud');
@@ -493,8 +512,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const kbIframeClose = document.getElementById('kbIframeClose');
 
             window._kbOpenSeqBinding = _startSeqBinding;
-            window._kbSpeak = speakText;
-            window._kbSpeakImmediate = speakImmediate;
+            window._kbSpeak = speak.text;
+            window._kbSpeakImmediate = speak.immediate;
 
             window._kbSpeakAllBindings = function () {
                 const kb = SETTINGS.keyBindings.keyboard || {};
@@ -506,7 +525,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (nkb[d]) numParts.push(_keyLabel(nkb[d]).replace('小键盘', ''));
                 }
                 const msg = '主键盘点位键：' + kbdParts.join('、') + '。小键盘点位键：' + numParts.join('、') + '。';
-                speakText(msg, SETTINGS.speechRate);
+                speak.text(msg, SETTINGS.speechRate);
             };
 
             window._kbApplyPreset = function (scope, name) {
@@ -530,7 +549,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     else if (code === 'Period') labels.push('句号');
                     else labels.push(code);
                 }
-                speakText('启用' + groupLabel + '键位预设，' + labels.join(' '), SETTINGS.speechRate);
+                speak.text('启用' + groupLabel + '键位预设，' + labels.join(' '), SETTINGS.speechRate);
             };
 
             window._kbOnDotDrop = function (scope, dot, code) {
@@ -597,11 +616,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 kbOverlay.classList.add('open');
                 syncKeyboard();
                 syncKbSettings();
-                speakText('打开键盘和设置');
+                speak.text('打开键盘和设置');
             }
             function closeKbOverlay() {
                 kbOverlay.classList.remove('open');
-                speakText('关闭键盘和设置');
+                speak.text('关闭键盘和设置');
             }
             _toggleKbOverlay = function () {
                 kbOverlay.classList.contains('open') ? closeKbOverlay() : openKbOverlay();

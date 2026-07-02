@@ -1,0 +1,306 @@
+/* ── Practice Overlay ── */
+.practice-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s, visibility 0.25s;
+}
+
+.practice-overlay.open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.practice-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 10px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-card);
+    flex-shrink: 0;
+    position: relative;
+}
+
+/* ── Topic toggle bar ── */
+.practice-topic-bar {
+    display: flex;
+    gap: 4px;
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 3px;
+}
+
+.practice-topic-tab {
+    padding: 5px 14px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 13px;
+    cursor: pointer;
+    transition: 0.15s;
+    white-space: nowrap;
+    font-family: inherit;
+}
+
+.practice-topic-tab:hover {
+    color: var(--text);
+    background: var(--bg-card);
+}
+
+.practice-topic-tab.active {
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+}
+
+.practice-label {
+    font-size: 16px;
+    color: var(--text-sub);
+    font-weight: bold;
+}
+
+.practice-close {
+    position: absolute;
+    right: 16px;
+    min-width: 40px;
+    min-height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--border-light);
+    background: transparent;
+    color: var(--text);
+    font-size: 18px;
+    cursor: pointer;
+    transition: .15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+}
+
+.practice-close:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-light);
+}
+
+/* ── Body / Panels ── */
+.practice-body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+    padding: 20px;
+}
+
+.practice-panels {
+    display: flex;
+    gap: 48px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.practice-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.practice-section-label {
+    font-size: 15px;
+    color: var(--text-sub);
+    font-weight: 600;
+    user-select: none;
+}
+
+/* ── Preview box ── */
+.practice-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 120px;
+    min-height: 44px;
+    padding: 6px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border-light);
+    background: var(--bg-card);
+    font-size: 28px;
+    color: var(--text);
+    user-select: none;
+    transition: 0.15s;
+}
+
+.practice-preview .braille-char {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.practice-preview .braille-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.practice-preview .braille-label {
+    text-align: center;
+    font-size: 10px;
+    color: var(--text-muted);
+    line-height: 1;
+}
+
+.practice-preview .braille-writing {
+    font-size: 28px;
+    line-height: 1;
+    color: var(--text-muted);
+}
+
+.practice-preview .braille-sep {
+    color: var(--text-muted);
+    font-size: 20px;
+    transform: scale(0.2, 1.5) translateY(-0.1em);
+    line-height: 40px;
+    opacity: 0.5;
+}
+
+.practice-preview .braille-reading {
+    font-size: 28px;
+    line-height: 1;
+    color: var(--text);
+}
+
+.practice-preview .preview-dots {
+    font-size: 11px;
+    color: var(--text-sub);
+    min-height: 1em;
+}
+
+.practice-preview .pinyin-label {
+    font-size: 13px;
+    color: var(--text-sub);
+    font-weight: bold;
+    min-height: 1em;
+}
+
+#practiceInputDots {
+    height: 1.2em;
+}
+
+#practiceInputLabel {
+    height: 1.2em;
+}
+
+.practice-preview.empty .braille-writing,
+.practice-preview.empty .braille-reading,
+.practice-preview.empty .braille-sep,
+.practice-preview.empty .braille-label,
+.practice-preview.empty .preview-dots,
+.practice-preview.empty .pinyin-label {
+    color: var(--empty-color);
+}
+
+.practice-score {
+    font-size: 13px;
+    color: var(--text-sub);
+    user-select: none;
+}
+
+/* ── Target grid (read-only appearance) ── */
+.practice-target .dot-cell {
+    cursor: default;
+}
+
+.practice-target .dot-cell:hover {
+    border-color: var(--border-light);
+    background: var(--bg);
+}
+
+/* ── Success flash ── */
+.practice-success .practice-target .dot-cell.active {
+    animation: practicePulse 0.4s ease;
+}
+
+@keyframes practicePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
+
+/* ── Close strips (same as kb overlay) ── */
+.practice-overlay .kb-close-strip {
+    position: fixed;
+    top: 42px;
+    bottom: 0;
+    width: 12%;
+    z-index: 10;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s, background 0.2s;
+    color: var(--text-sub);
+    font-size: 22px;
+    user-select: none;
+}
+
+.practice-overlay .kb-close-strip:hover {
+    opacity: 1;
+    background: rgba(127, 90, 240, 0.1);
+}
+
+/* ── Practice button in header ── */
+.practice-header-btn {
+    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border-light);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    transition: 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.practice-header-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-light);
+}
+
+.practice-header-btn kbd {
+    font-size: 11px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    border: 1px solid var(--border-light);
+    background: var(--bg-card);
+    color: var(--text-sub);
+    white-space: nowrap;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+    .practice-panels {
+        flex-direction: column;
+        gap: 24px;
+    }
+    .practice-overlay .kb-close-strip {
+        width: 10%;
+    }
+}

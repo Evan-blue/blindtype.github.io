@@ -143,7 +143,7 @@ header {
 .kb-iframe-overlay {
     position: fixed;
     inset: 0;
-    z-index: 3000;
+    z-index: 3100;
     background: var(--bg);
     display: flex;
     flex-direction: column;

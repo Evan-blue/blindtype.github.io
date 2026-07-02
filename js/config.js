@@ -70,6 +70,7 @@ export const KEY_COMBOS = [
     { ctrl: true, key: 'k', action: 'speakBindings' },
     { ctrl: true, key: 'o', action: 'openFile' },
     { ctrl: true, shift: true, key: 'H', action: 'tutorial' },
+    { ctrl: true, shift: true, key: 'E', action: 'togglePractice' },
     { ctrl: true, key: 'ArrowUp', action: 'speechRateUp' },
     { ctrl: true, key: 'ArrowDown', action: 'speechRateDown' },
     { key: 'q', action: 'toggleMapping' },
@@ -106,6 +107,8 @@ export const DEFAULT_SETTINGS = {
     dotFeedbackMode: 'beep',
     textConversionDisplay: 'pinyin',
 };
+
+export const ALERT_SPEECH_RATE = 1.5;
 
 // 非可配置动作键集合
 export const _NON_CONFIGURABLE_KEYS = new Set([

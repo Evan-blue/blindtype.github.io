@@ -1,8 +1,7 @@
 // tutorial.js - 新手教程文案（面向视障用户，用于语音播报）
 
 import {
-    speakText,
-    speakTutorialText,
+    speak,
     stopTutorialSpeech,
     stopSpeech,
     isMainSpeechActive,
@@ -137,9 +136,9 @@ function _speakTutorialSection() {
     }
     const sec = sections[_tutorialIdx];
     const text = sec.title + '。' + sec.text;
-    const rate = SETTINGS.speechRate || 0.9;
+    const rate = SETTINGS.speechRate;
 
-    speakTutorialText(text, rate, () => {
+    speak.tutorial(text, rate, () => {
         if (!_tutorialActive || _tutorialPaused) return;
         _tutorialIdx++;
         _speakTutorialSection();
@@ -157,7 +156,7 @@ export function handleTutorialNavigation(keyId) {
             _speakTutorialSection();
             return true;
         }
-        speakText('已是最后一节');
+        speak.text('已是最后一节');
         return true;
     }
     if (keyId === 'KeyG') {
@@ -168,7 +167,7 @@ export function handleTutorialNavigation(keyId) {
             _speakTutorialSection();
             return true;
         }
-        speakText('已是第一节');
+        speak.text('已是第一节');
         return true;
     }
     return false;
@@ -192,7 +191,7 @@ export function stopTutorial() {
     _tutorialPaused = false;
     _tutorialIdx = 0;
     stopTutorialSpeech(true);
-    speakText(tutorialEndText);
+    speak.text(tutorialEndText);
     return true;
 }
 
@@ -249,7 +248,7 @@ export function welcomeSkip() {
     _markWelcomed();
     _stopWelcomeLoop();
     stopSpeech();
-    speakText(tutorialEndText);
+    speak.text(tutorialEndText);
 }
 
 export function initWelcome() {
@@ -260,10 +259,10 @@ export function initWelcome() {
     welcomeMask.classList.add('active');
     welcomeBtnYes.focus();
 
-    speakText(welcomeText);
+    speak.text(welcomeText);
     _welcomeInterval = setInterval(() => {
         if (isMainSpeechActive()) return;
-        speakText(welcomeText);
+        speak.text(welcomeText);
     }, 3000);
 
     welcomeBtnYes.addEventListener('click', welcomeConfirm);

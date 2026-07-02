@@ -72,6 +72,7 @@ button {
     padding: 12px 16px;
     font-size: 13px;
     line-height: 1.7;
+    white-space: pre-line;
     box-shadow: 0 4px 24px #00000022;
     z-index: 1100;
     opacity: 0;

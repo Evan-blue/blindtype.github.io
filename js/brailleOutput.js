@@ -8,7 +8,7 @@ import {
     computeItemMeta,
     SETTINGS,
 } from './state.js';
-import { speakText } from './brailleSpeech.js';
+import { speak } from './brailleSpeech.js';
 
 export const outputArea = document.getElementById('outputArea');
 cursor.dom = document.getElementById('cursor');
@@ -390,7 +390,7 @@ export function switchToPage(pageNum) {
 
     renderCurrentPage();
     schedulePreRender();
-    speakText(`第${pages.idx + 1}页，共${pages.breaks.length}页`);
+    speak.text(`第${pages.idx + 1}页，共${pages.breaks.length}页`);
 }
 
 /**

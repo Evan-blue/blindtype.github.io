@@ -353,3 +353,46 @@
     margin: 0;
     cursor: pointer;
 }
+
+/* ── 浏览器快捷键参考 ── */
+.dev-shortcut-group {
+    margin-bottom: 8px;
+}
+
+.dev-shortcut-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-sub);
+    margin-bottom: 3px;
+    padding-bottom: 2px;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.dev-shortcut-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--text-muted);
+    padding: 1px 0;
+    white-space: nowrap;
+}
+
+.dev-shortcut-row kbd {
+    min-width: 78px;
+    text-align: center;
+    font-size: 9px;
+    padding: 0 3px;
+    border-radius: 3px;
+    border: 1px solid var(--border-light);
+    background: var(--bg);
+    color: var(--text-sub);
+    font-family: inherit;
+    white-space: nowrap;
+}
+
+.dev-shortcut-row.used kbd {
+    background: var(--accent-light);
+    border-color: var(--accent);
+    color: var(--accent);
+}

@@ -11,6 +11,7 @@ import {
     NUMBER_SIGN,
     _lookupBraille,
 } from './loadMappings.js';
+import { ALERT_SPEECH_RATE } from './config.js';
 import { pinyinToSpokenChar, resolveSoloFinal } from './utils-pinyin.js';
 import { indexToOnehot } from './utils-braille.js';
 
@@ -20,11 +21,20 @@ import { indexToOnehot } from './utils-braille.js';
 // - 主通道 stopSpeech() 不影响教程队列
 // - 教程通道 stopTutorialSpeech() 默认不调 cancel()；forceStop=true 时立即打断
 
+class SpeechItem {
+    constructor(text, rate, { onend, resumable = true } = {}) {
+        this.text = text;
+        this.rate = rate;
+        this.onend = onend;
+        this.resumable = resumable;
+    }
+}
+
 class SpeechQueue {
     static _activeChannel = null; // 'main' | 'tutorial' | null
     constructor(name, recordState = false) {
         this.name = name; // 'main' | 'tutorial'
-        this._queue = []; // { text, rate, onend? }
+        this._queue = [];
         this.isPlaying = false;
         this.gen = 0; // 生成器，用于取消时使过期的回调失效
         if (recordState) {
@@ -59,7 +69,7 @@ class SpeechQueue {
                 this.state.interruptState = null;
                 const resumeText = state.text.substring(state.charIndex);
                 if (!resumeText) { if (state.onend) state.onend(); return; }
-                this.push({ text: resumeText, rate: state.rate, onend: state.onend });
+                this.push(new SpeechItem(resumeText, state.rate, { onend: state.onend }));
                 _playNext(this.name);
             }
             this.clearInterruptState = function () {
@@ -168,6 +178,59 @@ function _playNext(queueName) {
     window.speechSynthesis.speak(u);
 }
 
+
+export const speak = {
+    braille: speakBraille,
+    text: speakText,
+    immediate: speakImmediate,
+    alert: speakAlert,
+    tutorial: speakTutorialText,
+};
+
+/**
+ * @description: 播报盲文字符。数字上下文中自动切换为数字读法。
+ * @param {string} input       盲文的onehot编码
+ * @param {number} [rate]      播报速度
+ * @param {object} [opts]      选项
+ * @param {boolean} [opts.forceNumber] 强制按数字映射播报
+ * @return {boolean}
+ */
+function speakBraille(input, rate, opts = {}) {
+    let oneHot;
+    if (typeof input === 'string' && input.includes('+')) {
+        oneHot = input;
+    } else {
+        oneHot = indexToOnehot(input);
+    }
+
+    if (outputItems.isInNumberContext(cursor.idx) || opts.forceNumber) {
+        const digit = ONEHOT_MAPPINGS.number[oneHot];
+        if (digit) {
+            return speakText(digit.audio || digit.label, rate);
+        }
+    }
+    if (outputItems.isInEnglishContext(cursor.idx)) {
+        const letter = ONEHOT_MAPPINGS.letter[oneHot];
+        if (letter && letter.char) {
+            const engItem = outputItems[outputItems.getEnglishStartIdx(cursor.idx)];
+            const isUpper = engItem.letterCase === 'upper';
+            const audioParts = (letter.audio || '').split(' ');
+            return speakText(isUpper ? (audioParts[0] || letter.char[0]) : (audioParts[1] || letter.char[1]), rate);
+        }
+    }
+    if (oneHot === NUMBER_SIGN && ONEHOT_MAPPINGS.number[oneHot]) {
+        return speakText(ONEHOT_MAPPINGS.number[oneHot].audio, rate);
+    }
+
+    const entry = _lookupBraille(oneHot);
+    if (!entry) return false;
+
+    const raw = entry.audio || entry.label;
+    if (!raw || !window.speechSynthesis) return false;
+
+    return speakText(pinyinToSpokenChar(raw), rate);
+}
+
 /**
  * @description: 主通道播报（操作反馈、朗读等），新请求替换排队中的旧请求。
  * 教程播放期间自动暂停教程，主通道播完后从断点恢复。
@@ -175,16 +238,24 @@ function _playNext(queueName) {
  * @param {number} rate  播报速度
  * @return {boolean}
  */
-export function speakText(text, rate, resumable = true) {
+function speakText(text, rate, resumable_or_opts = true) {
     // 基础检查：用户设置和浏览器支持
     if (!SETTINGS.allowSpeech) return false;
     if (!window.speechSynthesis) return false;
     // TODO 参数归一化：把其他类型输入（index, oneHot）转为text
     rate = rate || SETTINGS.speechRate;
 
+    let resumable, onend;
+    if (typeof resumable_or_opts === 'object') {
+        resumable = resumable_or_opts.resumable !== false;
+        onend = resumable_or_opts.onend;
+    } else {
+        resumable = resumable_or_opts !== false;
+        onend = null;
+    }
 
     // 教程/朗读正在播放时，打断并保存恢复点（resumable=false 时不保存）
-    if (resumable !== false) {
+    if (resumable) {
         if (SpeechQueue._activeChannel === 'tutorial' && !queues.tutorial.state.interruptState) {
             queues.tutorial.interrupt();
         }
@@ -194,7 +265,7 @@ export function speakText(text, rate, resumable = true) {
     }
 
     queues.main.length = 0; // 新主通道请求替换旧请求
-    queues.main.push({ 'text': ',' + text, 'rate': rate, resumable });
+    queues.main.push(new SpeechItem(',' + text, rate, { resumable, onend }));
     _playNext('main');
     return true;
 }
@@ -205,7 +276,7 @@ export function speakText(text, rate, resumable = true) {
  * @param {number} [rate] 播报速度
  * @return {void}
  */
-export function speakImmediate(text, rate, resumable = true) {
+function speakImmediate(text, rate, resumable = true) {
     if (!SETTINGS.allowSpeech || !window.speechSynthesis) return;
     rate = rate || SETTINGS.speechRate;
 
@@ -244,6 +315,30 @@ export function speakImmediate(text, rate, resumable = true) {
 }
 
 /**
+ * @description: 系统提示播报，使用固定 ALERT_SPEECH_RATE
+ * @param {string} text 播报内容
+ * @return {boolean}
+ */
+function speakAlert(text) {
+    return speakText(text, ALERT_SPEECH_RATE);
+}
+
+/**
+ * @description: 教程通道播报
+ * @param {string} text
+ * @param {number} rate
+ * @param {function} onend 播报自然结束时回调（被取消时不回调）
+ * @return {boolean}
+ */
+function speakTutorialText(text, rate, onend) {
+    if (!SETTINGS.allowSpeech) { if (onend) onend(); return false; }
+    if (!window.speechSynthesis) return false;
+    queues.tutorial.push(new SpeechItem(text, rate, { onend }));
+    _playNext('tutorial');
+    return true;
+}
+
+/**
  * @description: 停止主通道语音（不影响教程通道）
  * @return {void}
  */
@@ -257,21 +352,6 @@ export function stopSpeech() {
     }
     notifyVisualizer.stop();
     _playNext('main');
-}
-
-/**
- * @description: 教程通道播报
- * @param {string} text
- * @param {number} rate
- * @param {function} onend 播报自然结束时回调（被取消时不回调）
- * @return {boolean}
- */
-export function speakTutorialText(text, rate, onend) {
-    if (!SETTINGS.allowSpeech) { if (onend) onend(); return false; }
-    if (!window.speechSynthesis) return false;
-    queues.tutorial.push({ text, rate, onend });
-    _playNext('tutorial');
-    return true;
 }
 
 /**
@@ -312,57 +392,8 @@ export function isMainSpeechActive() {
 }
 
 
-// ── 盲文字符播报 ──
-
-/**
- * @description: 播报盲文字符。数字上下文中自动切换为数字读法。
- * @param {string} input       盲文的onehot编码
- * @param {number} [rate]      播报速度
- * @param {object} [opts]      选项
- * @param {boolean} [opts.forceNumber] 强制按数字映射播报
- * @return {boolean}
- */
-export function speakBraille(input, rate, opts = {}) {
-    let oneHot;
-    if (typeof input === 'string' && input.includes('+')) {
-        oneHot = input;
-    } else {
-        oneHot = indexToOnehot(input);
-    }
-
-    if (outputItems.isInNumberContext(cursor.idx) || opts.forceNumber) {
-        const digit = ONEHOT_MAPPINGS.number[oneHot];
-        if (digit) {
-            return speakText(digit.audio || digit.label, rate);
-        }
-    }
-    if (outputItems.isInEnglishContext(cursor.idx)) {
-        const letter = ONEHOT_MAPPINGS.letter[oneHot];
-        if (letter && letter.char) {
-            const engItem = outputItems[outputItems.getEnglishStartIdx(cursor.idx)];
-            const isUpper = engItem.letterCase === 'upper';
-            const audioParts = (letter.audio || '').split(' ');
-            return speakText(isUpper ? (audioParts[0] || letter.char[0]) : (audioParts[1] || letter.char[1]), rate);
-        }
-    }
-    if (oneHot === NUMBER_SIGN && ONEHOT_MAPPINGS.number[oneHot]) {
-        return speakText(ONEHOT_MAPPINGS.number[oneHot].audio, rate);
-    }
-
-    const entry = _lookupBraille(oneHot);
-    if (!entry) return false;
-
-    const raw = entry.audio || entry.label;
-    if (!raw || !window.speechSynthesis) return false;
-
-    return speakText(pinyinToSpokenChar(raw), rate);
-}
-
-
 // ── 按键音效 ──
-
 let _audioCtx = null;
-
 export function playBeep(freq = 880, duration = 50) {
     try {
         if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -380,7 +411,6 @@ export function playBeep(freq = 880, duration = 50) {
 }
 
 // ── 全文朗读 ──
-
 export function readAloud() {
     if (isMainSpeechActive()) {
         stopSpeech();

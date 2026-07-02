@@ -1,9 +1,9 @@
 // fileOperations.js - 文件打开与保存
 
 import { outputItems, SETTINGS } from './state.js';
-import { mixedToBraille, _batchInputOneHot } from './brailleInput.js';
-import { speakText } from './brailleSpeech.js';
-import { clearOutput } from './brailleInput.js';
+import { _batchInputOneHot, clearOutput } from './brailleInput.js';
+import { toOneHot } from './utils-braille.js';
+import { speak } from './brailleSpeech.js';
 
 /**
  * @description: 读取文件内容并渲染到输出区
@@ -14,7 +14,7 @@ function _loadFileContent(file) {
     const reader = new FileReader();
     reader.onload = async () => {
         const rawText = reader.result;
-        if (!rawText) { speakText('文件内容为空'); return; }
+        if (!rawText) { speak.text('文件内容为空'); return; }
 
         const textNoNewline = rawText.replace(/[\r\n]/g, ' ');
         const isOneHotFile = /\b[01]{6}\b/.test(textNoNewline);
@@ -32,33 +32,33 @@ function _loadFileContent(file) {
             if (oneHotList && oneHotList.length > 0) {
                 clearOutput();
                 await _batchInputOneHot(oneHotList);
-                speakText(`已加载${oneHotList.length}个盲文字符`);
+                speak.text(`已加载${oneHotList.length}个盲文字符`);
             }
             return;
         }
 
-        if (!rawText.trim()) { speakText('文件内容为空'); return; }
+        if (!rawText.trim()) { speak.text('文件内容为空'); return; }
 
         if (hasNewlines) {
             let text = rawText.replace(/\r\n/g, '\n');
             if (SETTINGS.mergeNewlines) text = text.replace(/(\s*\n)+\s*/g, '\n');
             text = text.replace(/\n/g, '  ');
-            const result = mixedToBraille(text);
+            const result = toOneHot.mixed(text);
             if (result && result.length > 0) {
                 clearOutput();
                 await _batchInputOneHot(result);
-                speakText('已加载文本');
+                speak.text('已加载文本');
             } else {
-                speakText('文件中未检测到有效内容');
+                speak.text('文件中未检测到有效内容');
             }
         } else {
-            const result = mixedToBraille(rawText.trim());
+            const result = toOneHot.mixed(rawText.trim());
             if (result && result.length > 0) {
                 clearOutput();
                 await _batchInputOneHot(result);
-                speakText('已加载文本');
+                speak.text('已加载文本');
             } else {
-                speakText('文件中未检测到有效内容');
+                speak.text('文件中未检测到有效内容');
             }
         }
     };
@@ -88,7 +88,7 @@ export function handleOpenFile() {
  */
 export function handleSaveContent() {
     if (outputItems.length === 0) {
-        speakText('当前没有可保存的内容', 1.5);
+        speak.alert('当前没有可保存的内容');
         return;
     }
 
@@ -147,7 +147,7 @@ export function initFileOperations() {
         const file = e.dataTransfer?.files[0];
         if (!file) return;
         if (!file.name.toLowerCase().endsWith('.txt')) {
-            speakText('仅支持txt文件');
+            speak.text('仅支持txt文件');
             return;
         }
         _loadFileContent(file);

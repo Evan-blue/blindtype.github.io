@@ -1,15 +1,18 @@
 // helpTooltip.js - 帮助提示系统（兼顾正常用户视觉展示与视障用户语音播报）
 
-import { speakText } from './brailleSpeech.js';
+import { speak } from './brailleSpeech.js';
 
 // ── 帮助文本注册中心 ──
 // 所有篇幅较长的帮助文本集中在此，HTML 中只需 data-help="key" 即可引用
 
 export const HELP_TEXTS = {
     'mapping-mode':          '书写从右向左，阅读从左向右',
+    
     'initial-braille':       'g、k、h 与 j、q、x 的判断方法：前者韵母起头字母为：a、o、e、u；后者韵母起头字母为：i、ü',
-    'number-braille':        '数字记忆方法：除了数号的点位是3 4 5 6以外，所有数字字符都只用上方四个点位，即1 2 4 5实现。1是点位1，2是点位1 2，小数点是点位2；数字3、4、5是在1的基础上叠加了4、4 5、5点位。数字6、7、8是在2的基础上叠加了4、4 5、5点位。数字9和0是在小数点的基础上叠加了4、4 5点位。',
-    'english-braille':       '英文字母记忆方法：字母A到J只有上面四个点位。A的点位是1，B的点位是2。C、D、E是在A的基础上叠加了4、4 5、5点位。F、G、H是在B的基础上叠加了4、4 5、5点位。I和J是在点位2的基础上叠加了4和4 5点位。K到T在此基础上增加了点位3。U到Z增加了点位3和6，W例外。我们只需记忆A、K、U和例外的W，其余的按此规律就能推到。',
+    
+    'number-braille':        '数字记忆方法：除了数号的点位是3 4 5 6以外，所有数字字符都只用上方四个点位，即1 2 4 5实现。\n1是点位1，2是点位1 2，小数点是点位2；\n数字3、4、5是在1的基础上叠加了4、4 5、5点位。\n数字6、7、8是在2的基础上叠加了4、4 5、5点位。\n数字9和0是在小数点的基础上叠加了4、4 5点位。\n几个数字可以按照 1 2 小数点、3 4 5、6 7 8、9 0 的规律记忆。',
+    
+    'english-braille':       '英文字母记忆方法：字母A到J只有上面四个点位。\nA的点位是1，B的点位是1 2。\nC、D、E是在A的基础上叠加了4、4 5、5点位。\nF、G、H是在B的基础上叠加了4、4 5、5点位。\nI和J是在点位2的基础上叠加了4和4 5点位。\n\nK到T是在A到J的此基础上增加了点位3。\nU到Z是在A到J的增加了点位3和6（注意W例外）。\n我们只需记忆A、K、U和例外的W，其余的按此规律就能推到。',
 };
 
 // ── 拼音字母播报转换 ──
@@ -105,7 +108,7 @@ function _bindSpeak(el, text) {
         e.preventDefault();
         e.stopPropagation();
         _showTooltip(el, text);
-        speakText(spoken);
+        speak.text(spoken);
     };
     el.addEventListener('click', speak);
     el.addEventListener('keydown', (e) => {

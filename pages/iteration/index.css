@@ -239,14 +239,6 @@ body {
     text-decoration: none;
 }
 
-@media (prefers-reduced-motion: reduce) {
-    html { scroll-behavior: auto; }
-    .entry { animation: none; }
-    .entry.milestone::before { animation: none; }
-    .side-nav a { transition: none; }
-    .side-nav a::after { transition: none; }
-}
-
 @media (max-width: 780px) {
     .main-wrap {
         flex-direction: column;

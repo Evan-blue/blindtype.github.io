@@ -192,6 +192,12 @@
     cursor: copy;
 }
 
+.kb-key.swap-target {
+    border-color: #f0a020 !important;
+    box-shadow: 0 0 8px rgba(240, 160, 32, 0.6), inset 0 0 8px rgba(240, 160, 32, 0.25);
+    cursor: pointer;
+}
+
 /* ── 参考面板悬停高亮 ── */
 .kb-key.highlight {
     border-color: rgba(255,255,255,0.7);

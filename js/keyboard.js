@@ -515,7 +515,6 @@
 
     function _validDrop(el, scope) {
         if (!el || !el.classList.contains('kb-key')) return false;
-        if (el.hasAttribute('data-color')) return false;
         const dk = el.getAttribute('data-key');
         if (!dk) return false;
         if (scope === 'keyboard') {
@@ -537,7 +536,9 @@
 
     kbSection.addEventListener('dragend', (e) => {
         kbSection.querySelectorAll('.kb-key.dragging').forEach(k => k.classList.remove('dragging'));
-        kbSection.querySelectorAll('.kb-key.drop-target').forEach(k => k.classList.remove('drop-target'));
+        kbSection.querySelectorAll('.kb-key.drop-target, .kb-key.swap-target').forEach(k => {
+            k.classList.remove('drop-target', 'swap-target');
+        });
         _dragInfo = null;
     });
 
@@ -545,11 +546,15 @@
         e.preventDefault();
         if (!_dragInfo) return;
         const key = e.target.closest('.kb-key');
-        kbSection.querySelectorAll('.kb-key.drop-target').forEach(k => {
-            if (k !== key) k.classList.remove('drop-target');
+        kbSection.querySelectorAll('.kb-key.drop-target, .kb-key.swap-target').forEach(k => {
+            if (k !== key) k.classList.remove('drop-target', 'swap-target');
         });
         if (_validDrop(key, _dragInfo.scope)) {
-            key.classList.add('drop-target');
+            if (key.hasAttribute('data-color')) {
+                key.classList.add('swap-target');
+            } else {
+                key.classList.add('drop-target');
+            }
             e.dataTransfer.dropEffect = 'move';
         } else {
             e.dataTransfer.dropEffect = 'none';
@@ -558,47 +563,92 @@
 
     kbSection.addEventListener('dragleave', (e) => {
         const key = e.target.closest('.kb-key');
-        if (key) key.classList.remove('drop-target');
+        if (key) {
+            key.classList.remove('drop-target', 'swap-target');
+        }
     });
 
     kbSection.addEventListener('drop', (e) => {
         e.preventDefault();
-        kbSection.querySelectorAll('.kb-key.drop-target').forEach(k => k.classList.remove('drop-target'));
+        kbSection.querySelectorAll('.kb-key.drop-target, .kb-key.swap-target').forEach(k => {
+            k.classList.remove('drop-target', 'swap-target');
+        });
         if (!_dragInfo) return;
         const key = e.target.closest('.kb-key');
         if (!_validDrop(key, _dragInfo.scope)) { _dragInfo = null; return; }
 
         const targetDataKey = key.getAttribute('data-key');
+        const targetInfo = _dotFromKey(key);
+        const group = _dragInfo.scope === 'numpad' ? 'numpad' : 'keyboard';
 
-        // 移除源键着色
+        // 拖到同一个键上，忽略
+        if (targetInfo && targetInfo.dot === _dragInfo.dot) {
+            _dragInfo = null;
+            return;
+        }
+
         const sourceEl = kbSection.querySelector(
             `.kb-key[data-dot="${_dragInfo.dot}"][data-key="${CSS.escape(_dragInfo.dataKey)}"]`
         );
-        if (sourceEl) {
-            sourceEl.removeAttribute('data-color');
-            sourceEl.removeAttribute('data-dot');
-            sourceEl.draggable = false;
-        }
 
-        // 给目标键着色
-        key.setAttribute('data-color', _dragInfo.color);
-        key.setAttribute('data-dot', _dragInfo.dot);
-        key.draggable = true;
+        if (targetInfo) {
+            // ── 交换模式：目标键上已有盲文点位，互换两个点位 ──
+            const sourceCode = dataKeyToCode(targetDataKey);
+            const targetCode = dataKeyToCode(_dragInfo.dataKey);
 
-        // 更新内存中的绑定数据
-        const code = dataKeyToCode(targetDataKey);
-        if (code) {
-            const group = _dragInfo.scope === 'numpad' ? 'numpad' : 'keyboard';
-            if (_lastBindings && _lastBindings[group]) {
-                _lastBindings[group][_dragInfo.dot] = code;
+            // 更新源键：换成目标的点位
+            if (sourceEl) {
+                sourceEl.setAttribute('data-color', targetInfo.color);
+                sourceEl.setAttribute('data-dot', targetInfo.dot);
+                sourceEl.draggable = true;
             }
-            matchPresets(
-                _lastBindings && _lastBindings.keyboard,
-                _lastBindings && _lastBindings.numpad
-            );
-            if (_lastBindings) updateBindingStatus(_lastBindings);
-            if (window._kbOnDotDrop) {
-                window._kbOnDotDrop(_dragInfo.scope, _dragInfo.dot, code);
+            // 更新目标键：换成拖拽源的点位
+            key.setAttribute('data-color', _dragInfo.color);
+            key.setAttribute('data-dot', _dragInfo.dot);
+            key.draggable = true;
+
+            // 更新 _lastBindings
+            if (sourceCode && targetCode && _lastBindings && _lastBindings[group]) {
+                _lastBindings[group][_dragInfo.dot] = sourceCode;
+                _lastBindings[group][targetInfo.dot] = targetCode;
+                matchPresets(
+                    _lastBindings && _lastBindings.keyboard,
+                    _lastBindings && _lastBindings.numpad
+                );
+                if (_lastBindings) updateBindingStatus(_lastBindings);
+                if (window._kbOnDotDrop) {
+                    window._kbOnDotDrop(_dragInfo.scope, _dragInfo.dot, sourceCode);
+                    window._kbOnDotDrop(_dragInfo.scope, targetInfo.dot, targetCode);
+                }
+            }
+        } else {
+            // ── 常规模式：移动到空白键 ──
+            // 移除源键着色
+            if (sourceEl) {
+                sourceEl.removeAttribute('data-color');
+                sourceEl.removeAttribute('data-dot');
+                sourceEl.draggable = false;
+            }
+
+            // 给目标键着色
+            key.setAttribute('data-color', _dragInfo.color);
+            key.setAttribute('data-dot', _dragInfo.dot);
+            key.draggable = true;
+
+            // 更新内存中的绑定数据
+            const code = dataKeyToCode(targetDataKey);
+            if (code) {
+                if (_lastBindings && _lastBindings[group]) {
+                    _lastBindings[group][_dragInfo.dot] = code;
+                }
+                matchPresets(
+                    _lastBindings && _lastBindings.keyboard,
+                    _lastBindings && _lastBindings.numpad
+                );
+                if (_lastBindings) updateBindingStatus(_lastBindings);
+                if (window._kbOnDotDrop) {
+                    window._kbOnDotDrop(_dragInfo.scope, _dragInfo.dot, code);
+                }
             }
         }
 

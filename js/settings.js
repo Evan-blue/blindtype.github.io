@@ -1,6 +1,6 @@
 // settings.js — 设置逻辑（原 panelSettings.js 去面板化）
 
-import { speakText, cancelAllSpeech } from './brailleSpeech.js';
+import { speak, cancelAllSpeech } from './brailleSpeech.js';
 import { cursor } from './state.js';
 import { invalidatePageCache, renderOutput } from './brailleOutput.js';
 import { updateKeyLabels, renderToolbarKeyLabels } from './brailleInput.js';
@@ -63,7 +63,7 @@ function _showBindMask(text) {
         textEl.textContent = text;
         mask.classList.add('active');
     }
-    speakText(text);
+    speak.text(text);
 }
 
 function _hideBindMask() {
@@ -111,7 +111,7 @@ export function renderActionKeyBindingsUI(container) {
             else cur.textContent = '…';
             const actionLabel = CONFIGURABLE_ACTIONS[action]?.label || action;
             _showBindMask('请按下按键绑定：' + actionLabel);
-            speakText('请按下按键绑定：' + actionLabel);
+            speak.text('请按下按键绑定：' + actionLabel);
         });
     });
 }
@@ -128,7 +128,7 @@ export function _startSeqBinding() {
     }
     _seqBinding = { step: 0, keys: {} };
     _showBindMask('请按下第1个按键（1号点）');
-    speakText('请按下第1个按键，1号点');
+    speak.text('请按下第1个按键，1号点');
 }
 
 // ── 键位捕获（全局键盘事件拦截） ──
@@ -142,14 +142,14 @@ export function handleKeyBindingCapture(e) {
             const badge = akbContainer?.querySelector(`.kb-badge[data-action="${_akbListening}"]`);
             if (badge) badge.click();
             else _cancelAllListening();
-            speakText('已取消');
+            speak.text('已取消');
             return true;
         }
         if (_seqBinding !== null) {
             e.preventDefault();
             e.stopPropagation();
             _cancelAllListening();
-            speakText('已取消');
+            speak.text('已取消');
             return true;
         }
         return false;
@@ -168,12 +168,12 @@ export function handleKeyBindingCapture(e) {
         if (dupDot) {
             const dupDotNum = parseInt(dupDot[0], 10);
             _showBindMask('按键 ' + keyIdToLabel(keyId) + ' 已被' + DOT_NAMES[dupDotNum - 1] + '使用，请换一个按键（' + DOT_NAMES[dot - 1] + '）');
-            speakText(keyIdToLabel(keyId) + '已被' + DOT_NAMES[dupDotNum - 1] + '使用，请换一个按键');
+            speak.text(keyIdToLabel(keyId) + '已被' + DOT_NAMES[dupDotNum - 1] + '使用，请换一个按键');
             return true;
         }
         if (_isKeyColored(keyId)) {
             _showBindMask('按键 ' + keyIdToLabel(keyId) + ' 已分配功能，请换一个按键（' + DOT_NAMES[dot - 1] + '）');
-            speakText(keyIdToLabel(keyId) + '已分配功能，请换一个按键');
+            speak.text(keyIdToLabel(keyId) + '已分配功能，请换一个按键');
             return true;
         }
         _seqBinding.keys[dot] = keyId;
@@ -192,11 +192,11 @@ export function handleKeyBindingCapture(e) {
             _seqBinding = null;
             _hideBindMask();
             const groupLabel = group === 'numpad' ? '小键盘' : '主键盘';
-            speakText(groupLabel + '键位已全部更新');
+            speak.text(groupLabel + '键位已全部更新');
         } else {
             const nextDot = ORDER[_seqBinding.step];
             _showBindMask('请按下第' + (_seqBinding.step + 1) + '个按键（' + DOT_NAME_AUDIOS[nextDot - 1] + '）');
-            speakText('请按下第' + (_seqBinding.step + 1) + '个按键，' + DOT_NAME_AUDIOS[nextDot - 1]);
+            speak.text('请按下第' + (_seqBinding.step + 1) + '个按键，' + DOT_NAME_AUDIOS[nextDot - 1]);
         }
         return true;
     }
@@ -217,7 +217,7 @@ export function handleKeyBindingCapture(e) {
         _akbListening = null;
         _hideBindMask();
         const actionLabel = CONFIGURABLE_ACTIONS[boundAction]?.label || boundAction;
-        speakText(actionLabel + '已绑定' + keyIdToLabel(keyId));
+        speak.text(actionLabel + '已绑定' + keyIdToLabel(keyId));
         return true;
     }
 
@@ -250,7 +250,7 @@ export function resetToDefaults() {
     if (akbContainer) renderActionKeyBindingsUI(akbContainer);
     invalidatePageCache();
     renderOutput();
-    speakText('已恢复默认设置');
+    speak.text('已恢复默认设置');
 }
 
 // ── 设置初始化（仅开发者面板中的控件） ──
@@ -361,6 +361,6 @@ export function initSettings() {
 document.getElementById('bindMask')?.addEventListener('click', () => {
     if (_akbListening !== null || _seqBinding !== null) {
         _cancelAllListening();
-        speakText('已取消');
+        speak.text('已取消');
     }
 });

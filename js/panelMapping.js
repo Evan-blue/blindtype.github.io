@@ -1,6 +1,6 @@
 // panelMapping.js - 盲文对照表面板
 
-import { speakText, speakImmediate } from './brailleSpeech.js';
+import { speak } from './brailleSpeech.js';
 import { oneHotToBrailleChar, onehotToIndex } from './utils-braille.js';
 import { ONEHOT_MAPPINGS } from './loadMappings.js';
 
@@ -62,14 +62,15 @@ export function renderMappingTable() {
 
             const card = document.createElement('div');
             card.className = 'mapping-card';
+            card.setAttribute('aria-hidden', 'true');
             if (isCombined) card.classList.add('combined');
             card.innerHTML =
                 '<span class="mc-braille">' + braille + '</span>' +
                 '<span class="mc-dots">' + dotsStr + '</span>' +
                 '<span class="mc-label">' + entry.label + '</span>';
             const speakText = (entry.audio || entry.label) + ', 点位' + onehotToIndex(entry.oneHot)
-            card.addEventListener('click', () => { speakImmediate(speakText, undefined, false) });
-            card.addEventListener('mouseenter', () => { _readingMode && speakImmediate(speakText, undefined, false) });
+            card.addEventListener('click', () => { speak.immediate(speakText, undefined, false) });
+            card.addEventListener('mouseenter', () => { _readingMode && speak.immediate(speakText, undefined, false) });
             grid.appendChild(card);
         });
     });
@@ -89,7 +90,7 @@ export const mappingPanel = {
         this.overlay.classList.add('open');
         if (this.btn) this.btn.setAttribute('aria-expanded', 'true');
         this.closeBtn.focus();
-        speakText('打开盲文对照表', 1.5);
+        speak.alert('打开盲文对照表');
     },
 
     close() {
@@ -98,7 +99,7 @@ export const mappingPanel = {
         this.overlay.classList.remove('open');
         if (this.btn) this.btn.setAttribute('aria-expanded', 'false');
         if (this.btn) this.btn.focus();
-        speakText('关闭盲文对照表', 1.5);
+        speak.alert('关闭盲文对照表');
     },
 
     toggle() {
@@ -139,7 +140,7 @@ export const mappingPanel = {
                 _readingMode = (btn.dataset.mode === 'reading');
                 modeContainer.querySelectorAll('.mode-toggle-btn').forEach(b => b.classList.toggle('active', b === btn));
                 renderMappingTable();
-                speakText(_readingMode ? '阅读时' : '书写时');
+                speak.text(_readingMode ? '阅读时' : '书写时');
             });
         }
 

@@ -94,6 +94,11 @@ function _getCtxStartIdx(target, idx, key) {
     return i + 1;
 }
 
+const CTX_KEYS = [
+    ['isNumber', 'number'],
+    ['isEnglish', 'english'],
+];
+
 export const outputItems = new Proxy(_outputItems, {
     get(target, prop) {
         // ── 上下文判断方法 ──
@@ -101,6 +106,12 @@ export const outputItems = new Proxy(_outputItems, {
         if (prop === 'isInEnglishContext') return (idx) => _isInCtx(target, idx, 'isEnglish');
         if (prop === 'getNumberStartIdx') return (idx) => _getCtxStartIdx(target, idx, 'isNumber');
         if (prop === 'getEnglishStartIdx') return (idx) => _getCtxStartIdx(target, idx, 'isEnglish');
+        if (prop === 'getContext') return (idx) => {
+            for (const [key, name] of CTX_KEYS) {
+                if (_isInCtx(target, idx, key)) return name;
+            }
+            return 'pinyin';
+        };
         if (prop === 'getEnglishCase') {
             return (idx) => {
                 const start = _getCtxStartIdx(target, idx, 'isEnglish');

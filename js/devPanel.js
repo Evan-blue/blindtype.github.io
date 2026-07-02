@@ -3,12 +3,9 @@
 import {
     dotInput,
     inputOneHot,
-    numberToBraille,
-    englishToBraille,
-    chineseToBraille,
-    mixedToBraille,
     _batchInputOneHot,
 } from './brailleInput.js';
+import { toOneHot } from './utils-braille.js';
 import { ONEHOT_MAPPINGS } from './loadMappings.js';
 import { SETTINGS } from './state.js';
 
@@ -193,28 +190,28 @@ export function initDevPanel() {
     document.getElementById('devMixedInput').addEventListener('click', () => {
         const input = prompt('请输入内容（支持中英数字混合）');
         if (!input || !input.trim()) return;
-        execMode(mixedToBraille(input.trim()));
+        execMode(toOneHot.mixed(input.trim()));
     });
 
     // ── 汉字输入转盲文 ──
     document.getElementById('devChineseInput').addEventListener('click', () => {
         const input = prompt('请输入汉字内容');
         if (!input || !input.trim()) return;
-        execMode(chineseToBraille(input.trim()));
+        execMode(toOneHot.chinese(input.trim()));
     });
 
     // ── 输入数字 ──
     document.getElementById('devNumberInput').addEventListener('click', () => {
         const input = prompt('请输入数字');
         if (!input || !input.trim()) return;
-        execMode(numberToBraille(input.trim()));
+        execMode(toOneHot.number(input.trim()));
     });
 
     // ── 输入英文 ──
     document.getElementById('devEnglishInput').addEventListener('click', () => {
         const input = prompt('请输入英文内容');
         if (!input || !input.trim()) return;
-        execMode(englishToBraille(input.trim()));
+        execMode(toOneHot.english(input.trim()));
     });
 
     // ── 我爱你 ──
@@ -229,22 +226,22 @@ export function initDevPanel() {
 
     // ── 静夜思 ──
     document.getElementById('devJingYeSi').addEventListener('click', () => {
-        execMode(chineseToBraille('床前明月光，疑是地上霜。举头望明月，低头思故乡。'));
+        execMode(toOneHot.chinese('床前明月光，疑是地上霜。举头望明月，低头思故乡。'));
     });
 
     // ── 老鼠爱大米 ──
     document.getElementById('devMouseLoveRice').addEventListener('click', () => {
-        execMode(chineseToBraille('我爱你，爱着你，就像老鼠爱大米。'));
+        execMode(toOneHot.chinese('我爱你，爱着你，就像老鼠爱大米。'));
     });
 
     // ── 123.456 ──
     document.getElementById('devNumber').addEventListener('click', () => {
-        execMode(numberToBraille('123.456'));
+        execMode(toOneHot.number('123.456'));
     });
 
     // ── English sentence ──
     document.getElementById('devEnglish').addEventListener('click', () => {
-        execMode(englishToBraille('Can you type without looking?'));
+        execMode(toOneHot.english('Can you type without looking?'));
     });
 
     // ── 随机若干字符 ──
@@ -286,7 +283,7 @@ export function initDevPanel() {
                             text = text.replace(/\r\n/g, '\n');
                             if (SETTINGS.mergeNewlines) text = text.replace(/(\s*\n)+\s*/g, '\n');
                             text = text.replace(/\n/g, '  ');
-                            await _batchInputOneHot(mixedToBraille(text));
+                            await _batchInputOneHot(toOneHot.mixed(text));
                         });
                         articleList.appendChild(item);
                     });
