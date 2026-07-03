@@ -1,5 +1,7 @@
 // audioVisualizer.js - 语音播报状态指示（极简角标脉冲）
 
+import { SETTINGS } from './state.js';
+
 const DOT_ID = 'speechDot';
 const LABEL_ID = 'speechLabel';
 const MAX_LABEL = 18;
@@ -44,5 +46,14 @@ export function visualizerStop() {
 }
 
 export function initAudioVisualizer() {
+    const indicator = document.getElementById('speechIndicator');
+    if (!indicator) return;
+    if (SETTINGS.showVisualizer === false) {
+        indicator.style.display = 'none';
+        return;
+    }
     _ensureElements();
+    window.addEventListener('speech-visualizer-start', (e) => visualizerStart(e.detail));
+    window.addEventListener('speech-visualizer-stop', visualizerStop);
+    window.addEventListener('speech-visualizer-update', (e) => updateSpeechLabel(e.detail));
 }

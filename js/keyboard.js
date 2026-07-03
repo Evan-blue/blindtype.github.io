@@ -1,250 +1,382 @@
-// keyboard.js - 键盘和设置可视化逻辑（与主页集成）
+// keyboard.js - 键盘和设置可视化逻辑（ES Module）
 
-(function () {
-    // ── 预设映射（名称即定义：键盘预设每个字符是 data-key，numpad 预设取数字部分）──
-    const PRESET_NAMES = [
-        'fdsjkl', 
-        'ik,ujm', 'ol.ik,', '.,mlkj', 'lkjoiu',
-        'numpad852741', 'numpad963852', 'numpad654987', 'numpad321654',
-    ];
+import { speak } from './brailleSpeech.js';
+import { keyIdToLabel, DEFAULT_SETTINGS, CONFIGURABLE_ACTIONS } from './config.js';
+import { SETTINGS, saveSettings, applyKeyBindings, applyActionKeyBindings } from './state.js';
+import { updateKeyLabels, renderToolbarKeyLabels } from './brailleInput.js';
 
-    function buildPresets() {
-        const out = {};
-        for (const name of PRESET_NAMES) {
-            const preset = {};
-            const isNumpad = name.startsWith('numpad');
-            const keys = isNumpad ? [...name.slice(6)].map(d => 'num' + d) : [...name];
-            keys.forEach((k, i) => { preset[k] = 'dot' + (i + 1); });
-            if (!isNumpad) preset.space = 'space';
-            out[name] = preset;
-        }
-        return out;
+// ── 预设映射（名称即定义：键盘预设每个字符是 data-key，numpad 预设取数字部分）──
+const PRESET_NAMES = [
+    'fdsjkl',
+    'ik,ujm', 'ol.ik,', '.,mlkj', 'lkjoiu',
+    'numpad852741', 'numpad963852', 'numpad654987', 'numpad321654',
+];
+
+function buildPresets() {
+    const out = {};
+    for (const name of PRESET_NAMES) {
+        const preset = {};
+        const isNumpad = name.startsWith('numpad');
+        const keys = isNumpad ? [...name.slice(6)].map(d => 'num' + d) : [...name];
+        keys.forEach((k, i) => { preset[k] = 'dot' + (i + 1); });
+        if (!isNumpad) preset.space = 'space';
+        out[name] = preset;
     }
+    return out;
+}
 
-    const presets = buildPresets();
+const presets = buildPresets();
 
-    const kbSection = document.getElementById('kbSection');
-    const legend = document.getElementById('kbLegend');
-    const controls = document.getElementById('kbControls');
-    let _lastBindings = null;
+// ── 模块级 DOM 引用（initKeyboard() 中赋值）──
+let kbSection = null;
+let legend = null;
+let controls = null;
+let _lastBindings = null;
 
-    // ── e.code → data-key ──
-    function codeToDataKey(code) {
-        const m = code.match(/^Key([A-Z])$/);
-        if (m) return m[1].toLowerCase();
-        const nm = code.match(/^Numpad(\d)$/);
-        if (nm) return 'num' + nm[1];
-        if (code === 'NumpadDivide') return 'num/';
-        if (code === 'NumpadMultiply') return 'num*';
-        if (code === 'NumpadAdd') return 'num+';
-        if (code === 'NumpadSubtract') return 'num-';
-        if (code === 'NumpadDecimal') return 'num.';
-        if (code === 'NumpadEnter') return 'numenter';
-        if (code === 'Comma') return ',';
-        if (code === 'Period') return '.';
-        if (code === 'Semicolon') return ';';
-        if (code === 'Quote') return '\'';
-        if (code === 'Space') return 'space';
-        if (code === 'Backspace') return 'backspace';
-        const dm = code.match(/^Digit(\d)$/);
-        if (dm) return dm[1];
-        return null;
-    }
+// ── e.code → data-key ──
+function codeToDataKey(code) {
+    const m = code.match(/^Key([A-Z])$/);
+    if (m) return m[1].toLowerCase();
+    const nm = code.match(/^Numpad(\d)$/);
+    if (nm) return 'num' + nm[1];
+    if (code === 'NumpadDivide') return 'num/';
+    if (code === 'NumpadMultiply') return 'num*';
+    if (code === 'NumpadAdd') return 'num+';
+    if (code === 'NumpadSubtract') return 'num-';
+    if (code === 'NumpadDecimal') return 'num.';
+    if (code === 'NumpadEnter') return 'numenter';
+    if (code === 'Comma') return ',';
+    if (code === 'Period') return '.';
+    if (code === 'Semicolon') return ';';
+    if (code === 'Quote') return '\'';
+    if (code === 'Space') return 'space';
+    if (code === 'Backspace') return 'backspace';
+    const dm = code.match(/^Digit(\d)$/);
+    if (dm) return dm[1];
+    return null;
+}
 
-    function dotNum(color) {
-        const m = color && color.match(/^dot(\d)$/);
-        return m ? m[1] : '';
-    }
+function dotNum(color) {
+    const m = color && color.match(/^dot(\d)$/);
+    return m ? m[1] : '';
+}
 
-    function clearAll() {
-        kbSection.querySelectorAll('.kb-key[data-color]').forEach(k => {
-            k.removeAttribute('data-color');
-            k.removeAttribute('data-dot');
-            k.draggable = false;
-        });
-    }
+function clearAll() {
+    kbSection.querySelectorAll('.kb-key[data-color]').forEach(k => {
+        k.removeAttribute('data-color');
+        k.removeAttribute('data-dot');
+        k.draggable = false;
+    });
+}
 
-    function applyBindings(kbdBindings, numBindings, spaceKey, numConfirmKey, deleteKey, backspaceKey, numDeleteKey, clearInputKey, numClearInputKey, functionKeys) {
-        clearAll();
-        if (kbdBindings) {
-            for (const [dot, code] of Object.entries(kbdBindings)) {
-                const dataKey = codeToDataKey(code);
-                if (dataKey) {
-                    const el = kbSection.querySelector(`.kb-key[data-key="${dataKey}"]`);
-                    if (el) {
-                        el.setAttribute('data-color', 'dot' + dot);
-                        el.setAttribute('data-dot', dot);
-                        el.draggable = true;
-                    }
+function _applyBindings(kbdBindings, numBindings, spaceKey, numConfirmKey, deleteKey, backspaceKey, numDeleteKey, clearInputKey, numClearInputKey, functionKeys) {
+    clearAll();
+    if (kbdBindings) {
+        for (const [dot, code] of Object.entries(kbdBindings)) {
+            const dataKey = codeToDataKey(code);
+            if (dataKey) {
+                const el = kbSection.querySelector(`.kb-key[data-key="${dataKey}"]`);
+                if (el) {
+                    el.setAttribute('data-color', 'dot' + dot);
+                    el.setAttribute('data-dot', dot);
+                    el.draggable = true;
                 }
             }
         }
-        if (numBindings) {
-            for (const [dot, code] of Object.entries(numBindings)) {
-                const dataKey = codeToDataKey(code);
-                if (dataKey) {
-                    const el = kbSection.querySelector(`.kb-key[data-key="${dataKey}"]`);
-                    if (el) {
-                        el.setAttribute('data-color', 'dot' + dot);
-                        el.setAttribute('data-dot', dot);
-                        el.draggable = true;
-                    }
+    }
+    if (numBindings) {
+        for (const [dot, code] of Object.entries(numBindings)) {
+            const dataKey = codeToDataKey(code);
+            if (dataKey) {
+                const el = kbSection.querySelector(`.kb-key[data-key="${dataKey}"]`);
+                if (el) {
+                    el.setAttribute('data-color', 'dot' + dot);
+                    el.setAttribute('data-dot', dot);
+                    el.draggable = true;
                 }
             }
         }
-        if (spaceKey) {
-            const dk = codeToDataKey(spaceKey);
-            if (dk) {
-                const el = kbSection.querySelector(`.kb-key[data-key="${dk}"]`);
-                if (el) el.setAttribute('data-color', 'space');
-            }
+    }
+    if (spaceKey) {
+        const dk = codeToDataKey(spaceKey);
+        if (dk) {
+            const el = kbSection.querySelector(`.kb-key[data-key="${dk}"]`);
+            if (el) el.setAttribute('data-color', 'space');
         }
-        if (numConfirmKey) {
-            const dk = codeToDataKey(numConfirmKey);
-            if (dk) {
-                const el = kbSection.querySelector(`.kb-key[data-key="${dk}"]`);
-                if (el) el.setAttribute('data-color', 'space');
-            }
+    }
+    if (numConfirmKey) {
+        const dk = codeToDataKey(numConfirmKey);
+        if (dk) {
+            const el = kbSection.querySelector(`.kb-key[data-key="${dk}"]`);
+            if (el) el.setAttribute('data-color', 'space');
         }
-        [deleteKey, backspaceKey, numDeleteKey].forEach(code => {
-            if (!code) return;
-            const dk = codeToDataKey(code);
-            if (dk) {
-                const el = kbSection.querySelector(`.kb-key[data-key="${dk}"]`);
-                if (el) el.setAttribute('data-color', 'delete');
-            }
+    }
+    [deleteKey, backspaceKey, numDeleteKey].forEach(code => {
+        if (!code) return;
+        const dk = codeToDataKey(code);
+        if (dk) {
+            const el = kbSection.querySelector(`.kb-key[data-key="${dk}"]`);
+            if (el) el.setAttribute('data-color', 'delete');
+        }
+    });
+    if (clearInputKey) {
+        const dk = codeToDataKey(clearInputKey);
+        if (dk) {
+            const el = kbSection.querySelector(`.kb-key[data-key="${dk}"]`);
+            if (el) el.setAttribute('data-color', 'action');
+        }
+    }
+    if (numClearInputKey) {
+        const dk = codeToDataKey(numClearInputKey);
+        if (dk) {
+            const el = kbSection.querySelector(`.kb-key[data-key="${dk}"]`);
+            if (el) el.setAttribute('data-color', 'action');
+        }
+    }
+    if (functionKeys) {
+        functionKeys.forEach(dk => {
+            const el = kbSection.querySelector(`.kb-key[data-key="${CSS.escape(dk)}"]`);
+            if (el) el.setAttribute('data-color', 'function');
         });
-        if (clearInputKey) {
-            const dk = codeToDataKey(clearInputKey);
-            if (dk) {
-                const el = kbSection.querySelector(`.kb-key[data-key="${dk}"]`);
-                if (el) el.setAttribute('data-color', 'action');
-            }
+    }
+    legend.style.display = 'flex';
+}
+
+function dataKeyToCode(dk) {
+    if (dk === 'space') return 'Space';
+    if (dk === 'backspace') return 'Backspace';
+    if (dk === ',') return 'Comma';
+    if (dk === '.') return 'Period';
+    if (dk === ';') return 'Semicolon';
+    if (dk === '\'') return 'Quote';
+    const nm = dk.match(/^num(\d)$/);
+    if (nm) return 'Numpad' + nm[1];
+    if (dk === 'num/') return 'NumpadDivide';
+    if (dk === 'num*') return 'NumpadMultiply';
+    if (dk === 'num+') return 'NumpadAdd';
+    if (dk === 'num-') return 'NumpadSubtract';
+    if (dk === 'num.') return 'NumpadDecimal';
+    if (dk === 'numenter') return 'NumpadEnter';
+    const lm = dk.match(/^[a-z]$/);
+    if (lm) return 'Key' + dk.toUpperCase();
+    return null;
+}
+
+export function presetToDotBindings(name) {
+    const map = presets[name];
+    if (!map) return null;
+    const result = {};
+    for (const [key, color] of Object.entries(map)) {
+        const dot = dotNum(color);
+        if (!dot) continue;
+        const code = dataKeyToCode(key);
+        if (code) result[dot] = code;
+    }
+    return Object.keys(result).length === 6 ? result : null;
+}
+
+function presetScope(name) {
+    return name.startsWith('numpad') ? 'numpad' : 'kbd';
+}
+
+function matchPresets(kbdBindings, numBindings) {
+    controls.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    let fdsjklMatched = false;
+    for (const btn of controls.querySelectorAll('button[data-preset]')) {
+        const name = btn.dataset.preset;
+        const presetBinding = presetToDotBindings(name);
+        if (!presetBinding) continue;
+        const scope = presetScope(name);
+        const target = scope === 'numpad' ? numBindings : kbdBindings;
+        if (!target) continue;
+        if (scope !== 'numpad' && fdsjklMatched) continue;
+        let match = true;
+        for (let d = 1; d <= 6; d++) {
+            if (presetBinding[d] !== target[d]) { match = false; break; }
         }
-        if (numClearInputKey) {
-            const dk = codeToDataKey(numClearInputKey);
-            if (dk) {
-                const el = kbSection.querySelector(`.kb-key[data-key="${dk}"]`);
-                if (el) el.setAttribute('data-color', 'action');
-            }
+        if (match) {
+            btn.classList.add('active');
+            if (name === 'fdsjkl') fdsjklMatched = true;
         }
-        if (functionKeys) {
-            functionKeys.forEach(dk => {
-                const el = kbSection.querySelector(`.kb-key[data-key="${CSS.escape(dk)}"]`);
-                if (el) el.setAttribute('data-color', 'function');
-            });
+    }
+}
+
+// ── 当前绑定状态占位 ──
+function _kl(code) {
+    return keyIdToLabel(code);
+}
+
+function bindingsMatchPreset(bindings, scope) {
+    if (!bindings) return false;
+    for (const name of PRESET_NAMES) {
+        if (presetScope(name) !== scope) continue;
+        const presetBinding = presetToDotBindings(name);
+        if (!presetBinding) continue;
+        let match = true;
+        for (let d = 1; d <= 6; d++) {
+            if (presetBinding[d] !== bindings[d]) { match = false; break; }
         }
-        legend.style.display = 'flex';
+        if (match) return true;
+    }
+    return false;
+}
+
+function updateBindingStatus(data) {
+    const kbdRect = document.getElementById('kbKbdRect');
+    const kbdLabel = document.getElementById('kbKbdLabel');
+    const numpadRect = document.getElementById('kbNumpadRect');
+    const numpadLabel = document.getElementById('kbNumpadLabel');
+    if (kbdRect) {
+        const matched = bindingsMatchPreset(data.keyboard, 'kbd');
+        if (matched) {
+            kbdRect.style.display = 'none';
+            if (kbdLabel) kbdLabel.style.display = 'none';
+        } else {
+            kbdRect.textContent = [...Array(6)].map((_, i) => _kl(data.keyboard[i + 1])).join(' ');
+            kbdRect.style.display = '';
+            if (kbdLabel) kbdLabel.style.display = '';
+        }
+    }
+    if (numpadRect) {
+        const matched = bindingsMatchPreset(data.numpad, 'numpad');
+        if (matched) {
+            numpadRect.style.display = 'none';
+            if (numpadLabel) numpadLabel.style.display = 'none';
+        } else {
+            numpadRect.textContent = [...Array(6)].map((_, i) => _kl(data.numpad[i + 1])).join(' ');
+            numpadRect.style.display = '';
+            if (numpadLabel) numpadLabel.style.display = '';
+        }
+    }
+}
+
+// ── 对 init.js 的公共导出 ──
+
+export function applyBindings(data) {
+    _lastBindings = data;
+    _applyBindings(data.keyboard, data.numpad, data.spaceKey, data.numConfirmKey, data.deleteKey, data.backspaceKey, data.numDeleteKey, data.clearInputKey, data.numClearInputKey, data.functionKeys);
+    matchPresets(data.keyboard, data.numpad);
+    updateBindingStatus(data);
+}
+
+export function getSettingsData() {
+    return {
+        multiSelect: SETTINGS.multiSelect,
+        debounceSpeech: SETTINGS.debounceSpeech,
+        speechRate: SETTINGS.speechRate,
+        brailleFontSize: SETTINGS.brailleFontSize,
+        maxUndoHistory: SETTINGS.maxUndoHistory,
+    };
+}
+
+export function getBindingsData() {
+    return {
+        keyboard: SETTINGS.keyBindings.keyboard,
+        numpad: SETTINGS.keyBindings.numpad,
+        spaceKey: 'Space',
+        numConfirmKey: 'Numpad0',
+        deleteKey: SETTINGS.actionKeyBindings.delete,
+        backspaceKey: 'Backspace',
+        numDeleteKey: 'NumpadMultiply',
+        clearInputKey: SETTINGS.actionKeyBindings.clearInput,
+        numClearInputKey: 'NumpadDivide',
+        functionKeys: ['q', 'w', 'r', 't', 'c', 'g', 'h'],
+    };
+}
+
+export function syncSettings(s) {
+    const kbMultiSelect = document.getElementById('kbMultiSelect');
+    const kbDebounceSpeech = document.getElementById('kbDebounceSpeech');
+    const kbSpeechRate = document.getElementById('kbSpeechRate');
+    const kbSpeechRateVal = document.getElementById('kbSpeechRateVal');
+    const kbBrailleFontSize = document.getElementById('kbBrailleFontSize');
+    const kbBrailleFontSizeVal = document.getElementById('kbBrailleFontSizeVal');
+    const kbMaxUndoHistory = document.getElementById('kbMaxUndoHistory');
+    const kbMaxUndoHistoryVal = document.getElementById('kbMaxUndoHistoryVal');
+    if (kbMultiSelect && s.multiSelect !== undefined) kbMultiSelect.checked = s.multiSelect;
+    if (kbDebounceSpeech && s.debounceSpeech !== undefined) kbDebounceSpeech.checked = s.debounceSpeech;
+    if (kbSpeechRate && s.speechRate !== undefined) { kbSpeechRate.value = s.speechRate; kbSpeechRateVal.textContent = s.speechRate; }
+    if (kbBrailleFontSize && s.brailleFontSize !== undefined) { kbBrailleFontSize.value = s.brailleFontSize; kbBrailleFontSizeVal.textContent = s.brailleFontSize; }
+    if (kbMaxUndoHistory && s.maxUndoHistory !== undefined) { kbMaxUndoHistory.value = s.maxUndoHistory; kbMaxUndoHistoryVal.textContent = s.maxUndoHistory; }
+}
+
+// ── 键盘面板 overlay ──
+let _kbOverlay = null;
+let _kbIframeClose = null;
+
+export function openKbOverlay() {
+    if (!_kbOverlay) return;
+    _kbOverlay.classList.add('open');
+    applyBindings(getBindingsData());
+    syncSettings(getSettingsData());
+    speak.text('打开键盘和设置');
+}
+
+export function closeKbOverlay() {
+    if (!_kbOverlay) return;
+    _kbOverlay.classList.remove('open');
+    speak.text('关闭键盘和设置');
+}
+
+export function toggleKbOverlay() {
+    if (!_kbOverlay) return;
+    _kbOverlay.classList.contains('open') ? closeKbOverlay() : openKbOverlay();
+}
+
+// ── 初始化入口（替代 IIFE 自动执行）──
+export function initKeyboard() {
+    _kbOverlay = document.getElementById('kbIframeOverlay');
+    _kbIframeClose = document.getElementById('kbIframeClose');
+    kbSection = document.getElementById('kbSection');
+    legend = document.getElementById('kbLegend');
+    controls = document.getElementById('kbControls');
+
+    // ── 着色按键 hover / 点击反馈 ──
+    const DOT_SPEAK = ['', '1号点', '2号点', '3号点', '4号点', '5号点', '6号点'];
+    const KEY_LABEL = {
+        'num/': '小键盘斜杠', 'num*': '小键盘星号', 'num+': '小键盘加号',
+        'num-': '小键盘减号', 'num.': '小键盘点号', 'numenter': '小键盘回车',
+        ',': '逗号', '.': '句号', ';': '分号', '\'': '引号',
+        'space': '空格', 'backspace': '退格',
+    };
+    const FUNC_LABEL = {
+        q: '盲文对照表', w: '键盘和设置',
+        r: '朗读', t: '切换主题', c: '清空输出区',
+        g: '上一节', h: '下一节',
+    };
+
+    function speakKey(keyEl) {
+        const color = keyEl.getAttribute('data-color');
+        if (!color) return;
+        const dataKey = keyEl.getAttribute('data-key') || '';
+        const label = KEY_LABEL[dataKey] || (dataKey.startsWith('num') ? '小键盘' + dataKey.replace('num', '') : keyEl.querySelector('.primary')?.textContent?.trim()) || dataKey;
+
+        let msg = '';
+        if (color.startsWith('dot')) {
+            msg = DOT_SPEAK[parseInt(color.slice(3))] || '';
+        } else if (color === 'space') {
+            msg = '确认输入';
+        } else if (color === 'delete') {
+            msg = '删除';
+        } else if (color === 'action') {
+            msg = '清空输入';
+        } else if (color === 'function') {
+            msg = FUNC_LABEL[dataKey] || '功能键';
+        }
+        if (msg) {
+            speak.immediate(label + '，' + msg);
+        }
     }
 
-    function dataKeyToCode(dk) {
-        if (dk === 'space') return 'Space';
-        if (dk === 'backspace') return 'Backspace';
-        if (dk === ',') return 'Comma';
-        if (dk === '.') return 'Period';
-        if (dk === ';') return 'Semicolon';
-        if (dk === '\'') return 'Quote';
-        const nm = dk.match(/^num(\d)$/);
-        if (nm) return 'Numpad' + nm[1];
-        if (dk === 'num/') return 'NumpadDivide';
-        if (dk === 'num*') return 'NumpadMultiply';
-        if (dk === 'num+') return 'NumpadAdd';
-        if (dk === 'num-') return 'NumpadSubtract';
-        if (dk === 'num.') return 'NumpadDecimal';
-        if (dk === 'numenter') return 'NumpadEnter';
-        const lm = dk.match(/^[a-z]$/);
-        if (lm) return 'Key' + dk.toUpperCase();
-        return null;
-    }
+    kbSection.addEventListener('mouseover', (e) => {
+        const key = e.target.closest('.kb-key[data-color]');
+        if (key) speakKey(key);
+    });
 
-    function presetToDotBindings(name) {
-        const map = presets[name];
-        if (!map) return null;
-        const result = {};
-        for (const [key, color] of Object.entries(map)) {
-            const dot = dotNum(color);
-            if (!dot) continue;
-            const code = dataKeyToCode(key);
-            if (code) result[dot] = code;
-        }
-        return Object.keys(result).length === 6 ? result : null;
-    }
-
-    function presetScope(name) {
-        return name.startsWith('numpad') ? 'numpad' : 'kbd';
-    }
-
-    function matchPresets(kbdBindings, numBindings) {
-        controls.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-        let fdsjklMatched = false;
-        for (const btn of controls.querySelectorAll('button[data-preset]')) {
-            const name = btn.dataset.preset;
-            const presetBinding = presetToDotBindings(name);
-            if (!presetBinding) continue;
-            const scope = presetScope(name);
-            const target = scope === 'numpad' ? numBindings : kbdBindings;
-            if (!target) continue;
-            if (scope !== 'numpad' && fdsjklMatched) continue;
-            let match = true;
-            for (let d = 1; d <= 6; d++) {
-                if (presetBinding[d] !== target[d]) { match = false; break; }
-            }
-            if (match) {
-                btn.classList.add('active');
-                if (name === 'fdsjkl') fdsjklMatched = true;
-            }
-        }
-    }
-
-    // ── 当前绑定状态占位 ──
-    function _kl(code) {
-        var fn = window._keyIdToLabel;
-        return fn ? fn(code) : (code || '?');
-    }
-
-    function bindingsMatchPreset(bindings, scope) {
-        if (!bindings) return false;
-        for (const name of PRESET_NAMES) {
-            if (presetScope(name) !== scope) continue;
-            const presetBinding = presetToDotBindings(name);
-            if (!presetBinding) continue;
-            let match = true;
-            for (let d = 1; d <= 6; d++) {
-                if (presetBinding[d] !== bindings[d]) { match = false; break; }
-            }
-            if (match) return true;
-        }
-        return false;
-    }
-
-    function updateBindingStatus(data) {
-        const kbdRect = document.getElementById('kbKbdRect');
-        const kbdLabel = document.getElementById('kbKbdLabel');
-        const numpadRect = document.getElementById('kbNumpadRect');
-        const numpadLabel = document.getElementById('kbNumpadLabel');
-        if (kbdRect) {
-            const matched = bindingsMatchPreset(data.keyboard, 'kbd');
-            if (matched) {
-                kbdRect.style.display = 'none';
-                if (kbdLabel) kbdLabel.style.display = 'none';
-            } else {
-                kbdRect.textContent = [...Array(6)].map((_, i) => _kl(data.keyboard[i + 1])).join(' ');
-                kbdRect.style.display = '';
-                if (kbdLabel) kbdLabel.style.display = '';
-            }
-        }
-        if (numpadRect) {
-            const matched = bindingsMatchPreset(data.numpad, 'numpad');
-            if (matched) {
-                numpadRect.style.display = 'none';
-                if (numpadLabel) numpadLabel.style.display = 'none';
-            } else {
-                numpadRect.textContent = [...Array(6)].map((_, i) => _kl(data.numpad[i + 1])).join(' ');
-                numpadRect.style.display = '';
-                if (numpadLabel) numpadLabel.style.display = '';
-            }
-        }
-    }
+    kbSection.addEventListener('click', (e) => {
+        const key = e.target.closest('.kb-key[data-color]');
+        if (key) speakKey(key);
+    });
 
     // ── 预设点击 ──
     controls.addEventListener('click', (e) => {
@@ -311,34 +443,33 @@
         btn.classList.add('active');
         legend.style.display = 'flex';
 
-        if (window._kbApplyPreset) window._kbApplyPreset(scope, name);
+        document.dispatchEvent(new CustomEvent('kb-preset-apply', { detail: { scope, name } }));
     });
 
     // ── 预设按钮悬停播报 ──
     const _PUNCT_SPEAK = { '.': '句号', ',': '逗号', ';': '分号', '/': '斜杠' };
     controls.addEventListener('mouseover', (e) => {
         const btn = e.target.closest('button[data-preset]');
-        if (!btn || !window._kbSpeakImmediate) return;
+        if (!btn) return;
         const text = btn.textContent.trim();
         let spoken;
         if (/^\d+$/.test(text)) {
-            // 小键盘数字：每个数字之间插入空格，让TTS逐位读出
             spoken = text.split('').join(' ');
         } else {
             spoken = text.replace(/[.,;/]/g, c => _PUNCT_SPEAK[c] || c);
         }
-        spoken = '键盘预设，' + spoken
-        window._kbSpeakImmediate(spoken);
+        spoken = '键盘预设，' + spoken;
+        speak.immediate(spoken);
     });
 
     // ── 播报盲文键位按钮 ──
     const btnSpeakBindings = document.getElementById('btnSpeakBindings');
     if (btnSpeakBindings) {
         btnSpeakBindings.addEventListener('click', () => {
-            if (window._kbSpeakAllBindings) window._kbSpeakAllBindings();
+            document.dispatchEvent(new CustomEvent('kb-speak-all-bindings'));
         });
         btnSpeakBindings.addEventListener('mouseover', () => {
-            if (window._kbSpeakImmediate) window._kbSpeakImmediate('播报当前盲文键位');
+            speak.immediate('播报当前盲文键位');
         });
     }
 
@@ -346,82 +477,25 @@
     const btnCustomBind = document.getElementById('btnCustomBind');
     if (btnCustomBind) {
         btnCustomBind.addEventListener('click', () => {
-            if (window._kbOpenSeqBinding) window._kbOpenSeqBinding();
+            document.dispatchEvent(new CustomEvent('kb-open-seq-binding'));
         });
         btnCustomBind.addEventListener('mouseover', () => {
-            if (window._kbSpeakImmediate) window._kbSpeakImmediate('自定义键位');
+            speak.immediate('自定义键位');
         });
     }
-
-    // ── 着色按键 hover / 点击反馈 ──
-    const DOT_SPEAK = ['', '1号点', '2号点', '3号点', '4号点', '5号点', '6号点'];
-    const KEY_LABEL = {
-        'num/': '小键盘斜杠', 'num*': '小键盘星号', 'num+': '小键盘加号',
-        'num-': '小键盘减号', 'num.': '小键盘点号', 'numenter': '小键盘回车',
-        ',': '逗号', '.': '句号', ';': '分号', '\'': '引号',
-        'space': '空格', 'backspace': '退格',
-    };
-    const FUNC_LABEL = {
-        q: '盲文对照表', w: '键盘和设置',
-        r: '朗读', t: '切换主题', c: '清空输出区',
-        g: '上一节', h: '下一节',
-    };
-
-    function speakKey(keyEl) {
-        const color = keyEl.getAttribute('data-color');
-        if (!color) return;
-        const dataKey = keyEl.getAttribute('data-key') || '';
-        const label = KEY_LABEL[dataKey] || (dataKey.startsWith('num') ? '小键盘' + dataKey.replace('num', '') : keyEl.querySelector('.primary')?.textContent?.trim()) || dataKey;
-
-        let msg = '';
-        if (color.startsWith('dot')) {
-            msg = DOT_SPEAK[parseInt(color.slice(3))] || '';
-        } else if (color === 'space') {
-            msg = '确认输入';
-        } else if (color === 'delete') {
-            msg = '删除';
-        } else if (color === 'action') {
-            msg = '清空输入';
-        } else if (color === 'function') {
-            msg = FUNC_LABEL[dataKey] || '功能键';
-        }
-        if (window._kbSpeakImmediate && msg) {
-            window._kbSpeakImmediate(label + '，' + msg);
-        }
-    }
-
-    kbSection.addEventListener('mouseover', (e) => {
-        const key = e.target.closest('.kb-key[data-color]');
-        if (key) speakKey(key);
-    });
-
-    kbSection.addEventListener('click', (e) => {
-        const key = e.target.closest('.kb-key[data-color]');
-        if (key) speakKey(key);
-    });
 
     // ── 恢复默认键位按钮 ──
     const btnResetDefaults = document.getElementById('btnKbResetDefaults');
     if (btnResetDefaults) {
         btnResetDefaults.addEventListener('click', () => {
-            if (window._kbResetDefaults) window._kbResetDefaults();
+            document.dispatchEvent(new CustomEvent('kb-reset-defaults'));
         });
         btnResetDefaults.addEventListener('mouseover', () => {
-            if (window._kbSpeakImmediate) window._kbSpeakImmediate('恢复默认键位');
+            speak.immediate('恢复默认键位');
         });
     }
 
-    window._kbPresetToDotBindings = presetToDotBindings;
-
-    // ── 对外接口（init.js 调用）──
-    window._kbApplyBindings = function (data) {
-        _lastBindings = data;
-        applyBindings(data.keyboard, data.numpad, data.spaceKey, data.numConfirmKey, data.deleteKey, data.backspaceKey, data.numDeleteKey, data.clearInputKey, data.numClearInputKey, data.functionKeys);
-        matchPresets(data.keyboard, data.numpad);
-        updateBindingStatus(data);
-    };
-
-    // ── 设置控件同步 ──
+    // ── 设置控件 ──
     const kbMultiSelect = document.getElementById('kbMultiSelect');
     const kbDebounceSpeech = document.getElementById('kbDebounceSpeech');
     const kbSpeechRate = document.getElementById('kbSpeechRate');
@@ -431,28 +505,21 @@
     const kbMaxUndoHistory = document.getElementById('kbMaxUndoHistory');
     const kbMaxUndoHistoryVal = document.getElementById('kbMaxUndoHistoryVal');
 
-    window._kbSyncSettings = function (s) {
-        if (kbMultiSelect && s.multiSelect !== undefined) kbMultiSelect.checked = s.multiSelect;
-        if (kbDebounceSpeech && s.debounceSpeech !== undefined) kbDebounceSpeech.checked = s.debounceSpeech;
-        if (kbSpeechRate && s.speechRate !== undefined) { kbSpeechRate.value = s.speechRate; kbSpeechRateVal.textContent = s.speechRate; }
-        if (kbBrailleFontSize && s.brailleFontSize !== undefined) { kbBrailleFontSize.value = s.brailleFontSize; kbBrailleFontSizeVal.textContent = s.brailleFontSize; }
-        if (kbMaxUndoHistory && s.maxUndoHistory !== undefined) { kbMaxUndoHistory.value = s.maxUndoHistory; kbMaxUndoHistoryVal.textContent = s.maxUndoHistory; }
-    };
-
     if (kbMultiSelect) {
         kbMultiSelect.addEventListener('change', () => {
-            if (window._kbUpdateSetting) window._kbUpdateSetting('multiSelect', kbMultiSelect.checked);
+            document.dispatchEvent(new CustomEvent('kb-setting-change', { detail: { key: 'multiSelect', value: kbMultiSelect.checked } }));
         });
     }
     if (kbDebounceSpeech) {
         kbDebounceSpeech.addEventListener('change', () => {
-            if (window._kbUpdateSetting) window._kbUpdateSetting('debounceSpeech', kbDebounceSpeech.checked);
+            document.dispatchEvent(new CustomEvent('kb-setting-change', { detail: { key: 'debounceSpeech', value: kbDebounceSpeech.checked } }));
         });
     }
     function _onRangeInput(el, valEl, key) {
         el.addEventListener('input', () => {
             valEl.textContent = el.value;
-            if (window._kbUpdateSetting) window._kbUpdateSetting(key, key === 'brailleFontSize' || key === 'maxUndoHistory' ? parseInt(el.value, 10) : parseFloat(el.value));
+            const raw = key === 'brailleFontSize' || key === 'maxUndoHistory' ? parseInt(el.value, 10) : parseFloat(el.value);
+            document.dispatchEvent(new CustomEvent('kb-setting-change', { detail: { key, value: raw } }));
         });
         el.addEventListener('change', () => el.blur());
     }
@@ -481,11 +548,10 @@
             keys.forEach(k => {
                 kbSection.querySelectorAll(`.kb-key[data-key="${CSS.escape(k)}"]`).forEach(el => el.classList.add('highlight'));
             });
-            // 语音播报键位说明
             const row = el.closest('.kb-ref-row');
-            if (row && window._kbSpeakImmediate) {
+            if (row) {
                 const spoken = row.textContent.trim().replace(/[↑↓←→]/g, m => ({'↑':'上','↓':'下','←':'左','→':'右'})[m]);
-                window._kbSpeakImmediate(spoken);
+                speak.immediate(spoken);
             }
         });
         kbRef.addEventListener('mouseout', (e) => {
@@ -581,7 +647,6 @@
         const targetInfo = _dotFromKey(key);
         const group = _dragInfo.scope === 'numpad' ? 'numpad' : 'keyboard';
 
-        // 拖到同一个键上，忽略
         if (targetInfo && targetInfo.dot === _dragInfo.dot) {
             _dragInfo = null;
             return;
@@ -592,22 +657,18 @@
         );
 
         if (targetInfo) {
-            // ── 交换模式：目标键上已有盲文点位，互换两个点位 ──
             const sourceCode = dataKeyToCode(targetDataKey);
             const targetCode = dataKeyToCode(_dragInfo.dataKey);
 
-            // 更新源键：换成目标的点位
             if (sourceEl) {
                 sourceEl.setAttribute('data-color', targetInfo.color);
                 sourceEl.setAttribute('data-dot', targetInfo.dot);
                 sourceEl.draggable = true;
             }
-            // 更新目标键：换成拖拽源的点位
             key.setAttribute('data-color', _dragInfo.color);
             key.setAttribute('data-dot', _dragInfo.dot);
             key.draggable = true;
 
-            // 更新 _lastBindings
             if (sourceCode && targetCode && _lastBindings && _lastBindings[group]) {
                 _lastBindings[group][_dragInfo.dot] = sourceCode;
                 _lastBindings[group][targetInfo.dot] = targetCode;
@@ -616,26 +677,20 @@
                     _lastBindings && _lastBindings.numpad
                 );
                 if (_lastBindings) updateBindingStatus(_lastBindings);
-                if (window._kbOnDotDrop) {
-                    window._kbOnDotDrop(_dragInfo.scope, _dragInfo.dot, sourceCode);
-                    window._kbOnDotDrop(_dragInfo.scope, targetInfo.dot, targetCode);
-                }
+                document.dispatchEvent(new CustomEvent('kb-dot-drop', { detail: { scope: _dragInfo.scope, dot: _dragInfo.dot, code: sourceCode } }));
+                document.dispatchEvent(new CustomEvent('kb-dot-drop', { detail: { scope: _dragInfo.scope, dot: targetInfo.dot, code: targetCode } }));
             }
         } else {
-            // ── 常规模式：移动到空白键 ──
-            // 移除源键着色
             if (sourceEl) {
                 sourceEl.removeAttribute('data-color');
                 sourceEl.removeAttribute('data-dot');
                 sourceEl.draggable = false;
             }
 
-            // 给目标键着色
             key.setAttribute('data-color', _dragInfo.color);
             key.setAttribute('data-dot', _dragInfo.dot);
             key.draggable = true;
 
-            // 更新内存中的绑定数据
             const code = dataKeyToCode(targetDataKey);
             if (code) {
                 if (_lastBindings && _lastBindings[group]) {
@@ -646,12 +701,80 @@
                     _lastBindings && _lastBindings.numpad
                 );
                 if (_lastBindings) updateBindingStatus(_lastBindings);
-                if (window._kbOnDotDrop) {
-                    window._kbOnDotDrop(_dragInfo.scope, _dragInfo.dot, code);
-                }
+                document.dispatchEvent(new CustomEvent('kb-dot-drop', { detail: { scope: _dragInfo.scope, dot: _dragInfo.dot, code } }));
             }
         }
 
         _dragInfo = null;
     });
-})();
+
+    // ── kb-preset-apply ──
+    document.addEventListener('kb-preset-apply', (e) => {
+        const { scope, name } = e.detail;
+        const bindings = presetToDotBindings(name);
+        if (!bindings) return;
+        const group = scope === 'numpad' ? 'numpad' : 'keyboard';
+        SETTINGS.keyBindings[group] = { ...bindings };
+        saveSettings();
+        applyKeyBindings();
+        updateKeyLabels();
+        document.dispatchEvent(new CustomEvent('bindings-changed'));
+
+        const groupLabel = scope === 'numpad' ? '小键盘' : '主键盘';
+        const labels = [];
+        for (let d = 1; d <= 6; d++) {
+            const code = bindings[d];
+            if (!code) continue;
+            if (code.startsWith('Key')) labels.push(code.slice(3));
+            else if (code.startsWith('Numpad')) labels.push(code.slice(6));
+            else if (code === 'Comma') labels.push('逗号');
+            else if (code === 'Period') labels.push('句号');
+            else labels.push(code);
+        }
+        speak.text('启用' + groupLabel + '键位预设，' + labels.join(' '), SETTINGS.speechRate);
+    });
+
+    // ── kb-dot-drop ──
+    document.addEventListener('kb-dot-drop', (e) => {
+        const { scope, dot, code } = e.detail;
+        const group = scope === 'numpad' ? 'numpad' : 'keyboard';
+        SETTINGS.keyBindings[group][String(dot)] = code;
+        saveSettings();
+        applyKeyBindings();
+        updateKeyLabels();
+    });
+
+    // ── kb-reset-defaults ──
+    document.addEventListener('kb-reset-defaults', () => {
+        const akbDefault = {};
+        for (const [action, cfg] of Object.entries(CONFIGURABLE_ACTIONS)) {
+            akbDefault[action] = cfg.defaultKey;
+        }
+        SETTINGS.keyBindings = {
+            keyboard: { ...DEFAULT_SETTINGS.keyBindings.keyboard },
+            numpad: { ...DEFAULT_SETTINGS.keyBindings.numpad },
+        };
+        SETTINGS.actionKeyBindings = { ...akbDefault };
+        SETTINGS.speechRate = DEFAULT_SETTINGS.speechRate;
+        SETTINGS.debounceSpeech = DEFAULT_SETTINGS.debounceSpeech;
+        saveSettings();
+        applyKeyBindings();
+        applyActionKeyBindings();
+        updateKeyLabels();
+        renderToolbarKeyLabels();
+        applyBindings(getBindingsData());
+        syncSettings(getSettingsData());
+        document.dispatchEvent(new CustomEvent('bindings-changed'));
+    });
+
+    // ── 键盘面板关闭按钮 ──
+    if (_kbIframeClose) _kbIframeClose.addEventListener('click', closeKbOverlay);
+    document.getElementById('kbCloseStripLeft')?.addEventListener('click', closeKbOverlay);
+    document.getElementById('kbCloseStripRight')?.addEventListener('click', closeKbOverlay);
+
+    // ── 键位变更后同步键盘可视化 ──
+    document.addEventListener('bindings-changed', () => applyBindings(getBindingsData()));
+
+    // ── 初始同步 ──
+    applyBindings(getBindingsData());
+}

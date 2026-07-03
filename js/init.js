@@ -28,12 +28,11 @@ import {
     moveCursorDown,
     setInputMode,
     normalInputConfirm,
-    dotCells,
-    previewBox,
     updateKeyLabels,
     renderToolbarKeyLabels,
     setActiveKeyGroup,
     clearOutput,
+    initBrailleInput,
 } from './brailleInput.js';
 import {
     outputArea,
@@ -46,15 +45,20 @@ import {
     speak,
     readAloud,
 } from './brailleSpeech.js';
-import { initAudioVisualizer, visualizerStart, visualizerStop, updateSpeechLabel } from './audioVisualizer.js';
+import { initAudioVisualizer } from './audioVisualizer.js';
+import {
+    syncSettings,
+    initKeyboard,
+    openKbOverlay,
+    closeKbOverlay,
+    toggleKbOverlay,
+} from './keyboard.js';
 import {
     DEFAULT_SETTINGS,
-    CONFIGURABLE_ACTIONS,
     KEY_COMBOS,
     keyIdToLabel,
 } from './config.js';
 
-window._keyIdToLabel = keyIdToLabel;
 import {
     renderActionKeyBindingsUI,
     handleKeyBindingCapture,
@@ -83,10 +87,8 @@ import {
     initFileOperations,
 } from './fileOperations.js';
 import { initDevPanel } from './devPanel.js';
-import { togglePractice, isPracticeActive, handlePracticeKey } from './practice.js';
-
-let _toggleKbOverlay = null;
-let _toggleTheme = null;
+import { togglePractice, isPracticeActive, handlePracticeKey, initPractice } from './practice.js';
+import { initTheme, toggleTheme } from './theme.js';
 
 // ── ACTION_HANDLERS 的 helper 函数 ──
 
@@ -128,7 +130,7 @@ function _handleSpeechRateChange(delta) {
         : Math.max(0.5, +(SETTINGS.speechRate - 0.1).toFixed(1));
     SETTINGS.speechRate = newRate;
     saveSettings();
-    if (window._kbSyncSettings) window._kbSyncSettings({ speechRate: SETTINGS.speechRate });
+    syncSettings({ speechRate: SETTINGS.speechRate });
     speak.text('语速' + SETTINGS.speechRate, SETTINGS.speechRate);
 }
 
@@ -159,15 +161,15 @@ const ACTION_HANDLERS = {
     tutorial: () => playTutorial(),
     toggleMapping: () => toggleMapping(),
     customBind: () => _startSeqBinding(),
-    toggleKeyboard: () => { if (_toggleKbOverlay) _toggleKbOverlay(); },
-    toggleTheme: () => { if (_toggleTheme) _toggleTheme(); },
+    toggleKeyboard: () => toggleKbOverlay(),
+    toggleTheme: () => toggleTheme(),
     speechRateUp: () => _handleSpeechRateChange(1),
     speechRateDown: () => _handleSpeechRateChange(-1),
-    speakBindings: () => { if (window._kbSpeakAllBindings) window._kbSpeakAllBindings(); },
+    speakBindings: () => { _speakAllBindings(); },
     pageUp: () => { if (pages.isActive) switchToPage(pages.idx - 1); },
     pageDown: () => { if (pages.isActive) switchToPage(pages.idx + 1); },
     togglePractice: () => {
-        if (kbOverlay.classList.contains('open')) closeKbOverlay();
+        if (document.getElementById('kbIframeOverlay').classList.contains('open')) closeKbOverlay();
         togglePractice();
     },
 };
@@ -232,16 +234,143 @@ function matchCombo(e) {
 document.addEventListener('DOMContentLoaded', () => {
     // ── pinyin 分支：并行加载模块 → 后台拉字典 ──
     loadPinyinPro().then(() => _initPinyinPro());
+
+    // ── Internal init helpers ──
+
+    function _applySettings() {
+        loadSettings();
+        applyBrailleFontSize();
+        applyKeyBindings();
+        applyActionKeyBindings();
+        renderActionKeyBindingsUI(document.getElementById('actionKeyBindings'));
+        renderToolbarKeyLabels();
+    }
+
+    function _initHeaderButtons() {
+        const btnKbToggle = document.getElementById('btnKbToggle');
+        if (btnKbToggle) {
+            btnKbToggle.addEventListener('click', () => toggleKbOverlay());
+        }
+        const tkbdKbToggle = document.getElementById('tkbd-kbToggle');
+        if (tkbdKbToggle) tkbdKbToggle.textContent = 'W';
+
+        const btnTutorial = document.getElementById('btnTutorial');
+        btnTutorial.addEventListener('click', () => playTutorial());
+        btnTutorial.addEventListener('mouseenter', () => speak.immediate('打开/关闭新手教程'));
+
+        const btnReadAloud = document.getElementById('btnReadAloud');
+        if (btnReadAloud) {
+            btnReadAloud.addEventListener('click', readAloud);
+        }
+
+        const btnClearAll = document.getElementById('btnClearAll');
+        if (btnClearAll) {
+            btnClearAll.addEventListener('click', clearOutput);
+        }
+    }
+
+    function _initKeydownHandler() {
+        document.addEventListener('keydown', (e) => {
+            // 焦点在可编辑控件上时不拦截按键（正常输入模式）
+            if (isEditableTarget(e.target)) return;
+            // 焦点在 button 上时不拦截 Enter（让原生 button 处理）；Space 不在此列——空格键用于盲文输入
+            if (e.target.closest('button') && e.key === 'Enter') return;
+
+            // 欢迎遮罩键盘选择：Escape 跳过，其他任意键确认
+            if (_welcomeActive) {
+                e.preventDefault();
+                if (e.key === 'Escape') { welcomeSkip(); }
+                else { welcomeConfirm(); }
+                return;
+            }
+
+            // 键位设置捕获优先（监听模式下拦截所有按键）
+            if (handleKeyBindingCapture(e)) return;
+
+            // 练习快捷键 Ctrl+Shift+E（直接检测，避免IME/浏览器拦截）
+            if (e.ctrlKey && e.shiftKey && e.code === 'KeyE') {
+                e.preventDefault();
+                if (document.getElementById('kbIframeOverlay').classList.contains('open')) closeKbOverlay();
+                togglePractice();
+                return;
+            }
+
+            // 组合键优先（须在教程G/H导航之前，避免Ctrl+Shift+H被H拦截）
+            const comboAction = matchCombo(e);
+            if (comboAction) {
+                e.preventDefault();
+                dispatchAction(comboAction);
+                return;
+            }
+
+            // 练习模式：拦截点位键和动作键
+            if (isPracticeActive() && handlePracticeKey(e)) { e.preventDefault(); return; }
+
+            // 教程播放中：G/H 切换章节
+            if (handleTutorialNavigation(e.code)) { e.preventDefault(); return; }
+
+            // 面板焦点陷阱：Tab 在打开的面板内循环
+            if (e.key === 'Tab') {
+                const openPanel = document.querySelector('.mapping-slide.open, .welcome-mask.active');
+                if (openPanel) {
+                    const focusable = openPanel.querySelectorAll(
+                        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+                    );
+                    if (focusable.length > 0) {
+                        const first = focusable[0];
+                        const last = focusable[focusable.length - 1];
+                        if (e.shiftKey && document.activeElement === first) {
+                            e.preventDefault();
+                            last.focus();
+                            return;
+                        }
+                        if (!e.shiftKey && document.activeElement === last) {
+                            e.preventDefault();
+                            first.focus();
+                            return;
+                        }
+                    }
+                }
+            }
+
+            // Esc 关闭面板 / 暂停教程
+            if (e.key === 'Escape') {
+                if (document.getElementById('kbIframeOverlay').classList.contains('open')) { closeKbOverlay(); e.preventDefault(); return; }
+                if (handleTutorialEscape()) { e.preventDefault(); return; }
+                if (mappingPanel.slide.classList.contains('open') && !mappingPanel.pinLit) { mappingPanel.close(); e.preventDefault(); return; }
+            }
+
+            // Shift+方向键：范围选择
+            if (SETTINGS.multiSelect && e.shiftKey && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) {
+                e.preventDefault();
+                selectExtend(e.code === 'ArrowRight' ? 1 : -1);
+                return;
+            }
+
+            // 修饰键组合（Ctrl/Alt/Meta）留给浏览器，本项目不拦截
+            if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+            // 小键盘：用 e.code 查找
+            if (e.code.startsWith('Numpad')) {
+                if (tryDispatch(e.code)) {
+                    e.preventDefault();
+                    return;
+                }
+            }
+
+            // 普通键：用 e.code 查找
+            if (tryDispatch(e.code)) {
+                e.preventDefault();
+                return;
+            }
+
+        });
+    }
+
     // ── 主页面分支 ──
     loadAllMappings()
         .then(() => {
-            // ── Load settings & apply ──
-            loadSettings();
-            applyBrailleFontSize();
-            applyKeyBindings();
-            applyActionKeyBindings();
-            renderActionKeyBindingsUI(document.getElementById('actionKeyBindings'));
-            renderToolbarKeyLabels();
+            _applySettings();
 
             // ── Fill key-label from config ──
             updateKeyLabels();
@@ -259,118 +388,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // ── Welcome mask for first-time visitors ──
             initWelcome();
 
-            // ── Keyboard handler ──
-            document.addEventListener('keydown', (e) => {
-                // 焦点在可编辑控件上时不拦截按键（正常输入模式）
-                if (isEditableTarget(e.target)) return;
-                // 焦点在 button 上时不拦截 Enter（让原生 button 处理）；Space 不在此列——空格键用于盲文输入
-                if (e.target.closest('button') && e.key === 'Enter') return;
-
-                // 欢迎遮罩键盘选择：Escape 跳过，其他任意键确认
-                if (_welcomeActive) {
-                    e.preventDefault();
-                    if (e.key === 'Escape') { welcomeSkip(); }
-                    else { welcomeConfirm(); }
-                    return;
-                }
-
-                // 键位设置捕获优先（监听模式下拦截所有按键）
-                if (handleKeyBindingCapture(e)) return;
-
-                // 练习快捷键 Ctrl+Shift+E（直接检测，避免IME/浏览器拦截）
-                if (e.ctrlKey && e.shiftKey && e.code === 'KeyE') {
-                    e.preventDefault();
-                    if (kbOverlay.classList.contains('open')) closeKbOverlay();
-                    togglePractice();
-                    return;
-                }
-
-                // 组合键优先（须在教程G/H导航之前，避免Ctrl+Shift+H被H拦截）
-                const comboAction = matchCombo(e);
-                if (comboAction) {
-                    e.preventDefault();
-                    dispatchAction(comboAction);
-                    return;
-                }
-
-                // 练习模式：拦截点位键和动作键
-                if (isPracticeActive() && handlePracticeKey(e)) { e.preventDefault(); return; }
-
-                // 教程播放中：G/H 切换章节
-                if (handleTutorialNavigation(e.code)) { e.preventDefault(); return; }
-
-                // 面板焦点陷阱：Tab 在打开的面板内循环
-                if (e.key === 'Tab') {
-                    const openPanel = document.querySelector('.mapping-slide.open, .welcome-mask.active');
-                    if (openPanel) {
-                        const focusable = openPanel.querySelectorAll(
-                            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-                        );
-                        if (focusable.length > 0) {
-                            const first = focusable[0];
-                            const last = focusable[focusable.length - 1];
-                            if (e.shiftKey && document.activeElement === first) {
-                                e.preventDefault();
-                                last.focus();
-                                return;
-                            }
-                            if (!e.shiftKey && document.activeElement === last) {
-                                e.preventDefault();
-                                first.focus();
-                                return;
-                            }
-                        }
-                    }
-                }
-
-                // Esc 关闭面板 / 暂停教程
-                if (e.key === 'Escape') {
-                    if (kbOverlay.classList.contains('open')) { closeKbOverlay(); e.preventDefault(); return; }
-                    if (handleTutorialEscape()) { e.preventDefault(); return; }
-                    if (mappingPanel.slide.classList.contains('open') && !mappingPanel.pinLit) { mappingPanel.close(); e.preventDefault(); return; }
-                }
-
-                // Shift+方向键：范围选择
-                if (SETTINGS.multiSelect && e.shiftKey && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) {
-                    e.preventDefault();
-                    selectExtend(e.code === 'ArrowRight' ? 1 : -1);
-                    return;
-                }
-
-                // 修饰键组合（Ctrl/Alt/Meta）留给浏览器，本项目不拦截
-                if (e.ctrlKey || e.altKey || e.metaKey) return;
-
-                // 小键盘：用 e.code 查找
-                if (e.code.startsWith('Numpad')) {
-                    if (tryDispatch(e.code)) {
-                        e.preventDefault();
-                        return;
-                    }
-                }
-
-                // 普通键：用 e.code 查找
-                if (tryDispatch(e.code)) {
-                    e.preventDefault();
-                    return;
-                }
-
-                // 主键盘数字键1-6映射到盲文点位1-6（开发面板开关控制）
-                if (SETTINGS.mainKeyboardDigits && e.code >= 'Digit1' && e.code <= 'Digit6') {
-                    const dotIdx = parseInt(e.code.slice(-1), 10);
-                    dotInput.toggle(dotIdx);
-                    setActiveKeyGroup(e.code);
-                    e.preventDefault();
-                    return;
-                }
-            });
+            _initKeydownHandler();
 
             // ── Dot-cell clicks & keyboard ──
-            dotCells.forEach(cell => {
-                cell.addEventListener('click', () => {
-                    dotInput.toggle(+cell.dataset.idx);
-                    cell.blur(); // 点击后移除焦点，避免后续空格键误触发按钮原生click
-                });
-            });
+            initBrailleInput();
 
             // ── Action bar clicks (直接调用动作，不走键位查找)
             document.getElementById('actionBar').addEventListener('click', (e) => {
@@ -379,80 +400,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 dispatchAction(btn.dataset.action);
             });
 
-            // ── Preview click/keyboard to speak ──
-            previewBox.addEventListener('click', () => {
-                if (dotInput.isLit) speak.braille(dotInput.onehot);
-            });
+            // ── Theme ──
+            initTheme();
 
-            // ── Theme toggle ──
-            const themeToggle = document.getElementById('themeToggle');
-            _toggleTheme = function () {
-                const isLight = document.body.classList.toggle('light');
-                localStorage.setItem('braille-theme', isLight ? 'light' : 'dark');
-                themeToggle.textContent = isLight ? '☀' : '🌙';
-                themeToggle.setAttribute('aria-pressed', String(isLight));
-            };
-            const savedTheme = localStorage.getItem('braille-theme');
-            if (savedTheme === 'light') {
-                document.body.classList.add('light');
-                themeToggle.textContent = '☀';
-                themeToggle.setAttribute('aria-pressed', 'true');
-            }
-            themeToggle.addEventListener('click', _toggleTheme);
-
-            // ── Keyboard toggle button ──
-            const btnKbToggle = document.getElementById('btnKbToggle');
-            if (btnKbToggle) {
-                btnKbToggle.addEventListener('click', () => _toggleKbOverlay());
-            }
-            const tkbdKbToggle = document.getElementById('tkbd-kbToggle');
-            if (tkbdKbToggle) tkbdKbToggle.textContent = 'W';
-
-            // ── Header tutorial button ──
-            const btnTutorial = document.getElementById('btnTutorial');
-            btnTutorial.addEventListener('click', () => playTutorial());
-            btnTutorial.addEventListener('mouseenter', () => speak.immediate('打开/关闭新手教程'));
-
-            // ── Header practice button ──
-            const btnPractice = document.getElementById('btnPractice');
-            btnPractice.addEventListener('click', () => togglePractice());
-            btnPractice.addEventListener('mouseenter', () => speak.immediate('打开练习面板'));
-
-            // ── Read aloud ──
-            const btnReadAloud = document.getElementById('btnReadAloud');
-            if (btnReadAloud) {
-                btnReadAloud.addEventListener('click', readAloud);
-            }
-
-            // ── Clear all ──
-            const btnClearAll = document.getElementById('btnClearAll');
-            if (btnClearAll) {
-                btnClearAll.addEventListener('click', clearOutput);
-            }
+            _initHeaderButtons();
 
             initForceWelcomeToggle();
-
-            // 省写映射开关（dev panel）
-            const omitToneMappingCheck = document.getElementById('omitToneMapping');
-            if (omitToneMappingCheck) {
-                omitToneMappingCheck.checked = SETTINGS.omitToneMapping !== false;
-                omitToneMappingCheck.addEventListener('change', () => {
-                    SETTINGS.omitToneMapping = omitToneMappingCheck.checked;
-                    saveSettings();
-                    renderOutput();
-                });
-            }
-
-            // 主键盘数字1-6映射盲文点位（dev panel）
-            const mainKeyboardDigitsCheck = document.getElementById('mainKeyboardDigits');
-            if (mainKeyboardDigitsCheck) {
-                mainKeyboardDigitsCheck.checked = SETTINGS.mainKeyboardDigits;
-                mainKeyboardDigitsCheck.addEventListener('change', () => {
-                    SETTINGS.mainKeyboardDigits = mainKeyboardDigitsCheck.checked;
-                    saveSettings();
-                });
-            }
-
 
             // Initial render
             dotInput.renderDots();
@@ -478,21 +431,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('btnPrevPage').addEventListener('click', () => switchToPage(pages.idx - 1));
             document.getElementById('btnNextPage').addEventListener('click', () => switchToPage(pages.idx + 1));
 
-            // ── 分页重检：仅在窗口缩放时触发 ──
-            let _resizeTimer = null;
-            window.addEventListener('resize', () => {
-                clearTimeout(_resizeTimer);
-                _resizeTimer = setTimeout(() => {
-                    if (pages.isActive || outputArea.scrollHeight > outputArea.clientHeight + 2) {
-                        invalidatePageCache();
-                        renderOutput();
-                    }
-                }, 300);
-            });
-
             // ── 分页重检：字体大小调整结束后触发（防快速拖拽）──
             let _fontSizeTimer = null;
-            window._kbUpdateSetting = function (key, value) {
+            function _handleKbSettingChange(key, value) {
                 SETTINGS[key] = value;
                 if (key === 'brailleFontSize') {
                     applyBrailleFontSize();
@@ -505,17 +446,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     }, 500);
                 }
                 saveSettings();
-            };
+            }
 
-            // ── Keyboard overlay ──
-            const kbOverlay = document.getElementById('kbIframeOverlay');
-            const kbIframeClose = document.getElementById('kbIframeClose');
-
-            window._kbOpenSeqBinding = _startSeqBinding;
-            window._kbSpeak = speak.text;
-            window._kbSpeakImmediate = speak.immediate;
-
-            window._kbSpeakAllBindings = function () {
+            // ── 键盘面板设置变更 / 序列绑定 / 播报键位 ──
+            function _speakAllBindings() {
                 const kb = SETTINGS.keyBindings.keyboard || {};
                 const nkb = SETTINGS.keyBindings.numpad || {};
                 const kbdParts = [];
@@ -526,130 +460,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 const msg = '主键盘点位键：' + kbdParts.join('、') + '。小键盘点位键：' + numParts.join('、') + '。';
                 speak.text(msg, SETTINGS.speechRate);
-            };
-
-            window._kbApplyPreset = function (scope, name) {
-                const bindings = window._kbPresetToDotBindings && window._kbPresetToDotBindings(name);
-                if (!bindings) return;
-                const group = scope === 'numpad' ? 'numpad' : 'keyboard';
-                SETTINGS.keyBindings[group] = { ...bindings };
-                saveSettings();
-                applyKeyBindings();
-                updateKeyLabels();
-                document.dispatchEvent(new CustomEvent('bindings-changed'));
-
-                const groupLabel = scope === 'numpad' ? '小键盘' : '主键盘';
-                const labels = [];
-                for (let d = 1; d <= 6; d++) {
-                    const code = bindings[d];
-                    if (!code) continue;
-                    if (code.startsWith('Key')) labels.push(code.slice(3));
-                    else if (code.startsWith('Numpad')) labels.push(code.slice(6));
-                    else if (code === 'Comma') labels.push('逗号');
-                    else if (code === 'Period') labels.push('句号');
-                    else labels.push(code);
-                }
-                speak.text('启用' + groupLabel + '键位预设，' + labels.join(' '), SETTINGS.speechRate);
-            };
-
-            window._kbOnDotDrop = function (scope, dot, code) {
-                const group = scope === 'numpad' ? 'numpad' : 'keyboard';
-                SETTINGS.keyBindings[group][String(dot)] = code;
-                saveSettings();
-                applyKeyBindings();
-                updateKeyLabels();
-            };
-
-            window._kbResetDefaults = function () {
-                const akbDefault = {};
-                for (const [action, cfg] of Object.entries(CONFIGURABLE_ACTIONS)) {
-                    akbDefault[action] = cfg.defaultKey;
-                }
-                SETTINGS.keyBindings = {
-                    keyboard: { ...DEFAULT_SETTINGS.keyBindings.keyboard },
-                    numpad: { ...DEFAULT_SETTINGS.keyBindings.numpad },
-                };
-                SETTINGS.actionKeyBindings = { ...akbDefault };
-                SETTINGS.speechRate = DEFAULT_SETTINGS.speechRate;
-                SETTINGS.debounceSpeech = DEFAULT_SETTINGS.debounceSpeech;
-                saveSettings();
-                applyKeyBindings();
-                applyActionKeyBindings();
-                updateKeyLabels();
-                renderToolbarKeyLabels();
-                syncKeyboard();
-                syncKbSettings();
-                document.dispatchEvent(new CustomEvent('bindings-changed'));
-            };
-
-            function getSettingsData() {
-                return {
-                    multiSelect: SETTINGS.multiSelect,
-                    debounceSpeech: SETTINGS.debounceSpeech,
-                    speechRate: SETTINGS.speechRate,
-                    brailleFontSize: SETTINGS.brailleFontSize,
-                    maxUndoHistory: SETTINGS.maxUndoHistory,
-                };
-            }
-            function syncKbSettings() {
-                if (window._kbSyncSettings) window._kbSyncSettings(getSettingsData());
             }
 
-            function getBindingsData() {
-                return {
-                    keyboard: SETTINGS.keyBindings.keyboard,
-                    numpad: SETTINGS.keyBindings.numpad,
-                    spaceKey: 'Space',
-                    numConfirmKey: 'Numpad0',
-                    deleteKey: SETTINGS.actionKeyBindings.delete,
-                    backspaceKey: 'Backspace',
-                    numDeleteKey: 'NumpadMultiply',
-                    clearInputKey: SETTINGS.actionKeyBindings.clearInput,
-                    numClearInputKey: 'NumpadDivide',
-                    functionKeys: ['q', 'w', 'r', 't', 'c', 'g', 'h'],
-                };
-            }
-            function syncKeyboard() {
-                if (window._kbApplyBindings) window._kbApplyBindings(getBindingsData());
-            }
-            function openKbOverlay() {
-                kbOverlay.classList.add('open');
-                syncKeyboard();
-                syncKbSettings();
-                speak.text('打开键盘和设置');
-            }
-            function closeKbOverlay() {
-                kbOverlay.classList.remove('open');
-                speak.text('关闭键盘和设置');
-            }
-            _toggleKbOverlay = function () {
-                kbOverlay.classList.contains('open') ? closeKbOverlay() : openKbOverlay();
-            };
+            document.addEventListener('kb-setting-change', (e) => {
+                _handleKbSettingChange(e.detail.key, e.detail.value);
+            });
 
-            kbIframeClose.addEventListener('click', closeKbOverlay);
+            document.addEventListener('kb-open-seq-binding', () => {
+                _startSeqBinding();
+            });
 
-            // 侧边关闭条：hover 显示，点击关闭键盘
-            document.getElementById('kbCloseStripLeft')?.addEventListener('click', closeKbOverlay);
-            document.getElementById('kbCloseStripRight')?.addEventListener('click', closeKbOverlay);
+            document.addEventListener('kb-speak-all-bindings', () => {
+                _speakAllBindings();
+            });
 
-            // 键位变更后同步到键盘可视化
-            document.addEventListener('bindings-changed', syncKeyboard);
-
-            // 初始同步
-            syncKeyboard();
+            // 初始化键盘模块（含 overlay 管理 + 初始同步）
+            initKeyboard();
 
             // ── Dev panel ──
             initDevPanel();
 
+            // ── Practice ──
+            initPractice();
+
             // ── Audio visualizer ──
-            if (SETTINGS.showVisualizer !== false) {
-                initAudioVisualizer();
-            } else {
-                const indicator = document.getElementById('speechIndicator');
-                if (indicator) indicator.style.display = 'none';
-            }
-            window.addEventListener('speech-visualizer-start', (e) => visualizerStart(e.detail));
-            window.addEventListener('speech-visualizer-stop', visualizerStop);
-            window.addEventListener('speech-visualizer-update', (e) => updateSpeechLabel(e.detail));
+            initAudioVisualizer();
         });
 });

@@ -10,6 +10,36 @@ import {
 } from './state.js';
 import { speak } from './brailleSpeech.js';
 
+// 需要后置空方的标点（关/后置类 + 成对类）
+const PUNCT_TRAILING = new Set([
+    '000010',                   // ，
+    '000100',                   // 、
+    '000011',                   // ；
+    '001001',                   // ：
+    '000010+000010+000010',     // ……
+    '000001+011000',            // ）
+    '001001+010000',            // 》
+    '000110',                   // ""（成对，关时后置空方）
+    '000110+000110',            // ''（成对）
+    '000011+011000',            // ［］（成对）
+]);
+// 需要前置空方的标点（开类 + 成对类）
+const PUNCT_LEADING = new Set([
+    '000011+001000',            // （
+    '000010+001001',            // 《
+    '000110',                   // ""（成对，开时前置空方）
+    '000110+000110',            // ''（成对）
+    '000011+011000',            // ［］（成对）
+]);
+
+function _isPunctSpacer(idx) {
+    const prev = idx > 0 ? outputItems[idx - 1] : null;
+    const next = idx < outputItems.length - 1 ? outputItems[idx + 1] : null;
+    if (prev && PUNCT_TRAILING.has(prev.oneHot)) return true;
+    if (next && PUNCT_LEADING.has(next.oneHot)) return true;
+    return false;
+}
+
 export const outputArea = document.getElementById('outputArea');
 cursor.dom = document.getElementById('cursor');
 
@@ -312,7 +342,8 @@ export function renderPageRange(startIdx, endIdx, container) {
             if (item.oneHot === '000000') unit.classList.add('empty-braille');
             unit.dataset.idx = i;
             if (item.oneHot === '000000') {
-                unit.innerHTML = `<span class="bu-dots">&nbsp;</span><span class="bu-char">&nbsp;</span>`;
+                const charContent = _isPunctSpacer(i) ? '' : '&nbsp;';
+                unit.innerHTML = `<span class="bu-dots">&nbsp;</span><span class="bu-char">${charContent}</span>`;
             } else {
                 unit.innerHTML = `<span class="bu-dots">${item.braille}</span>${item.char ? `<span class="bu-char">${item.char}</span>` : ''}`;
             }
@@ -510,5 +541,17 @@ export function initBrailleOutput() {
             renderOutput();
         }
         _selStart = -1;
+    });
+
+    // ── 窗口缩放时重算分页 ──
+    let _resizeTimer = null;
+    window.addEventListener('resize', () => {
+        clearTimeout(_resizeTimer);
+        _resizeTimer = setTimeout(() => {
+            if (pages.isActive || outputArea.scrollHeight > outputArea.clientHeight + 2) {
+                invalidatePageCache();
+                renderOutput();
+            }
+        }, 300);
     });
 }

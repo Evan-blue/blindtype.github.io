@@ -15,11 +15,12 @@ import { ALERT_SPEECH_RATE } from './config.js';
 import { pinyinToSpokenChar, resolveSoloFinal } from './utils-pinyin.js';
 import { indexToOnehot } from './utils-braille.js';
 
-// ── 双通道语音调度器 ──
-// 主通道（操作反馈/朗读）与教程通道各自维护独立队列，互不阻塞。
-// speechSynthesis 底层仍有串行限制，但两通道在 JS 层面完全解耦：
-// - 主通道 stopSpeech() 不影响教程队列
+// ── 三通道语音调度器 ──
+// 主通道（操作反馈/朗读）、教程通道、练习通道各自维护独立队列，互不阻塞。
+// speechSynthesis 底层仍有串行限制，但三通道在 JS 层面完全解耦：
+// - 主通道 stopSpeech() 不影响教程和练习队列
 // - 教程通道 stopTutorialSpeech() 默认不调 cancel()；forceStop=true 时立即打断
+// - 练习通道 stopPracticeSpeech() 只清练习队列，不影响其他通道
 
 class SpeechItem {
     constructor(text, rate, { onend, resumable = true } = {}) {
@@ -31,7 +32,7 @@ class SpeechItem {
 }
 
 class SpeechQueue {
-    static _activeChannel = null; // 'main' | 'tutorial' | null
+    static _activeChannel = null; // 'main' | 'tutorial' | 'practice' | null
     constructor(name, recordState = false) {
         this.name = name; // 'main' | 'tutorial'
         this._queue = [];
@@ -94,7 +95,8 @@ class SpeechQueue {
 
 const queues = {
     main: new SpeechQueue('main', true),  // 主通道
-    tutorial: new SpeechQueue('tutorial', true)  // 教程通道
+    tutorial: new SpeechQueue('tutorial', true),  // 教程通道
+    practice: new SpeechQueue('practice', false),  // 练习通道
 }
 
 
@@ -104,7 +106,7 @@ const notifyVisualizer = {
         window.dispatchEvent(new CustomEvent('speech-visualizer-start', { detail: text }));
     },
     stop() {
-        if (queues.main.isActive() || queues.tutorial.isActive()) return;
+        if (Object.values(queues).some(q => q.isActive())) return;
         window.dispatchEvent(new CustomEvent('speech-visualizer-stop'));
     },
     update(text) {
@@ -136,9 +138,10 @@ function _playNext(queueName) {
     const item = q.shift();
     const itemText = item.text;
 
-    // 记录当前 utterance，供中断时保存状态
-    q.state.currentItem = item;
-    q.state.charIndex = 0;
+    if (q.state) {
+        q.state.currentItem = item;
+        q.state.charIndex = 0;
+    }
 
     if (window.speechSynthesis.paused && typeof window.speechSynthesis.resume === 'function') {
         window.speechSynthesis.resume();
@@ -151,7 +154,7 @@ function _playNext(queueName) {
     u.onboundary = (e) => {
         if (queueName === 'main' && q.isExpired(gen)) return;
         if (e.charIndex !== undefined) {
-            q.state.charIndex = e.charIndex;
+            if (q.state) q.state.charIndex = e.charIndex;
             if (queueName === 'main') notifyVisualizer.update(itemText.substring(e.charIndex));
         }
     };
@@ -161,7 +164,7 @@ function _playNext(queueName) {
         if (q.isExpired(gen)) return;
         q.isPlaying = false;
         SpeechQueue._activeChannel = null;
-        q.state.currentItem = null;
+        if (q.state) q.state.currentItem = null;
         if (item.onend) item.onend();
         notifyVisualizer.stop();
         _playNext(queueName);
@@ -170,7 +173,7 @@ function _playNext(queueName) {
         if (q.isExpired(gen)) return;
         q.isPlaying = false;
         SpeechQueue._activeChannel = null;
-        q.state.currentItem = null;
+        if (q.state) q.state.currentItem = null;
         notifyVisualizer.stop();
         _playNext(queueName);
     };
@@ -185,6 +188,7 @@ export const speak = {
     immediate: speakImmediate,
     alert: speakAlert,
     tutorial: speakTutorialText,
+    practice: speakPractice,
 };
 
 /**
@@ -336,6 +340,39 @@ function speakTutorialText(text, rate, onend) {
     queues.tutorial.push(new SpeechItem(text, rate, { onend }));
     _playNext('tutorial');
     return true;
+}
+
+/**
+ * @description: 练习通道播报（独立队列，不影响主/教程通道）
+ * @param {string} text
+ * @param {number} [rate]
+ * @param {object} [opts]
+ * @param {function} [opts.onend]
+ * @return {boolean}
+ */
+function speakPractice(text, rate, opts = {}) {
+    if (!SETTINGS.allowSpeech) { if (opts.onend) opts.onend(); return false; }
+    if (!window.speechSynthesis) return false;
+    rate = rate || SETTINGS.speechRate;
+    queues.practice.length = 0;
+    queues.practice.push(new SpeechItem(',' + text, rate, { resumable: false, onend: opts.onend }));
+    _playNext('practice');
+    return true;
+}
+
+/**
+ * @description: 停止练习通道语音（不影响主/教程通道）
+ * @return {void}
+ */
+export function stopPracticeSpeech() {
+    queues.practice.clear();
+    if (SpeechQueue._activeChannel === 'practice') {
+        window.speechSynthesis.cancel();
+    }
+}
+
+export function isPracticeSpeechActive() {
+    return queues.practice.isActive();
 }
 
 /**

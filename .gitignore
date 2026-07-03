@@ -4,6 +4,7 @@ docs
 data/test*.txt
 test_files
 test_codes
+test_results
 node_modules
 js/__tests__
 vitest.config.js

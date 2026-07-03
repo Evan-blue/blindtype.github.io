@@ -1022,3 +1022,22 @@ export function clearOutput() {
     speak.text('输出区已清除');
     renderOutput();
 }
+
+// Convenience wrappers for batch conversion (used by tests and dev panel)
+export function numberToBraille(num) { return toOneHot.number(num); }
+export function englishToBraille(text) { return toOneHot.english(text); }
+export function chineseToBraille(text) { return toOneHot.chinese(text).map(x => typeof x === 'string' ? x : x.oneHot); }
+export function mixedToBraille(text) { return toOneHot.mixed(text).map(x => typeof x === 'string' ? x : x.oneHot); }
+
+export function initBrailleInput() {
+    dotCells.forEach(cell => {
+        cell.addEventListener('click', () => {
+            dotInput.toggle(+cell.dataset.idx);
+            cell.blur();
+        });
+    });
+
+    previewBox.addEventListener('click', () => {
+        if (dotInput.isLit) speak.braille(dotInput.onehot);
+    });
+}

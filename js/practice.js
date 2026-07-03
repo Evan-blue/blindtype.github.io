@@ -1,8 +1,7 @@
 // practice.js - 练习模式 (ES Module)
 
 import { DOT_TO_KEY, KEY_TO_DOT, KEY_ACTIONS, SETTINGS } from './state.js';
-import { playBeep } from './brailleSpeech.js';
-import { speak } from './brailleSpeech.js';
+import { playBeep, speak, stopPracticeSpeech, isPracticeSpeechActive } from './brailleSpeech.js';
 import { keyIdToLabel } from './config.js';
 import { dotsToBrailleChar } from './utils-braille.js';
 import { _lookupBraille, ONEHOT_MAPPINGS } from './loadMappings.js';
@@ -60,6 +59,8 @@ const state = {
     _active: false,
     _debounceTimer: null,
     _DEBOUNCE_MS: 500,
+    _correctPending: false,  // 答对后、TTS 开始前的窗口期
+    _speechTimer: null,
 };
 
 function getCurrentInput() {
@@ -77,12 +78,18 @@ function cellCount() {
 // ── 生成随机题目 ──
 function nextQuestion() {
     clearTimeout(state._debounceTimer);
+    clearTimeout(state._speechTimer);
+    state._correctPending = false;
+    state._speechTimer = null;
     const bank = questionBanks[state.topic];
     if (!bank || !bank.length) {
         state.currentQuestion = null;
         return;
     }
-    const entry = bank[Math.floor(Math.random() * bank.length)];
+    const pool = state.currentQuestion && bank.length > 1
+        ? bank.filter(e => e !== state.currentQuestion)
+        : bank;
+    const entry = pool[Math.floor(Math.random() * pool.length)];
     state.currentQuestion = entry;
     state.questionCells = entry.oneHot.split('+');
     state.currentCell = 0;
@@ -99,6 +106,28 @@ function speakQuestion(entry) {
     } else {
         speak.text(entry.audio || entry.label || entry.char);
     }
+}
+
+function _speakAnswer() {
+    const entry = state.currentQuestion;
+    if (!entry) return;
+    const dotParts = [];
+    for (const qoh of state.questionCells) {
+        const nums = [];
+        for (let i = 0; i < 6; i++) {
+            if (qoh[i] === '1') nums.push(i + 1);
+        }
+        if (nums.length) dotParts.push('点位 ' + nums.join(' '));
+    }
+    let name = '';
+    if (state.topic === 'number') {
+        name = entry.char === '数号' ? '数号' : '数字' + (entry.label || entry.char);
+    } else if (state.topic === 'english') {
+        name = entry.char ? '字母' + entry.char[0] : (entry.label || '');
+    } else {
+        name = entry.label || entry.char;
+    }
+    speak.text(name + '，' + dotParts.join(' '));
 }
 
 // ── 辅助：oneHot 转点位描述文本 ──
@@ -246,8 +275,14 @@ function debouncedLookup() {
     inputDots.textContent = dotsText;
     inputLabel.textContent = labelText || ' ';
     inputPreview.classList.toggle('empty', !state.inputCells.some(ic => ic.some(d => d)));
-    if (hasInput && SETTINGS.debounceSpeech && speechText) {
-        // speak.text(speechText);
+    if (hasInput && SETTINGS.debounceSpeech) {
+        if (state.topic === 'number') {
+            speak.braille(oneHot, undefined, { forceNumber: true });
+        } else if (state.topic === 'pinyin') {
+            speak.braille(oneHot);
+        } else if (speechText) {
+            speak.text(speechText);
+        }
     }
 }
 
@@ -262,12 +297,14 @@ function isMatch() {
 
 // ── 匹配成功 ──
 function onCorrect() {
+    clearTimeout(state._debounceTimer);
     state.score++;
     state.total++;
 
-    // 成功蜂鸣：两个短促的上行音
-    playBeep(880, 60);
-    setTimeout(() => playBeep(1100, 80), 80);
+    // 成功蜂鸣：大三和弦上行琶音
+    playBeep(880, 80);
+    setTimeout(() => playBeep(1109, 80), 80);
+    setTimeout(() => playBeep(1319, 120), 160);
 
     // 播报正确点位（所有格）
     const dotParts = [];
@@ -287,9 +324,13 @@ function onCorrect() {
     } else {
         name = entry.label || entry.char;
     }
-    speak.text('正确！' + name + '，' + dotParts.join(' '), null, {
-        onend: () => nextQuestion()
-    });
+    state._correctPending = true;
+    state._speechTimer = setTimeout(() => {
+        state._speechTimer = null;
+        speak.practice('正确！' + name + '，' + dotParts.join(' '), null, {
+            onend: () => { state._correctPending = false; nextQuestion(); }
+        });
+    }, 300);
 }
 
 // ── 切换用户输入点位 ──
@@ -335,9 +376,12 @@ function prevCell() {
 function clearInput() {
     if (!state._active) return;
     clearTimeout(state._debounceTimer);
+    const litCount = getCurrentInput().reduce((s, d) => s + d, 0);
     state.inputCells[state.currentCell] = [0, 0, 0, 0, 0, 0];
     renderInput();
-    playBeep(440, 50);
+    for (let i = 0; i < litCount; i++) {
+        setTimeout(() => playBeep(440, 40), i * 50);
+    }
 }
 
 // ── 撤销当前格最近一个点位，或跳到上一格 ──
@@ -404,7 +448,11 @@ const TOPIC_NAMES = { number: '数字', english: '英文', pinyin: '拼音', pun
 
 function closePractice() {
     state._active = false;
+    stopPracticeSpeech();
     clearTimeout(state._debounceTimer);
+    clearTimeout(state._speechTimer);
+    state._correctPending = false;
+    state._speechTimer = null;
     state.inputCells = [[0, 0, 0, 0, 0, 0]];
     state.currentCell = 0;
     state.questionCells = [];
@@ -426,7 +474,14 @@ export function isPracticeActive() {
 }
 
 // ── 初始化 ──
-function init() {
+export function initPractice() {
+    // Header practice button
+    const btnPractice = document.getElementById('btnPractice');
+    if (btnPractice) {
+        btnPractice.addEventListener('click', () => togglePractice());
+        btnPractice.addEventListener('mouseenter', () => speak.immediate('打开练习面板'));
+    }
+
     // 目标网格的点击不做任何事（只读展示）
     targetGrid.addEventListener('click', (e) => {
         const cell = e.target.closest('.dot-cell');
@@ -459,7 +514,7 @@ function init() {
 
     // 更新键位标签
     updatePracticeKeyLabels();
-    window.addEventListener('bindings-changed', updatePracticeKeyLabels);
+    document.addEventListener('bindings-changed', updatePracticeKeyLabels);
 }
 
 // ── 同步键位标签到练习面板 ──
@@ -482,6 +537,12 @@ function updatePracticeKeyLabels() {
 export function handlePracticeKey(e) {
     if (!state._active) return false;
 
+    // Ctrl+R 播报答案
+    if (e.ctrlKey && e.code === 'KeyR') {
+        _speakAnswer();
+        return true;
+    }
+
     // Ctrl/Meta 组合键放行（浏览器快捷键如 Ctrl+Shift+C 等）
     if (e.ctrlKey || e.metaKey) return false;
 
@@ -492,9 +553,10 @@ export function handlePracticeKey(e) {
         return true;
     }
 
-    // 主键盘数字键1-6
-    if (e.code >= 'Digit1' && e.code <= 'Digit6') {
-        toggleInputDot(parseInt(e.code.slice(-1), 10));
+    // R / Space 跳过成功播报（含 TTS 开始前的蜂鸣窗口期）
+    if ((isPracticeSpeechActive() || state._correctPending) && (e.code === 'KeyR' || e.code === 'Space' || e.code === 'Numpad0')) {
+        if (isPracticeSpeechActive()) stopPracticeSpeech();
+        nextQuestion();
         return true;
     }
 
@@ -544,7 +606,4 @@ export function handlePracticeKey(e) {
     return false;
 }
 
-// ── 导出供 init.js 使用 ──
 export { openPractice, closePractice };
-
-init();

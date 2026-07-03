@@ -189,4 +189,49 @@ const TIMELINE_ENTRIES = [
     tags: ["镜像盲文", "写读对照", "布局防抖"],
     hiTags: ["镜像盲文"],
   },
+
+  // ═══════════════════════════════════════════
+  // Phase 6: ESM 收尾 & 工程结构优化  (07-01 ~ 07-02)
+  // ═══════════════════════════════════════════
+  {
+    date: "2026-07-01 ~ 07-02",
+    title: "Phase 6 — ESM 收尾 & 工程结构优化",
+    desc: "keyboard.js 完成 IIFE→ESM 迁移，项目全部 JS 统一为 ES Module。init.js 函数提取大幅瘦身，事件监听归位到所属模块。",
+    milestone: true,
+    tags: ["ESM 完成", "工程结构", "模块内聚"],
+    hiTags: ["ESM 完成"],
+  },
+  {
+    date: "07-01",
+    title: "keyboard.js ESM 迁移 & 模块内聚",
+    desc: "最后一块 IIFE 脚本改造为 ES Module。6 个 window._kb* 回调替换为 CustomEvent；3 个 export 函数替代全局赋值。overlay 管理、bindings-changed 监听、设置同步全部归入 initKeyboard()。新增 theme.js 独立管理明暗主题。",
+    tags: ["IIFE→ESM", "CustomEvent", "theme.js", "模块内聚"],
+    hiTags: ["IIFE→ESM"],
+  },
+  {
+    date: "07-02",
+    title: "init.js 瘦身 & 事件归位",
+    desc: "提取 _applySettings / _initHeaderButtons / _initKeydownHandler 三个内部函数，then() 块从 ~150 行压缩至 ~60 行。showVisualizer 检查移入 initAudioVisualizer()，resize 分页处理移入 initBrailleOutput()。38 项预存在测试失败全部修复，130 测试全绿。",
+    tags: ["代码瘦身", "事件归位", "测试修复"],
+    hiTags: ["代码瘦身"],
+  },
+
+  // ═══════════════════════════════════════════
+  // Phase 7: Practice 模式深度打磨  (07-03)
+  // ═══════════════════════════════════════════
+  {
+    date: "2026-07-03",
+    title: "Phase 7 — Practice 模式深度打磨",
+    desc: "练习模式多项体验修复：语音播报崩溃修复、跳过时机优化、拼音播报一致性、空方渲染检测、快捷键答案播报。",
+    milestone: true,
+    tags: ["Practice 打磨", "语音修复", "UX 优化"],
+    hiTags: ["Practice 打磨"],
+  },
+  {
+    date: "07-03",
+    title: "练习模式语音 & 交互修复",
+    desc: "修复 practice 通道语音崩溃（recordState:false 无 state 属性）。蜂鸣后立即按空格可跳过播报（_correctPending 窗口期检测）。拼音防抖播报改用 speak.braille() 与主输入一致。答对时清除防抖定时器防重复播报。Ctrl+R 播报当前题目正确点位。删除全项目主键盘数字1-6盲文点位绑定。输出区标点空方渲染时检测前后标点类型，自动压缩 char 行高度。",
+    tags: ["语音崩溃", "跳过时机", "拼音播报", "答案播报", "空方检测"],
+    hiTags: ["语音崩溃", "空方检测"],
+  },
 ];

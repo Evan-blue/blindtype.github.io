@@ -7,7 +7,8 @@ import {
 } from './brailleInput.js';
 import { toOneHot } from './utils-braille.js';
 import { ONEHOT_MAPPINGS } from './loadMappings.js';
-import { SETTINGS } from './state.js';
+import { SETTINGS, saveSettings } from './state.js';
+import { renderOutput } from './brailleOutput.js';
 
 /**
  * @description: 模拟盲文键盘逐键输入（走 toggleDot → confirmInput 流程，可视化反馈）
@@ -331,6 +332,17 @@ export function initDevPanel() {
             setTimeout(() => focusable.blur(), 0);
         }
     });
+
+    // ── 省写映射开关 ──
+    const omitToneMappingCheck = document.getElementById('omitToneMapping');
+    if (omitToneMappingCheck) {
+        omitToneMappingCheck.checked = SETTINGS.omitToneMapping !== false;
+        omitToneMappingCheck.addEventListener('change', () => {
+            SETTINGS.omitToneMapping = omitToneMappingCheck.checked;
+            saveSettings();
+            renderOutput();
+        });
+    }
 
     // 初始位于右上角，需要立即确定展开方向
     updateDevFlip();

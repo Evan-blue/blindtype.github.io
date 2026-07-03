@@ -52,7 +52,7 @@ export function _buildValidComponents(categories) {
     }
 }
 
-function ensureReverseSoloMap() {
+export function ensureReverseSoloMap() {
     if (REVERSE_ONEHOT_MAPPINGS.solo || !PINYIN_MAPPINGS.soloFinals) return;
     REVERSE_ONEHOT_MAPPINGS.solo = {};
     const allSolo = {

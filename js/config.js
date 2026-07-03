@@ -100,7 +100,6 @@ export const DEFAULT_SETTINGS = {
     punctAutoSpacing: true,
     multiSelect: false,
     forceWelcome: false,
-    mainKeyboardDigits: true,
     mergeNewlines: true,
     omitToneMapping: true,
     showVisualizer: true,
