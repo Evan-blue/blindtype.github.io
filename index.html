@@ -4,20 +4,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="盲文输入工具，无障碍盲文打印，双手配合，高效打字">
+    <meta name="description" content="盲文输入工具|汉字转盲文|盲文转拼音|盲文学习|盲文练习|6点汉语拼音盲文|无障碍盲文打印，双手配合，高效打字">
     <title>盲文输入工具</title>
     <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" alt="盲文输入工具图标">
     <link rel="stylesheet" href="./css/index.css">
 </head>
 
-<body aria-hidden="true">
+<body>
 
     <header>
         <h1>盲文输入工具</h1>
         <span class="header-actions">
             <button class="header-btn" id="btnTutorial" title="新手教程" aria-label="新手教程" aria-hidden="true">新手教程<kbd
                     id="tkbd-tutorial">?</kbd></button>
-            <button class="practice-header-btn" id="btnPractice" aria-label="练习" aria-hidden="true">练习<kbd id="tkbd-practice">E</kbd></button>
+            <button class="practice-header-btn" id="btnPractice" aria-label="练习" aria-hidden="true">练习<kbd
+                    id="tkbd-practice">E</kbd></button>
             <button class="theme-toggle" id="themeToggle" title="切换主题" aria-label="切换主题" aria-hidden="true">🌙</button>
         </span>
     </header>
@@ -65,8 +66,8 @@
             </button>
             <span class="dict-loading" id="dictLoading" aria-live="polite">字典配置加载中…</span>
             <div class="help-settings-row">
-                <button class="help-btn" id="btnMapping" title="盲文对照表" aria-label="盲文对照表" aria-expanded="false" aria-hidden="true">⠕<kbd
-                        id="tkbd-toggleMapping"></kbd></button>
+                <button class="help-btn" id="btnMapping" title="盲文对照表" aria-label="盲文对照表" aria-expanded="false"
+                    aria-hidden="true">⠕<kbd id="tkbd-toggleMapping"></kbd></button>
                 <span class="help-right-group">
                     <button class="help-btn kb-toggle-btn" id="btnKbToggle" title="键盘和设置" aria-label="键盘和设置"
                         aria-expanded="false" aria-hidden="true">⚙<kbd id="tkbd-kbToggle"></kbd></button>
@@ -88,7 +89,7 @@
         </section>
 
         <!-- Output Area -->
-        <section class="output-panel" aria-label="输出区">
+        <section class="output-panel" aria-label="输出区" >
             <div class="output-header">
                 <span class="speech-indicator" id="speechIndicator">
                     <span class="speech-dot" id="speechDot" aria-hidden="true"></span>
@@ -99,34 +100,39 @@
                             id="tkbd-readAloud"></kbd></button>
                     <button class="toolbar-btn" id="btnClearAll" title="清除输出区" aria-hidden="true">清空<kbd
                             id="tkbd-clearOutput"></kbd></button>
-                    <button class="toolbar-btn" id="btnOpenFile" title="打开文件" aria-hidden="true">打开<kbd id="tkbd-openFile"></kbd></button>
-                    <button class="toolbar-btn" id="btnSaveContent" title="保存内容" aria-hidden="true">保存<kbd id="tkbd-save"></kbd></button>
+                    <button class="toolbar-btn" id="btnOpenFile" title="打开文件" aria-hidden="true">打开<kbd
+                            id="tkbd-openFile"></kbd></button>
+                    <button class="toolbar-btn" id="btnSaveContent" title="保存内容" aria-hidden="true">保存<kbd
+                            id="tkbd-save"></kbd></button>
                 </div>
             </div>
             <div class="output-text" id="outputArea" tabindex="0" role="textbox" aria-live="polite" aria-label="输出内容区">
                 <span class="cursor" id="cursor"></span>
             </div>
             <div class="page-nav" id="pageNav" style="display:none;">
-                <button class="page-btn page-btn-prev" id="btnPrevPage" title="上一页" aria-label="上一页" aria-hidden="true">&#9664;</button>
+                <button class="page-btn page-btn-prev" id="btnPrevPage" title="上一页" aria-label="上一页"
+                    aria-hidden="true">&#9664;</button>
                 <span class="page-indicator" id="pageIndicator">1/1</span>
-                <button class="page-btn page-btn-next" id="btnNextPage" title="下一页" aria-label="下一页" aria-hidden="true">&#9654;</button>
+                <button class="page-btn page-btn-next" id="btnNextPage" title="下一页" aria-label="下一页"
+                    aria-hidden="true">&#9654;</button>
             </div>
         </section>
 
-        <footer class="site-footer" style="display:block;">
-            <a tabindex="-1" onfocus="this.blur()" href="https://github.com/Evan-blue/blindtype.github.io/"
-                target="_blank" rel="noopener">Github仓库</a>
-            <a tabindex="-1" onfocus="this.blur()" href="http://www.mangwendazi.xin/" target="_blank" rel="noopener">国内网址</a>
-            <a tabindex="-1" onfocus="this.blur()" href="https://evan-blue.github.io/blindtype.github.io/"
-                target="_blank" rel="noopener">github page网址</a>
-            <a tabindex="-1" onfocus="this.blur()" href="https://www.zcse.edu.cn/info/1696/47121.htm" target="_blank"
-                rel="noopener">盲文教程资料</a>
-            <a tabindex="-1" onfocus="this.blur()" href="https://www.zgmx.org.cn/updatenews.html" target="_blank"
-                rel="noopener">中国盲人协会</a>
-            <a tabindex="-1" onfocus="this.blur()" href="https://www.blc.org.cn/" target="_blank"
-                rel="noopener">中国盲文图书馆</a>
-            <span tabindex="-1" onfocus="this.blur()">Q群-659256567</span>
-            <a tabindex="-1" onfocus="this.blur()" href="./pages/iteration/" target="_blank">项目迭代时间线</a>
+        <footer class="site-footer" style="display:block;" onfocusin="this.blur()">
+            <a tabindex="-1" target="_blank" rel="noopener"
+                href="https://github.com/Evan-blue/blindtype.github.io/">Github仓库</a>
+            <a tabindex="-1" target="_blank" rel="noopener" 
+                href="http://www.mangwendazi.xin/">国内网址</a>
+            <a tabindex="-1" target="_blank" rel="noopener"
+                href="https://evan-blue.github.io/blindtype.github.io/">github page网址</a>
+            <a tabindex="-1" target="_blank" rel="noopener"
+                href="https://www.zcse.edu.cn/info/1696/47121.htm">盲文教程资料</a>
+            <a tabindex="-1" target="_blank" rel="noopener" 
+                href="https://www.zgmx.org.cn/updatenews.html">中国盲人协会</a>
+            <a tabindex="-1" target="_blank" rel="noopener" 
+                href="https://www.blc.org.cn/">中国盲文图书馆</a>
+            <span tabindex="-1">Q群-659256567</span>
+            <a tabindex="-1" target="_blank" href="./pages/iteration/">项目迭代时间线</a>
         </footer>
     </main>
 
@@ -139,7 +145,8 @@
             <p class="welcome-mask-desc">这是一个面向视障人士的盲文输入工具，支持拼音、数字、英文盲文输入，并提供语音播报反馈。</p>
             <p class="welcome-mask-question">是否需要开始新手教程？</p>
             <div class="welcome-mask-actions">
-                <button class="welcome-btn welcome-btn-primary" id="welcomeBtnYes" autofocus aria-hidden="true">开始教程</button>
+                <button class="welcome-btn welcome-btn-primary" id="welcomeBtnYes" autofocus
+                    aria-hidden="true">开始教程</button>
                 <button class="welcome-btn welcome-btn-secondary" id="welcomeBtnNo" aria-hidden="true">跳过</button>
             </div>
         </div>
@@ -169,7 +176,8 @@
                 <button class="pin-toggle" id="pinToggle" title="锁定面板" aria-label="锁定面板" aria-hidden="true">
                     <span class="pin-icon">📌</span>
                 </button>
-                <button class="mapping-slide-close" id="mappingSlideClose" aria-label="关闭对照表" aria-hidden="true">&times;</button>
+                <button class="mapping-slide-close" id="mappingSlideClose" aria-label="关闭对照表"
+                    aria-hidden="true">&times;</button>
             </div>
         </div>
         <div class="mapping-body">
@@ -266,13 +274,15 @@
                 <div class="dev-action-keys" id="actionKeyBindings">
                     <div class="dev-toggle-row">
                         <span>清空输入</span>
-                        <button type="button" class="kb-badge" data-action="clearInput" title="点击后按键盘任意键设置" aria-hidden="true">
+                        <button type="button" class="kb-badge" data-action="clearInput" title="点击后按键盘任意键设置"
+                            aria-hidden="true">
                             <span class="key-label">f</span>
                         </button>
                     </div>
                     <div class="dev-toggle-row">
                         <span>清空输出</span>
-                        <button type="button" class="kb-badge" data-action="clearOutput" title="点击后按键盘任意键设置" aria-hidden="true">
+                        <button type="button" class="kb-badge" data-action="clearOutput" title="点击后按键盘任意键设置"
+                            aria-hidden="true">
                             <span class="key-label">s</span>
                         </button>
                     </div>
@@ -285,6 +295,11 @@
                     <label class="dev-radio"><input type="radio" name="cursorJumpMode" value="sentenceEnd"
                             checked>句子</label>
                 </div>
+                <div class="dev-radio-group" role="radiogroup" aria-label="↑↓箭头播报模式">
+                    <span class="dev-radio-label">↑↓箭头播报</span>
+                    <label class="dev-radio"><input type="radio" name="cursorSpeakMode" value="item" checked>音节</label>
+                    <label class="dev-radio"><input type="radio" name="cursorSpeakMode" value="sentence">句子</label>
+                </div>
                 <div class="dev-radio-group" role="radiogroup" aria-label="点位反馈方式">
                     <span class="dev-radio-label">点位反馈</span>
                     <label class="dev-radio"><input type="radio" name="dotFeedbackMode" value="beep" checked>蜂鸣</label>
@@ -293,7 +308,8 @@
                 <div class="dev-sep"></div>
                 <div class="dev-radio-group" role="radiogroup" aria-label="文本转化显示">
                     <span class="dev-radio-label">文本转化显示</span>
-                    <label class="dev-radio"><input type="radio" name="textConversionDisplay" value="pinyin" checked>拼音</label>
+                    <label class="dev-radio"><input type="radio" name="textConversionDisplay" value="pinyin"
+                            checked>拼音</label>
                     <label class="dev-radio"><input type="radio" name="textConversionDisplay" value="char">汉字</label>
                 </div>
             </div>
@@ -368,10 +384,12 @@
         </div>
         <div class="dev-header">
             Dev
-            <button class="dev-pin" id="devPin" title="固定面板" aria-label="固定面板" aria-pressed="false" aria-hidden="true">📌</button>
+            <button class="dev-pin" id="devPin" title="固定面板" aria-label="固定面板" aria-pressed="false"
+                aria-hidden="true">📌</button>
             <button class="dev-close" id="devClose" title="关闭" aria-label="关闭" aria-hidden="true">×</button>
             <span class="dev-tabs">
-                <span class="dev-tab active" data-target="devSectionSettings" title="高级设置" aria-hidden="true">高级设置</span>
+                <span class="dev-tab active" data-target="devSectionSettings" title="高级设置"
+                    aria-hidden="true">高级设置</span>
                 <span class="dev-tab" data-target="devSectionMain" title="模拟输入" aria-hidden="true">模拟输入</span>
                 <span class="dev-tab" data-target="devSectionShortcuts" title="浏览器快捷键" aria-hidden="true">快捷键</span>
             </span>
@@ -418,7 +436,8 @@
                         <button class="bind-btn" id="btnSpeakBindings" title="播报当前盲文键位" aria-hidden="true">播报键位</button>
                         <button class="bind-btn" id="btnCustomBind" title="自定义键位" aria-hidden="true">自定义键位 <kbd
                                 id="tkbd-kbResetKeyBindings"></kbd></button>
-                        <button class="reset-btn" id="btnKbResetDefaults" title="恢复默认键位" aria-hidden="true">恢复默认设置</button>
+                        <button class="reset-btn" id="btnKbResetDefaults" title="恢复默认键位"
+                            aria-hidden="true">恢复默认设置</button>
                     </span>
                 </div>
             </div>
@@ -586,9 +605,11 @@
                     <h3 class="kb-ref-title">操作</h3>
                     <div class="kb-ref-row" data-hl="delete"><kbd>Delete</kbd> 向后删除</div>
                     <div class="kb-ref-row" data-hl="arrowleft arrowright arrowup arrowdown">
-                        <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> 移动光标</div>
+                        <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> 移动光标
+                    </div>
                     <div class="kb-ref-row" data-hl="shift arrowleft arrowright">
-                        <kbd>Shift</kbd>+<kbd>←</kbd><kbd>→</kbd> 范围选择</div>
+                        <kbd>Shift</kbd>+<kbd>←</kbd><kbd>→</kbd> 范围选择
+                    </div>
                     <div class="kb-ref-row" data-hl="ctrl arrowup arrowdown"><kbd>Ctrl</kbd>+<kbd>↑</kbd><kbd>↓</kbd>
                         调整语速</div>
                     <div class="kb-ref-row" data-hl="g h"><kbd>G</kbd> / <kbd>H</kbd> 翻页</div>
@@ -644,25 +665,35 @@
     <div class="practice-overlay" id="practiceOverlay" aria-hidden="true">
         <div class="practice-header">
             <span class="practice-label">练习</span>
+            <button class="practice-close" id="practiceClose" aria-label="关闭练习">&times;</button>
+        </div>
+        <div class="practice-body">
             <div class="practice-topic-bar" id="practiceTopicBar">
                 <button class="practice-topic-tab active" data-topic="number">数字</button>
                 <button class="practice-topic-tab" data-topic="english">英文</button>
                 <button class="practice-topic-tab" data-topic="pinyin">拼音</button>
                 <button class="practice-topic-tab" data-topic="punc">标点</button>
             </div>
-            <button class="practice-close" id="practiceClose" aria-label="关闭练习">&times;</button>
-        </div>
-        <div class="practice-body">
+            <div class="practice-diff-bar" id="practiceDiffBar">
+                <button class="practice-diff-tab active" data-diff="basic">初级</button>
+                <button class="practice-diff-tab" data-diff="advanced">高级</button>
+            </div>
             <div class="practice-panels">
                 <div class="practice-section practice-target" id="practiceTargetSection">
                     <span class="practice-section-label">题目</span>
                     <div class="dot-grid rtl" id="practiceTargetGrid">
-                        <button class="dot-cell" aria-hidden="true" data-idx="1" tabindex="-1"><span class="dot-label">1</span><span class="key-label"></span></button>
-                        <button class="dot-cell" aria-hidden="true" data-idx="4" tabindex="-1"><span class="dot-label">4</span><span class="key-label"></span></button>
-                        <button class="dot-cell" aria-hidden="true" data-idx="2" tabindex="-1"><span class="dot-label">2</span><span class="key-label"></span></button>
-                        <button class="dot-cell" aria-hidden="true" data-idx="5" tabindex="-1"><span class="dot-label">5</span><span class="key-label"></span></button>
-                        <button class="dot-cell" aria-hidden="true" data-idx="3" tabindex="-1"><span class="dot-label">3</span><span class="key-label"></span></button>
-                        <button class="dot-cell" aria-hidden="true" data-idx="6" tabindex="-1"><span class="dot-label">6</span><span class="key-label"></span></button>
+                        <button class="dot-cell" aria-hidden="true" data-idx="1" tabindex="-1"><span
+                                class="dot-label">1</span><span class="key-label"></span></button>
+                        <button class="dot-cell" aria-hidden="true" data-idx="4" tabindex="-1"><span
+                                class="dot-label">4</span><span class="key-label"></span></button>
+                        <button class="dot-cell" aria-hidden="true" data-idx="2" tabindex="-1"><span
+                                class="dot-label">2</span><span class="key-label"></span></button>
+                        <button class="dot-cell" aria-hidden="true" data-idx="5" tabindex="-1"><span
+                                class="dot-label">5</span><span class="key-label"></span></button>
+                        <button class="dot-cell" aria-hidden="true" data-idx="3" tabindex="-1"><span
+                                class="dot-label">3</span><span class="key-label"></span></button>
+                        <button class="dot-cell" aria-hidden="true" data-idx="6" tabindex="-1"><span
+                                class="dot-label">6</span><span class="key-label"></span></button>
                     </div>
                     <div class="practice-preview" id="practiceTargetPreview">
                         <span class="braille-char" id="practiceTargetBraille">
@@ -680,12 +711,18 @@
                 <div class="practice-section practice-input-section" id="practiceInputSection">
                     <span class="practice-section-label">输入</span>
                     <div class="dot-grid rtl" id="practiceInputGrid">
-                        <button class="dot-cell" aria-hidden="true" data-idx="1" tabindex="-1"><span class="dot-label">1</span><span class="key-label"></span></button>
-                        <button class="dot-cell" aria-hidden="true" data-idx="4" tabindex="-1"><span class="dot-label">4</span><span class="key-label"></span></button>
-                        <button class="dot-cell" aria-hidden="true" data-idx="2" tabindex="-1"><span class="dot-label">2</span><span class="key-label"></span></button>
-                        <button class="dot-cell" aria-hidden="true" data-idx="5" tabindex="-1"><span class="dot-label">5</span><span class="key-label"></span></button>
-                        <button class="dot-cell" aria-hidden="true" data-idx="3" tabindex="-1"><span class="dot-label">3</span><span class="key-label"></span></button>
-                        <button class="dot-cell" aria-hidden="true" data-idx="6" tabindex="-1"><span class="dot-label">6</span><span class="key-label"></span></button>
+                        <button class="dot-cell" aria-hidden="true" data-idx="1" tabindex="-1"><span
+                                class="dot-label">1</span><span class="key-label"></span></button>
+                        <button class="dot-cell" aria-hidden="true" data-idx="4" tabindex="-1"><span
+                                class="dot-label">4</span><span class="key-label"></span></button>
+                        <button class="dot-cell" aria-hidden="true" data-idx="2" tabindex="-1"><span
+                                class="dot-label">2</span><span class="key-label"></span></button>
+                        <button class="dot-cell" aria-hidden="true" data-idx="5" tabindex="-1"><span
+                                class="dot-label">5</span><span class="key-label"></span></button>
+                        <button class="dot-cell" aria-hidden="true" data-idx="3" tabindex="-1"><span
+                                class="dot-label">3</span><span class="key-label"></span></button>
+                        <button class="dot-cell" aria-hidden="true" data-idx="6" tabindex="-1"><span
+                                class="dot-label">6</span><span class="key-label"></span></button>
                     </div>
                     <div class="practice-preview" id="practiceInputPreview">
                         <span class="braille-char" id="practiceInputBraille">

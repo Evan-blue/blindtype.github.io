@@ -97,6 +97,7 @@ export const DEFAULT_SETTINGS = {
     announceEmptyCell: false,
     wordSegmentation: true,
     cursorJumpMode: 'sentenceEnd',
+    cursorSpeakMode: 'item',
     punctAutoSpacing: true,
     multiSelect: false,
     forceWelcome: false,

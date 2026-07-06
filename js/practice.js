@@ -3,8 +3,9 @@
 import { DOT_TO_KEY, KEY_TO_DOT, KEY_ACTIONS, SETTINGS } from './state.js';
 import { playBeep, speak, stopPracticeSpeech, isPracticeSpeechActive } from './brailleSpeech.js';
 import { keyIdToLabel } from './config.js';
-import { dotsToBrailleChar } from './utils-braille.js';
+import { dotsToBrailleChar, toOneHot } from './utils-braille.js';
 import { _lookupBraille, ONEHOT_MAPPINGS } from './loadMappings.js';
+import { pinyinToSpokenChar, chineseToPinyin } from './utils-pinyin.js';
 
 // ── 题库 ──
 const questionBanks = { number: [], english: [], pinyin: [], punc: [] };
@@ -50,6 +51,7 @@ if (!overlay) throw new Error('Practice overlay DOM not found');
 // ── 状态 ──
 const state = {
     topic: 'number',
+    difficulty: 'basic',
     currentQuestion: null,
     inputCells: [[0, 0, 0, 0, 0, 0]],  // 二维：每个元素是一个盲文方
     currentCell: 0,
@@ -61,7 +63,147 @@ const state = {
     _DEBOUNCE_MS: 500,
     _correctPending: false,  // 答对后、TTS 开始前的窗口期
     _speechTimer: null,
+    _modeTimer: null,   // 模式切换防抖：停止切换 1s 后才加载题目
 };
+
+// ── 高级模式辅助映射 ──
+const NUMBER_SIGN_OH = '001111';
+const DECIMAL_POINT_OH = '010000';
+const LOWERCASE_SIGN_OH = '000011';
+
+let _digitToOH = null;   // { '0': '010110', '1': '100000', ... }
+let _letterToOH = null;  // { 'a': '100000', 'b': '110000', ... }
+
+function _ensureAdvancedMaps() {
+    if (_digitToOH && _letterToOH) return;
+    _digitToOH = {};
+    _letterToOH = {};
+    const numMap = ONEHOT_MAPPINGS.number || {};
+    for (const [oh, entry] of Object.entries(numMap)) {
+        const ch = entry.char;
+        if (ch === '数号' || ch === '.') continue;
+        _digitToOH[ch] = oh;
+    }
+    const letterMap = ONEHOT_MAPPINGS.letter || {};
+    for (const [oh, entry] of Object.entries(letterMap)) {
+        const ch = entry.char;
+        if (!ch || ch.length < 2) continue;
+        _letterToOH[ch[1]] = oh; // 小写字母
+    }
+}
+
+// ── 高级模式：随机数字 → 盲文 ──
+function generateAdvancedNumber() {
+    _ensureAdvancedMaps();
+    let numStr;
+    if (Math.random() < 0.3) {
+        // 2位小数
+        const intPart = Math.floor(Math.random() * 100);
+        const fracPart = Math.floor(Math.random() * 90 + 10);
+        numStr = intPart + '.' + fracPart;
+    } else {
+        // 0~100 整数
+        numStr = String(Math.floor(Math.random() * 101));
+    }
+    const cells = [NUMBER_SIGN_OH];
+    for (const ch of numStr) {
+        if (ch === '.') {
+            cells.push(DECIMAL_POINT_OH);
+        } else {
+            cells.push(_digitToOH[ch]);
+        }
+    }
+    return {
+        oneHot: cells.join('+'),
+        char: numStr,
+        label: numStr,
+        audio: numStr,
+    };
+}
+
+// ── 高级模式：日常单词 → 盲文 ──
+const DAILY_WORDS = [
+    'the', 'be', 'to', 'of', 'and', 'in', 'that', 'have', 'it', 'is',
+    'for', 'not', 'on', 'with', 'he', 'as', 'you', 'do', 'at', 'this',
+    'but', 'his', 'by', 'from', 'they', 'we', 'say', 'her', 'she', 'or',
+    'an', 'will', 'my', 'one', 'all', 'would', 'there', 'their', 'what', 'so',
+    'up', 'out', 'if', 'about', 'who', 'get', 'which', 'go', 'me', 'when',
+    'make', 'can', 'like', 'time', 'no', 'just', 'him', 'know', 'take', 'people',
+    'into', 'year', 'your', 'good', 'some', 'could', 'them', 'see', 'other', 'than',
+    'then', 'now', 'look', 'only', 'come', 'its', 'over', 'think', 'also', 'back',
+    'after', 'use', 'two', 'how', 'our', 'work', 'first', 'well', 'way', 'even',
+    'new', 'want', 'because', 'any', 'these', 'give', 'day', 'most', 'us',
+];
+
+function generateAdvancedEnglish() {
+    _ensureAdvancedMaps();
+    const word = DAILY_WORDS[Math.floor(Math.random() * DAILY_WORDS.length)];
+    const cells = [LOWERCASE_SIGN_OH];
+    for (const ch of word) {
+        const oh = _letterToOH[ch];
+        if (oh) cells.push(oh);
+    }
+    return {
+        oneHot: cells.join('+'),
+        char: word,
+        label: word,
+        audio: word,
+    };
+}
+
+// ── 高级模式：汉字/词语/成语 → 盲文 ──
+const PINYIN_CHARS = [
+    '我', '你', '他', '她', '是', '的', '了', '在', '不', '有',
+    '人', '大', '小', '上', '下', '中', '国', '家', '学', '生',
+    '好', '来', '去', '看', '说', '想', '做', '能', '会', '要',
+    '对', '这', '那', '个', '和', '也', '就', '都', '很', '把',
+    '被', '从', '到', '得', '地', '出', '过', '还', '没', '时',
+    '年', '月', '日', '天', '水', '火', '山', '花', '马', '鸟',
+    '鱼', '红', '黄', '蓝', '白', '黑', '手', '口', '目', '耳',
+    '心', '头', '走', '跑', '吃', '喝', '买', '卖', '高', '长',
+];
+
+const PINYIN_WORDS = [
+    '我们', '他们', '自己', '什么', '怎么', '可以', '因为', '所以',
+    '但是', '如果', '虽然', '而且', '不过', '已经', '正在', '没有',
+    '所有', '知道', '喜欢', '觉得', '东西', '时候', '地方', '问题',
+    '事情', '生活', '工作', '学习', '朋友', '孩子', '老师', '同学',
+    '父母', '电脑', '手机', '电影', '音乐', '游戏', '衣服', '天气',
+    '世界', '中国', '今天', '明天', '昨天', '早上', '晚上', '下午',
+    '吃饭', '睡觉', '开车', '说话', '回家', '帮忙',
+];
+
+const PINYIN_IDIOMS = [
+    '春暖花开', '一帆风顺', '心想事成', '万事如意', '马到成功',
+    '龙马精神', '步步高升', '年年有余', '花好月圆', '风和日丽',
+    '风调雨顺', '国泰民安', '天下太平', '喜气洋洋', '蒸蒸日上',
+    '欣欣向荣', '百发百中', '十全十美', '天长地久', '海阔天空',
+    '鸟语花香', '开门见山', '大吉大利', '红红火火', '平平安安',
+];
+
+function generateAdvancedPinyin() {
+    const r = Math.random();
+    let text;
+    if (r < 0.35) {
+        text = PINYIN_CHARS[Math.floor(Math.random() * PINYIN_CHARS.length)];
+    } else if (r < 0.75) {
+        text = PINYIN_WORDS[Math.floor(Math.random() * PINYIN_WORDS.length)];
+    } else {
+        text = PINYIN_IDIOMS[Math.floor(Math.random() * PINYIN_IDIOMS.length)];
+    }
+    const items = toOneHot.chinese(text);
+    const oneHot = items
+        .filter(x => x.oneHot !== '000000')
+        .map(x => x.oneHot)
+        .join('+');
+    const pyArr = chineseToPinyin(text, { toneType: 'num', type: 'array' });
+    return {
+        oneHot,
+        char: text,
+        label: text,
+        audio: pyArr.join(' '),
+    };
+}
 
 function getCurrentInput() {
     return state.inputCells[state.currentCell] || [0, 0, 0, 0, 0, 0];
@@ -79,17 +221,30 @@ function cellCount() {
 function nextQuestion() {
     clearTimeout(state._debounceTimer);
     clearTimeout(state._speechTimer);
+    clearTimeout(state._modeTimer);
     state._correctPending = false;
     state._speechTimer = null;
-    const bank = questionBanks[state.topic];
-    if (!bank || !bank.length) {
+    state._modeTimer = null;
+
+    let entry;
+    if (state.difficulty === 'advanced') {
+        if (state.topic === 'number') {
+            entry = generateAdvancedNumber();
+        } else if (state.topic === 'english') {
+            entry = generateAdvancedEnglish();
+        } else if (state.topic === 'pinyin') {
+            entry = generateAdvancedPinyin();
+        } else {
+            entry = _pickFromBank();
+        }
+    } else {
+        entry = _pickFromBank();
+    }
+
+    if (!entry) {
         state.currentQuestion = null;
         return;
     }
-    const pool = state.currentQuestion && bank.length > 1
-        ? bank.filter(e => e !== state.currentQuestion)
-        : bank;
-    const entry = pool[Math.floor(Math.random() * pool.length)];
     state.currentQuestion = entry;
     state.questionCells = entry.oneHot.split('+');
     state.currentCell = 0;
@@ -99,10 +254,32 @@ function nextQuestion() {
     speakQuestion(state.currentQuestion);
 }
 
+function _pickFromBank() {
+    const bank = questionBanks[state.topic];
+    if (!bank || !bank.length) return null;
+    const pool = state.currentQuestion && bank.length > 1
+        ? bank.filter(e => e !== state.currentQuestion)
+        : bank;
+    return pool[Math.floor(Math.random() * pool.length)];
+}
+
 function speakQuestion(entry) {
     if (!entry) return;
     if (state.topic === 'english' && entry.char) {
-        speak.text(entry.char[0]);
+        if (state.difficulty === 'advanced') {
+            speak.text(entry.audio || entry.char);
+        } else {
+            speak.text(entry.char[0]);
+        }
+    } else if (state.topic === 'pinyin') {
+        if (state.difficulty === 'advanced') {
+            speak.text(entry.char || entry.label);
+        } else {
+            const raw = entry.audio || entry.label || entry.char;
+            speak.text(pinyinToSpokenChar(raw) || raw);
+        }
+    } else if (state.topic === 'punc') {
+        speak.text(entry.audio || entry.label || entry.char);
     } else {
         speak.text(entry.audio || entry.label || entry.char);
     }
@@ -123,9 +300,16 @@ function _speakAnswer() {
     if (state.topic === 'number') {
         name = entry.char === '数号' ? '数号' : '数字' + (entry.label || entry.char);
     } else if (state.topic === 'english') {
-        name = entry.char ? '字母' + entry.char[0] : (entry.label || '');
+        if (state.difficulty === 'advanced') {
+            name = entry.char || entry.label;
+        } else {
+            name = entry.char ? '字母' + entry.char[0] : (entry.label || '');
+        }
+    } else if (state.topic === 'pinyin' && state.difficulty === 'advanced') {
+        name = entry.char || entry.label;
     } else {
-        name = entry.label || entry.char;
+        const raw = entry.audio || entry.label || entry.char;
+        name = pinyinToSpokenChar(raw) || raw;
     }
     speak.text(name + '，' + dotParts.join(' '));
 }
@@ -183,7 +367,11 @@ function renderTarget() {
     let labelText = '';
     if (entry) {
         if (state.topic === 'english') {
-            labelText = entry.char ? entry.char[0] : (entry.label || '');
+            if (state.difficulty === 'advanced') {
+                labelText = entry.char || entry.label;
+            } else {
+                labelText = entry.char ? entry.char[0] : (entry.label || '');
+            }
         } else if (state.topic === 'number' && entry.char === '数号') {
             labelText = '数号';
         } else {
@@ -295,6 +483,52 @@ function isMatch() {
     return state.currentQuestion && getInputOneHot() === state.currentQuestion.oneHot;
 }
 
+function isCurrentCellMatch() {
+    const cur = getCurrentInput().join('');
+    const qoh = getCurrentQuestionOH();
+    return cur !== '000000' && cur === qoh;
+}
+
+// ── 组合盲文逐格反馈 ──
+// ── 获取当前格的名称（用于逐格反馈播报）──
+function _cellName(oneHot) {
+    if (state.topic === 'number') {
+        const obj = ONEHOT_MAPPINGS.number?.[oneHot];
+        if (!obj) return '';
+        if (obj.char === '数号') return '数号';
+        if (obj.char === '.') return '小数点';
+        return '数字' + obj.label;
+    }
+    if (state.topic === 'english') {
+        const obj = ONEHOT_MAPPINGS.letter?.[oneHot];
+        if (!obj) return '';
+        if (!obj.char) return obj.label; // 大小写符号
+        return '字母' + obj.char[0];
+    }
+    const entry = _lookupBraille(oneHot);
+    if (!entry) return '';
+    // 拼音/标点：声母韵母直接用label，声调转中文
+    if (oneHot === '100000') return '1声';
+    if (oneHot === '010000') return '2声';
+    if (oneHot === '001000') return '3声';
+    if (oneHot === '011000') return '4声';
+    return entry.label || entry.char;
+}
+
+function onCellCorrect() {
+    clearTimeout(state._debounceTimer);
+    // 简短成功蜂鸣
+    playBeep(1047, 60);
+    setTimeout(() => playBeep(1319, 80), 60);
+
+    const idx = state.currentCell;
+    const oh = state.inputCells[idx].join('');
+    const name = _cellName(oh);
+    // 立即切到下一方，语音后台播报，不阻塞输入
+    nextCell();
+    speak.practice('第' + (idx + 1) + '方，' + (name || '') + '，正确');
+}
+
 // ── 匹配成功 ──
 function onCorrect() {
     clearTimeout(state._debounceTimer);
@@ -320,9 +554,16 @@ function onCorrect() {
     if (state.topic === 'number') {
         name = entry.char === '数号' ? '数号' : '数字' + (entry.label || entry.char);
     } else if (state.topic === 'english') {
-        name = entry.char ? '字母' + entry.char[0] : (entry.label || '');
+        if (state.difficulty === 'advanced') {
+            name = entry.char || entry.label;
+        } else {
+            name = entry.char ? '字母' + entry.char[0] : (entry.label || '');
+        }
+    } else if (state.topic === 'pinyin' && state.difficulty === 'advanced') {
+        name = entry.char || entry.label;
     } else {
-        name = entry.label || entry.char;
+        const raw = entry.audio || entry.label || entry.char;
+        name = pinyinToSpokenChar(raw) || raw;
     }
     state._correctPending = true;
     state._speechTimer = setTimeout(() => {
@@ -349,12 +590,16 @@ function toggleInputDot(idx) {
 
     if (isMatch()) {
         onCorrect();
+    } else if (state.questionCells.length > 1 && isCurrentCellMatch()) {
+        onCellCorrect();
     }
 }
 
 // ── 切换到下一格（多格题目用）──
 function nextCell() {
     if (state.currentCell < state.questionCells.length - 1) {
+        clearTimeout(state._speechTimer);
+        state._speechTimer = null;
         state.currentCell++;
         renderTarget();
         renderInput();
@@ -365,6 +610,8 @@ function nextCell() {
 // ── 切换到上一格 ──
 function prevCell() {
     if (state.currentCell > 0) {
+        clearTimeout(state._speechTimer);
+        state._speechTimer = null;
         state.currentCell--;
         renderTarget();
         renderInput();
@@ -401,36 +648,99 @@ function clearLastDot() {
     prevCell();
 }
 
+// ── 难度切换 ──
+const DIFF_FORCED_BASIC = { punc: true };
+
+function _syncDiffBar() {
+    const forced = DIFF_FORCED_BASIC[state.topic];
+    if (forced && state.difficulty === 'advanced') {
+        state.difficulty = 'basic';
+    }
+    const tabs = document.querySelectorAll('.practice-diff-tab');
+    tabs.forEach(t => {
+        const isActive = t.dataset.diff === state.difficulty;
+        t.classList.toggle('active', isActive);
+        t.disabled = forced;
+    });
+}
+
+// 模式切换后延迟加载题目：停止切换 1s 后才出题，保证切换丝滑
+function _scheduleNextQuestion() {
+    clearTimeout(state._modeTimer);
+    clearTimeout(state._speechTimer);
+    clearTimeout(state._debounceTimer);
+    state._correctPending = false;
+    state._modeTimer = setTimeout(() => {
+        state._modeTimer = null;
+        nextQuestion();
+    }, 1000);
+}
+
+function switchDifficulty(diff) {
+    if (state.difficulty === diff) return;
+    const forced = DIFF_FORCED_BASIC[state.topic];
+    if (forced && diff === 'advanced') return;
+    state.difficulty = diff;
+    state.score = 0;
+    state.total = 0;
+    _syncDiffBar();
+    const name = TOPIC_DIFF_NAMES[state.topic + '-' + diff] || diff;
+    speak.immediate(name);
+    _scheduleNextQuestion();
+}
+
 // ── 打开/关闭 ──
 function openPractice() {
     buildQuestionBanks();
+    _ensureAdvancedMaps();
     state._active = true;
     state.score = 0;
     state.total = 0;
     state.topic = 'number';
-    // 同步 topic bar 激活状态
+    state.difficulty = 'basic';
+    // 同步 topic / diff bar 激活状态
     const tabs = document.querySelectorAll('.practice-topic-tab');
     tabs.forEach(t => t.classList.toggle('active', t.dataset.topic === state.topic));
+    _syncDiffBar();
     overlay.classList.add('open');
     overlay.setAttribute('aria-hidden', 'false');
     nextQuestion();
 }
 
-const TOPIC_ORDER = ['number', 'english', 'pinyin', 'punc'];
+// Tab 深度优先轮转：数字初级→数字高级→英文初级→英文高级→拼音初级→拼音高级→标点初级
+const CYCLE_ORDER = [
+    { topic: 'number', diff: 'basic' },
+    { topic: 'number', diff: 'advanced' },
+    { topic: 'english', diff: 'basic' },
+    { topic: 'english', diff: 'advanced' },
+    { topic: 'pinyin', diff: 'basic' },
+    { topic: 'pinyin', diff: 'advanced' },
+    { topic: 'punc', diff: 'basic' },
+];
+
+const TOPIC_DIFF_NAMES = {
+    'number-basic': '数字初级', 'number-advanced': '数字高级',
+    'english-basic': '英文初级', 'english-advanced': '英文高级',
+    'pinyin-basic': '拼音初级', 'pinyin-advanced': '拼音高级',
+    'punc-basic': '标点初级',
+};
 
 function cycleTopic() {
-    const idx = TOPIC_ORDER.indexOf(state.topic);
-    const next = TOPIC_ORDER[(idx + 1) % TOPIC_ORDER.length];
-    state.topic = next;
+    const curIdx = CYCLE_ORDER.findIndex(
+        x => x.topic === state.topic && x.diff === state.difficulty
+    );
+    const next = CYCLE_ORDER[(curIdx + 1) % CYCLE_ORDER.length];
+    state.topic = next.topic;
+    state.difficulty = next.diff;
     state.score = 0;
     state.total = 0;
-    clearTimeout(state._debounceTimer);
+    _syncDiffBar();
     document.querySelectorAll('.practice-topic-tab').forEach(t => {
-        t.classList.toggle('active', t.dataset.topic === next);
+        t.classList.toggle('active', t.dataset.topic === next.topic);
     });
-    speak.text(TOPIC_NAMES[next] || next, null, {
-        onend: () => nextQuestion()
-    });
+    const name = TOPIC_DIFF_NAMES[next.topic + '-' + next.diff] || next.topic;
+    speak.immediate(name);
+    _scheduleNextQuestion();
 }
 
 function switchTopic(topic) {
@@ -438,10 +748,11 @@ function switchTopic(topic) {
     state.topic = topic;
     state.score = 0;
     state.total = 0;
-    clearTimeout(state._debounceTimer);
-    speak.text(TOPIC_NAMES[topic] || topic, null, {
-        onend: () => nextQuestion()
-    });
+    const forced = DIFF_FORCED_BASIC[topic];
+    if (forced) state.difficulty = 'basic';
+    _syncDiffBar();
+    speak.immediate(TOPIC_NAMES[topic] || topic);
+    _scheduleNextQuestion();
 }
 
 const TOPIC_NAMES = { number: '数字', english: '英文', pinyin: '拼音', punc: '标点' };
@@ -451,8 +762,10 @@ function closePractice() {
     stopPracticeSpeech();
     clearTimeout(state._debounceTimer);
     clearTimeout(state._speechTimer);
+    clearTimeout(state._modeTimer);
     state._correctPending = false;
     state._speechTimer = null;
+    state._modeTimer = null;
     state.inputCells = [[0, 0, 0, 0, 0, 0]];
     state.currentCell = 0;
     state.questionCells = [];
@@ -512,6 +825,15 @@ export function initPractice() {
         });
     });
 
+    // 难度切换 tab
+    document.querySelectorAll('.practice-diff-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const diff = tab.dataset.diff;
+            if (!diff || tab.disabled) return;
+            switchDifficulty(diff);
+        });
+    });
+
     // 更新键位标签
     updatePracticeKeyLabels();
     document.addEventListener('bindings-changed', updatePracticeKeyLabels);
@@ -553,20 +875,25 @@ export function handlePracticeKey(e) {
         return true;
     }
 
-    // R / Space 跳过成功播报（含 TTS 开始前的蜂鸣窗口期）
-    if ((isPracticeSpeechActive() || state._correctPending) && (e.code === 'KeyR' || e.code === 'Space' || e.code === 'Numpad0')) {
+    // R 跳过播报；Space 仅在最终答对后跳过（_correctPending），避免与逐格反馈冲突
+    if (e.code === 'KeyR' && (isPracticeSpeechActive() || state._correctPending)) {
         if (isPracticeSpeechActive()) stopPracticeSpeech();
+        clearTimeout(state._speechTimer);
+        state._speechTimer = null;
+        nextQuestion();
+        return true;
+    }
+    if (state._correctPending && (e.code === 'Space' || e.code === 'Numpad0')) {
+        if (isPracticeSpeechActive()) stopPracticeSpeech();
+        clearTimeout(state._speechTimer);
+        state._speechTimer = null;
         nextQuestion();
         return true;
     }
 
-    // 清除输入（单格：清空当前格；多格：Space 进下一格）
+    // 清除输入
     if (e.code === 'Space' || e.code === 'Numpad0') {
-        if (state.questionCells.length > 1) {
-            nextCell();
-        } else {
-            clearInput();
-        }
+        clearInput();
         return true;
     }
     if (e.code === 'KeyY' || e.code === 'NumpadDivide' || e.code === 'KeyC') {
@@ -598,9 +925,18 @@ export function handlePracticeKey(e) {
         return true;
     }
 
+    // 左右方向键切换盲文格（多格组合用）
+    if (e.code === 'ArrowLeft') {
+        prevCell();
+        return true;
+    }
+    if (e.code === 'ArrowRight') {
+        nextCell();
+        return true;
+    }
+
     // 其他点位/动作键拦截，防止触发 dotInput
     if (e.code in KEY_ACTIONS) return true;
-    if (e.code.startsWith('Arrow')) return true;
     if (e.code === 'KeyG' || e.code === 'KeyH') return true;
 
     return false;

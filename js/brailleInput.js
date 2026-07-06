@@ -403,7 +403,7 @@ function _finalizeCommit(result, { silent = false, clearDots = false } = {}) {
 function _handleNumberSign(oneHot, braille) {
     if (oneHot !== NUMBER_SIGN) return null;
     const prevChar = _getPrevChar(cursor.idx);
-    if (prevChar && _validInitials && _validInitials.has(prevChar)) return null;
+    if (prevChar && _validInitials.has(prevChar)) return null;
 
     const signEntry = ONEHOT_MAPPINGS.number[oneHot];
     if (cursor.idx > 0 && outputItems[cursor.idx - 1].oneHot !== '000000') {
@@ -512,7 +512,7 @@ function _handleEnglishContext(oneHot, braille) {
     return null;
 }
 
-function _handlePinyinInput(oneHot, braille, sourceChar) {
+function _handlePinyinInput(oneHot, braille, sourceChar, sourcePy) {
     const entry = _lookupBraille(oneHot);
     const pinyin = entry ? entry.label : '';
     const audio = entry ? entry.audio : '';
@@ -520,6 +520,7 @@ function _handlePinyinInput(oneHot, braille, sourceChar) {
 
     const item = { braille, pinyin, char, audio, oneHot };
     if (sourceChar) item._sourceChar = sourceChar;
+    if (sourcePy) item._sourcePy = sourcePy;
     if (AMBIG_INITIALS[oneHot]) item._ambigInitial = true;
     outputItems.splice(cursor.idx, 0, item);
     cursor.idx = cursor.idx + 1;
@@ -542,6 +543,8 @@ function _handlePinyinInput(oneHot, braille, sourceChar) {
                 });
                 if (prev._sourceChar) outputItems[cursor.idx - 1]._sourceChar = prev._sourceChar;
                 if (curr._sourceChar) outputItems[cursor.idx - 1]._sourceChar = curr._sourceChar;
+                if (prev._sourcePy) outputItems[cursor.idx - 1]._sourcePy = prev._sourcePy;
+                if (curr._sourcePy) outputItems[cursor.idx - 1]._sourcePy = curr._sourcePy;
                 cursor.idx = cursor.idx - 1;
                 merged = true;
             }
@@ -552,7 +555,7 @@ function _handlePinyinInput(oneHot, braille, sourceChar) {
     return { speakBrailleArg: merged ? outputItems[cursor.idx - 1].oneHot : oneHot };
 }
 
-function _commitOneHot(oneHot, { silent = false, clearDots = false, sourceChar = undefined } = {}) {
+function _commitOneHot(oneHot, { silent = false, clearDots = false, sourceChar = undefined, sourcePy = undefined } = {}) {
     const braille = oneHotToBrailleChar(oneHot);
 
     _resolveDeferredPunct(oneHot);
@@ -563,7 +566,7 @@ function _commitOneHot(oneHot, { silent = false, clearDots = false, sourceChar =
         || _handleCapitalSign(oneHot, braille)
         || _handleLowercaseSign(oneHot, braille)
         || _handleEnglishContext(oneHot, braille)
-        || _handlePinyinInput(oneHot, braille, sourceChar);
+        || _handlePinyinInput(oneHot, braille, sourceChar, sourcePy);
 
     _finalizeCommit(result, { silent, clearDots });
 }
@@ -799,6 +802,37 @@ function _getCursorSpeechText(item) {
     return text || '空方';
 }
 
+function _getSentenceTextAtCursor(cursorIdx, outputItems, meta) {
+    const _SPEAK_BOUNDARY = new Set([
+        ...cursor._SENTENCE_END,
+        '000010', // ，
+    ]);
+    let start = cursorIdx;
+    while (start > 0) {
+        start--;
+        if (_SPEAK_BOUNDARY.has(outputItems[start].oneHot)) { start++; break; }
+    }
+    let end = cursorIdx;
+    while (end < outputItems.length) {
+        if (_SPEAK_BOUNDARY.has(outputItems[end].oneHot)) { end++; break; }
+        end++;
+    }
+
+    const parts = [];
+    let lastMerged = '';
+    for (let i = start; i < end && i < outputItems.length; i++) {
+        const m = meta[i];
+        if (!m || !m.isFirst) continue;
+        if (m.sourceChar) { parts.push(m.sourceChar); lastMerged = ''; continue; }
+        const merged = m.merged;
+        if (merged === lastMerged) continue;
+        lastMerged = merged;
+        const ch = pinyinToSpokenChar(merged);
+        if (ch) parts.push(ch);
+    }
+    return parts.join('') || null;
+}
+
 function _moveCursorVertical(direction) {
     if (outputItems.length === 0) return;
     if (cursor.selectedIndices.size > 0) {
@@ -830,6 +864,12 @@ function _moveCursorVertical(direction) {
             return;
         }
         const curMeta = computeItemMeta();
+
+        if (SETTINGS.cursorSpeakMode === 'sentence') {
+            const sentence = _getSentenceTextAtCursor(cursor.idx - 1, outputItems, curMeta);
+            if (sentence) { speak.text(sentence); return; }
+        }
+
         const item = outputItems[cursor.idx - 1];
         const itemMeta = curMeta[cursor.idx - 1];
         if (item.oneHot === '000000') speak.text('空方');
@@ -861,7 +901,8 @@ export function inputOneHot(oneHot) {
     if (!getRenderSuppressed()) invalidatePageCache();
     const oh = typeof oneHot === 'string' ? oneHot : oneHot.oneHot;
     const sc = typeof oneHot === 'string' ? undefined : oneHot.sourceChar;
-    _commitOneHot(oh, { silent: true, clearDots: false, sourceChar: sc });
+    const sp = typeof oneHot === 'string' ? undefined : oneHot.sourcePy;
+    _commitOneHot(oh, { silent: true, clearDots: false, sourceChar: sc, sourcePy: sp });
 }
 
 // ── 打字输入模式 ──

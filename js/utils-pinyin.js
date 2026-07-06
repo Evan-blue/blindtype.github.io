@@ -7,7 +7,6 @@ import {
     PINYIN_MAPPINGS,
     _validInitials,
     _validFinals,
-    _buildValidComponents,
 } from './loadMappings.js';
 
 
@@ -137,7 +136,7 @@ export function splitText(text, locales = 'zh-CN', granularity = 'word') {
  * @return {{ initial: string, fin: string } | null} 拆分结果；无法拆分时返回 null
  */
 export function _splitPinyinBase(base) {
-    if (!_validInitials || !_validFinals || !base) return null;
+    if (!base) return null;
     for (let split = 1; split < base.length; split++) {
         const init = base.slice(0, split);
         const fin = base.slice(split);
@@ -178,7 +177,7 @@ export function _resolveOmittedTone(merged) {
     }
 
     // 确认为有效韵母则返回默认值
-    if (_validFinals && _validFinals.has(base)) {
+    if (_validFinals.has(base)) {
         return solo.default;
     }
 
@@ -222,7 +221,7 @@ export function _shouldOmitTone(base, tone) {
         return val === tone;
     }
 
-    if (_validFinals && _validFinals.has(resolvedBase)) {
+    if (_validFinals.has(resolvedBase)) {
         return solo.default === tone;
     }
 
@@ -246,7 +245,9 @@ export function _isContextKeep(prevPy, nextPy) {
     if (!_soloInitials.has(prevBase)) return false;
 
     // 后一音节为韵母自成音节（无辅音声母）
-    if (_splitPinyinBase(nextBase) !== null) return false;
+    const resolvedNext = (REVERSE_ONEHOT_MAPPINGS.solo && REVERSE_ONEHOT_MAPPINGS.solo[nextBase])
+        || nextBase;
+    if (!_validFinals.has(resolvedNext)) return false;
 
     return true;
 }
@@ -276,9 +277,6 @@ export function isPinyinSyllable(str) {
     }
 
     // 2. 组件结构验证（基于盲文映射的声母/韵母分类，覆盖如 uo+声调 等非完整音节组合）
-    if (!_validInitials) _buildValidComponents(ONEHOT_MAPPINGS.categories);
-    if (!_validInitials || !_validFinals) return false;
-
     // 韵母单独 + 可选声调
     if (_validFinals.has(base)) return true;
 
@@ -303,7 +301,7 @@ export function splitPinyinChars(chars) {
     let i = 0;
     while (i < chars.length) {
         // 当前字符已是完整韵母且下一字符非声调数字时，独立成音节，防止韵母间误合并（如 e+n→en）
-        if (_validFinals && _validFinals.has(chars[i])) {
+        if (_validFinals.has(chars[i])) {
             const next = i + 1 < chars.length ? chars[i + 1] : '';
             if (!/^[1-5]$/.test(next)) {
                 syllables.push({ count: 1, merged: resolveSoloFinal(chars[i]) });
@@ -322,10 +320,10 @@ export function splitPinyinChars(chars) {
                 if (/\d$/.test(sub)) break;
                 // 下一字符是声母则停止（如 zhe+n→zhen）
                 const nextCh = i + len < chars.length ? chars[i + len] : '';
-                if (nextCh && _validInitials && _validInitials.has(nextCh)) break;
+                if (nextCh && _validInitials.has(nextCh)) break;
                 // 当前匹配以韵母结尾且下一字符也是韵母则停止（如 le+i→lei）
                 const lastCh = sub.slice(-1);
-                if (nextCh && _validFinals && _validFinals.has(lastCh) && _validFinals.has(nextCh)) break;
+                if (nextCh && _validFinals.has(lastCh) && _validFinals.has(nextCh)) break;
             }
         }
         if (bestLen > 0) {

@@ -45,6 +45,24 @@ cursor.dom = document.getElementById('cursor');
 
 const PRE_RENDER_ADJACENT = 1;
 
+// ── 分页检测缓存 ──
+
+function _tryReusePageBreaks() {
+    if (!pages.isActive) return false;
+    const cw = outputArea.clientWidth;
+    const ch = outputArea.clientHeight;
+    const cache = pages.detectCache;
+    if (cache &&
+        Math.abs(cache.cw - cw) < 2 &&
+        Math.abs(cache.ch - ch) < 2 &&
+        outputItems.length >= cache.itemCount) {
+        pages.breaks[pages.breaks.length - 1].endIdx = outputItems.length;
+        return true;
+    }
+    pages.detectCache = { itemCount: outputItems.length, cw, ch };
+    return false;
+}
+
 // ── 选择拖拽状态 ──
 let _selStart = -1;
 let _selLastIdx = -1;
@@ -77,16 +95,24 @@ export function clearSelection() {
 export function renderOutput() {
     if (getRenderSuppressed()) return;
 
-    const wasAtBottom = outputArea.scrollTop + outputArea.clientHeight >= outputArea.scrollHeight - 4;
-    outputArea.innerHTML = '';
-
     if (outputItems.length === 0) {
+        outputArea.innerHTML = '';
         outputArea.classList.add('is-empty');
         outputArea.appendChild(cursor.dom);
         updatePageNav();
         return;
     }
     outputArea.classList.remove('is-empty');
+
+    // 快速路径：分页已激活且可复用缓存的断点，跳过全量渲染
+    if (_tryReusePageBreaks()) {
+        renderCurrentPage();
+        schedulePreRender();
+        return;
+    }
+
+    const wasAtBottom = outputArea.scrollTop + outputArea.clientHeight >= outputArea.scrollHeight - 4;
+    outputArea.innerHTML = '';
 
     // 全量渲染到 fragment
     const fragment = document.createDocumentFragment();
@@ -137,6 +163,7 @@ export function invalidatePageCache() {
     pages.breaks.length = 0;
     pages.setActive(false);
     pages.preRendered.clear();
+    pages.detectCache = null;
 }
 
 /**
@@ -204,6 +231,12 @@ function detectPageBreaks() {
 
     pages.setActive(pages.breaks.length > 1);
     pages.idx = Math.min(pages.idx, pages.breaks.length - 1);
+
+    pages.detectCache = {
+        itemCount: outputItems.length,
+        cw: outputArea.clientWidth,
+        ch: outputArea.clientHeight,
+    };
 }
 
 /**

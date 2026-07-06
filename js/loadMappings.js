@@ -23,8 +23,8 @@ export const PINYIN_MAPPINGS = {
     omitRule: null,    // 标调省写规则
 };
 
-export let _validInitials = null;
-export let _validFinals = null;
+export const _validInitials = new Set();
+export const _validFinals = new Set();
 
 // ── 特殊符号常量 ──
 
@@ -33,12 +33,10 @@ export const CAPITAL_SIGN = '000001';
 export const LOWERCASE_SIGN = '000011';
 export const _TONE_NUM_TO_SYM = { '1': '¯', '2': '´', '3': 'ˇ', '4': '`' };
 
-// ── 惰性构建 ──
-
 export function _buildValidComponents(categories) {
     if (!categories || !categories.length) return;
-    _validInitials = new Set();
-    _validFinals = new Set();
+    _validInitials.clear();
+    _validFinals.clear();
     for (const cat of categories) {
         if (cat.name === '声母') {
             for (const entry of cat.entries) {

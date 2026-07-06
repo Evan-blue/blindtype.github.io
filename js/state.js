@@ -125,6 +125,7 @@ export const outputItems = new Proxy(_outputItems, {
     },
     set(target, prop, value) {
         target[prop] = value;
+        invalidateMeta();
         return true;
     }
 });
@@ -135,6 +136,7 @@ export const pages = {
     breaks: [],
     isActive: false,
     preRendered: new Map(),
+    detectCache: null,
 
     set idx(n) { this._idx = n; },
     get idx() { return this._idx; },
@@ -147,49 +149,94 @@ let _renderSuppressed = false;
 export function setRenderSuppressed(v) { _renderSuppressed = v; }
 export function getRenderSuppressed() { return _renderSuppressed; }
 
-// ── 元数据计算 ──
-export function computeItemMeta() {
-    const emptyIndices = [];
-    outputItems.forEach((item, i) => {
-        if (item.oneHot === '000000') emptyIndices.push(i);
-    });
+// ── 元数据缓存 ──
+let _metaCache = null;
 
-    const meta = new Array(outputItems.length).fill(null);
-    for (let g = 0; g <= emptyIndices.length; g++) {
-        const start = g === 0 ? 0 : emptyIndices[g - 1] + 1;
-        const end = g < emptyIndices.length ? emptyIndices[g] : outputItems.length;
+export function invalidateMeta() {
+    _metaCache = null;
+}
+
+function _computeMetaSegment(meta, rangeStart, rangeEnd) {
+    const TONE_SYM_TO_NUM = { '¯': '1', '´': '2', 'ˇ': '3', '`': '4' };
+
+    // 收集 range 内的空方位置
+    const empties = [];
+    for (let i = rangeStart; i < rangeEnd; i++) {
+        if (outputItems[i].oneHot === '000000') empties.push(i);
+    }
+
+    for (let g = 0; g <= empties.length; g++) {
+        const start = g === 0 ? rangeStart : empties[g - 1] + 1;
+        const end = g < empties.length ? empties[g] : rangeEnd;
         if (outputItems.slice(start, end).some(it => it.isNumber || it.isEnglish)) continue;
-        if (end - start >= 2) {
-            const TONE_SYM_TO_NUM = { '¯': '1', '´': '2', 'ˇ': '3', '`': '4' };
-            const chars = outputItems.slice(start, end).map((it, ci, arr) => {
-                const ch = TONE_SYM_TO_NUM[it.char] || it.char || '';
-                if (ch !== 'e/o') return ch;
-                const prevCh = ci > 0 ? (TONE_SYM_TO_NUM[arr[ci - 1].char] || arr[ci - 1].char || '') : '';
-                if (prevCh === 'b' || prevCh === 'p' || prevCh === 'f') return 'o';
-                if (prevCh === 'm') return 'o';
-                return 'e';
-            });
-            const syllables = splitPinyinChars(chars);
-            if (syllables) {
-                let pos = start;
-                for (const syl of syllables) {
-                    let merged = syl.merged;
-                    if (SETTINGS.omitToneMapping !== false && !/\d$/.test(merged)) {
-                        const tone = _resolveOmittedTone(merged);
-                        if (tone) merged += tone;
-                    }
-                    let sourceChar = undefined;
-                    for (let k = 0; k < syl.count; k++) {
-                        if (outputItems[pos + k]._sourceChar) sourceChar = outputItems[pos + k]._sourceChar;
-                    }
-                    for (let k = 0; k < syl.count; k++) {
-                        meta[pos + k] = { merged, sourceChar, isFirst: k === 0, isLast: k === syl.count - 1 };
-                    }
-                    pos += syl.count;
+        if (end - start < 2) {
+            if (end - start === 1 && outputItems[start]._sourcePy) {
+                const it = outputItems[start];
+                meta[start] = { merged: it._sourcePy, sourceChar: it._sourceChar, isFirst: true, isLast: true };
+            }
+            continue;
+        }
+
+        const chars = outputItems.slice(start, end).map((it, ci, arr) => {
+            const ch = TONE_SYM_TO_NUM[it.char] || it.char || '';
+            if (ch !== 'e/o') return ch;
+            const prevCh = ci > 0 ? (TONE_SYM_TO_NUM[arr[ci - 1].char] || arr[ci - 1].char || '') : '';
+            if (prevCh === 'b' || prevCh === 'p' || prevCh === 'f') return 'o';
+            if (prevCh === 'm') return 'o';
+            return 'e';
+        });
+        const syllables = splitPinyinChars(chars);
+        if (syllables) {
+            let pos = start;
+            for (const syl of syllables) {
+                let merged = syl.merged;
+                if (outputItems[pos]._sourcePy) {
+                    merged = outputItems[pos]._sourcePy;
+                } else if (SETTINGS.omitToneMapping !== false && !/\d$/.test(merged)) {
+                    const tone = _resolveOmittedTone(merged);
+                    if (tone) merged += tone;
                 }
+                let sourceChar = undefined;
+                for (let k = 0; k < syl.count; k++) {
+                    if (outputItems[pos + k]._sourceChar) sourceChar = outputItems[pos + k]._sourceChar;
+                }
+                for (let k = 0; k < syl.count; k++) {
+                    meta[pos + k] = { merged, sourceChar, isFirst: k === 0, isLast: k === syl.count - 1 };
+                }
+                pos += syl.count;
             }
         }
     }
+}
+
+// ── 元数据计算 ──
+export function computeItemMeta() {
+    const n = outputItems.length;
+
+    // 完全命中缓存
+    if (_metaCache && _metaCache.length === n) return _metaCache;
+
+    // 增量：尾部追加时，只重算最后一个空方之后的段落
+    if (_metaCache && _metaCache.length < n) {
+        let lastEmpty = -1;
+        for (let i = _metaCache.length - 1; i >= 0; i--) {
+            if (outputItems[i].oneHot === '000000') { lastEmpty = i; break; }
+        }
+        const startIdx = lastEmpty + 1;
+        if (startIdx < n) {
+            const meta = _metaCache.slice(0, startIdx);
+            meta.length = n;
+            meta.fill(null, startIdx);
+            _computeMetaSegment(meta, startIdx, n);
+            _metaCache = meta;
+            return meta;
+        }
+    }
+
+    // 全量计算
+    const meta = new Array(n).fill(null);
+    if (n > 0) _computeMetaSegment(meta, 0, n);
+    _metaCache = meta;
     return meta;
 }
 

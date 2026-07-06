@@ -344,6 +344,15 @@ export function initDevPanel() {
         });
     }
 
+    // ── 上下键播报模式 ──
+    document.querySelectorAll('input[name="cursorSpeakMode"]').forEach(radio => {
+        if (radio.value === (SETTINGS.cursorSpeakMode || 'item')) radio.checked = true;
+        radio.addEventListener('change', () => {
+            SETTINGS.cursorSpeakMode = radio.value;
+            saveSettings();
+        });
+    });
+
     // 初始位于右上角，需要立即确定展开方向
     updateDevFlip();
 }

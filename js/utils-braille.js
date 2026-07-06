@@ -139,7 +139,7 @@ function _pinyinToOneHot(py, forceKeepTone) {
 
     let initial = '';
     let fin = actualBase;
-    if (!_validFinals || !_validFinals.has(actualBase)) {
+    if (!_validFinals.has(actualBase)) {
         const split = _splitPinyinBase(actualBase);
         if (split) { initial = split.initial; fin = split.fin; }
     }
@@ -181,7 +181,7 @@ function _pinyinItemsToOneHot(pinyinItems) {
     for (let i = 0; i < pinyinItems.length; i++) {
         const items = _pinyinToOneHot(pinyinItems[i].py, forceKeep.has(i));
         for (let k = 0; k < items.length; k++) {
-            result.push({ oneHot: items[k], sourceChar: k === 0 ? pinyinItems[i].src : undefined });
+            result.push({ oneHot: items[k], sourceChar: k === 0 ? pinyinItems[i].src : undefined, sourcePy: k === 0 ? pinyinItems[i].py : undefined });
         }
     }
     return result;
