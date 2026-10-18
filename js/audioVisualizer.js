@@ -22,18 +22,29 @@ function _formatLabel(text) {
     return '播报中：' + display;
 }
 
+// const SPEAKER_ICON = '🔊';
+const SPEAKER_ICON = '播报中...';
+
+function _showText() {
+    return SETTINGS.speechIndicatorMode !== 'breath';
+}
+
 export function visualizerStart(text) {
     _ensureElements();
     if (_dot) _dot.classList.add('active');
     if (_label) {
-        _label.textContent = _formatLabel(text);
+        if (_showText()) {
+            _label.textContent = _formatLabel(text);
+        } else {
+            _label.textContent = SPEAKER_ICON;
+        }
         _label.classList.add('active');
     }
 }
 
 export function updateSpeechLabel(text) {
     _ensureElements();
-    if (_label) _label.textContent = _formatLabel(text);
+    if (_label && _showText()) _label.textContent = _formatLabel(text);
 }
 
 export function visualizerStop() {

@@ -84,6 +84,7 @@ import { undo, redo } from './history.js';
 import {
     handleOpenFile,
     handleSaveContent,
+    handleCopyContent,
     initFileOperations,
 } from './fileOperations.js';
 import { initDevPanel } from './devPanel.js';
@@ -157,6 +158,7 @@ const ACTION_HANDLERS = {
     redo: () => redo(),
     readAloud: () => readAloud(),
     save: () => handleSaveContent(),
+    copy: () => handleCopyContent(),
     openFile: () => handleOpenFile(),
     tutorial: () => playTutorial(),
     toggleMapping: () => toggleMapping(),

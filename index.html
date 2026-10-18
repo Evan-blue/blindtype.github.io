@@ -104,6 +104,8 @@
                             id="tkbd-openFile"></kbd></button>
                     <button class="toolbar-btn" id="btnSaveContent" title="保存内容" aria-hidden="true">保存<kbd
                             id="tkbd-save"></kbd></button>
+                    <button class="toolbar-btn" id="btnCopyContent" title="复制盲文内容" aria-hidden="true">复制<kbd
+                            id="tkbd-copy"></kbd></button>
                 </div>
             </div>
             <div class="output-text" id="outputArea" tabindex="0" role="textbox" aria-live="polite" aria-label="输出内容区">
@@ -304,6 +306,11 @@
                     <span class="dev-radio-label">点位反馈</span>
                     <label class="dev-radio"><input type="radio" name="dotFeedbackMode" value="beep" checked>蜂鸣</label>
                     <label class="dev-radio"><input type="radio" name="dotFeedbackMode" value="speak">即时播报</label>
+                </div>
+                <div class="dev-radio-group" role="radiogroup" aria-label="播报提示方式">
+                    <span class="dev-radio-label">播报提示</span>
+                    <label class="dev-radio"><input type="radio" name="speechIndicatorMode" value="breath">呼吸灯</label>
+                    <label class="dev-radio"><input type="radio" name="speechIndicatorMode" value="text" checked>文字提示</label>
                 </div>
                 <div class="dev-sep"></div>
                 <div class="dev-radio-group" role="radiogroup" aria-label="文本转化显示">

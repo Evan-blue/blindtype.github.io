@@ -345,6 +345,17 @@ export function initSettings() {
         });
     }
 
+    const speechIndicatorRadios = document.querySelectorAll('input[name="speechIndicatorMode"]');
+    if (speechIndicatorRadios.length) {
+        const current = SETTINGS.speechIndicatorMode || 'text';
+        speechIndicatorRadios.forEach(r => {
+            r.checked = (r.value === current);
+            r.addEventListener('change', () => {
+                if (r.checked) { SETTINGS.speechIndicatorMode = r.value; saveSettings(); }
+            });
+        });
+    }
+
     const textConvRadios = document.querySelectorAll('input[name="textConversionDisplay"]');
     if (textConvRadios.length) {
         const current = SETTINGS.textConversionDisplay || 'pinyin';

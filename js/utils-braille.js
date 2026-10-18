@@ -71,6 +71,19 @@ export function oneHotToBrailleChar(oneHot) {
 }
 
 /**
+ * @description: 将单个 Unicode 盲文字符（U+2800~U+283F）转为 oneHot 编码
+ * @param {string} ch 单个盲文字符
+ * @return {string|null} 6位 oneHot 编码，非盲文字符返回 null
+ */
+export function brailleCharToOneHot(ch) {
+    const cp = ch.codePointAt(0);
+    if (cp == null || cp < 0x2800 || cp > 0x283F) return null;
+    const bits = cp - 0x2800;
+    // 与 dotsToBrailleChar 位序一致：dot1..dot6 → Unicode bit0..bit5
+    return [1, 2, 4, 8, 16, 32].map(mask => (bits & mask) ? '1' : '0').join('');
+}
+
+/**
  * @description: 将位置编码转为oneHot格式（6位二进制字符串如"110000"）
  *   支持两种输入：已为oneHot则直接返回；位置编码如"12"表示dot1+dot2激活
  * @param {string|*} input oneHot编码或位置编码
@@ -97,6 +110,42 @@ export function onehotToIndex(oneHot) {
         }
     }
     return index;
+}
+
+/**
+ * @description: 检测文本是否为盲文输入（oneHot 编码串或 Unicode 盲文字符），
+ *   若是则提取为 oneHot 数组（换行按段落转两个空方），否则返回 null
+ * @param {string} text 输入文本
+ * @return {string[]|null} oneHot 数组，非盲文返回 null
+ */
+export function extractBrailleOneHotList(text) {
+    // 1. oneHot 编码串（如 "110000 101100"）
+    if (/\b[01]{6}\b/.test(text.replace(/[\r\n]/g, ' '))) {
+        let t = text;
+        if (/[\r\n]/.test(text)) {
+            t = t.replace(/\r\n/g, '\n');
+            if (SETTINGS.mergeNewlines) t = t.replace(/(\s*\n)+\s*/g, '\n');
+            t = t.replace(/\n/g, ' 000000 000000 ');
+            t = '000000 000000 ' + t;
+        }
+        return t.match(/\b[01]{6}\b/g);
+    }
+
+    // 2. Unicode 盲文字符（如 "⠃⠗⠑⠇"）
+    if (Array.from(text).some(ch => brailleCharToOneHot(ch))) {
+        let t = text.replace(/\r\n/g, '\n');
+        if (SETTINGS.mergeNewlines) t = t.replace(/(\s*\n)+\s*/g, '\n');
+        const list = [];
+        for (const ch of t) {
+            const oh = brailleCharToOneHot(ch);
+            if (oh) { list.push(oh); continue; }
+            if (ch === '\n') { list.push('000000', '000000'); continue; }
+            if (/\s/.test(ch)) { list.push('000000'); continue; }
+        }
+        return list.length ? list : null;
+    }
+
+    return null;
 }
 
 // ═══════════════════════════════════════════════

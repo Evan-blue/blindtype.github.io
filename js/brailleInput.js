@@ -22,7 +22,7 @@ import {
     _lookupBraille,
     _validInitials,
 } from './loadMappings.js';
-import { dotsToBrailleChar, oneHotToBrailleChar, toOneHot } from './utils-braille.js';
+import { dotsToBrailleChar, oneHotToBrailleChar, toOneHot, extractBrailleOneHotList } from './utils-braille.js';
 import { pinyinToSpokenChar } from './utils-pinyin.js';
 import {
     speak,
@@ -976,6 +976,15 @@ export async function normalInputConfirm() {
     const text = textarea.value.trim();
     if (!text) { speak.text('内容为空'); return; }
 
+    // 盲文 oneHot 输入：按转换规则直接转成拼音/字符
+    const oneHotList = extractBrailleOneHotList(text);
+    if (oneHotList && oneHotList.length > 0) {
+        await _batchInputOneHot(oneHotList);
+        speak.text(`已输入${oneHotList.length}个盲文字符`);
+        textarea.value = '';
+        return;
+    }
+
     const result = toOneHot.mixed(text);
     if (result && result.length > 0) {
         await _batchInputOneHot(result);
@@ -1044,6 +1053,7 @@ export function renderToolbarKeyLabels() {
         'tkbd-clearOutput': 'clearOutput',
         'tkbd-openFile': 'openFile',
         'tkbd-save': 'save',
+        'tkbd-copy': 'copy',
         'tkbd-toggleMapping': 'toggleMapping',
         'tkbd-kbResetKeyBindings': 'customBind',
         'tkbd-practice': 'togglePractice',

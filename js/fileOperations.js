@@ -2,7 +2,7 @@
 
 import { outputItems, SETTINGS } from './state.js';
 import { _batchInputOneHot, clearOutput } from './brailleInput.js';
-import { toOneHot } from './utils-braille.js';
+import { toOneHot, extractBrailleOneHotList } from './utils-braille.js';
 import { speak } from './brailleSpeech.js';
 
 /**
@@ -16,29 +16,18 @@ function _loadFileContent(file) {
         const rawText = reader.result;
         if (!rawText) { speak.text('文件内容为空'); return; }
 
-        const textNoNewline = rawText.replace(/[\r\n]/g, ' ');
-        const isOneHotFile = /\b[01]{6}\b/.test(textNoNewline);
-        const hasNewlines = /[\r\n]/.test(rawText);
-
-        if (isOneHotFile) {
-            let text = rawText;
-            if (hasNewlines) {
-                text = text.replace(/\r\n/g, '\n');
-                if (SETTINGS.mergeNewlines) text = text.replace(/(\s*\n)+\s*/g, '\n');
-                text = text.replace(/\n/g, ' 000000 000000 ');
-                text = '000000 000000 ' + text;
-            }
-            const oneHotList = text.match(/\b[01]{6}\b/g);
-            if (oneHotList && oneHotList.length > 0) {
-                clearOutput();
-                await _batchInputOneHot(oneHotList);
-                speak.text(`已加载${oneHotList.length}个盲文字符`);
-            }
+        // 盲文 oneHot 文件：按转换规则直接转成拼音/字符
+        const oneHotList = extractBrailleOneHotList(rawText);
+        if (oneHotList && oneHotList.length > 0) {
+            clearOutput();
+            await _batchInputOneHot(oneHotList);
+            speak.text(`已加载${oneHotList.length}个盲文字符`);
             return;
         }
 
         if (!rawText.trim()) { speak.text('文件内容为空'); return; }
 
+        const hasNewlines = /[\r\n]/.test(rawText);
         if (hasNewlines) {
             let text = rawText.replace(/\r\n/g, '\n');
             if (SETTINGS.mergeNewlines) text = text.replace(/(\s*\n)+\s*/g, '\n');
@@ -134,9 +123,47 @@ function saveWithDownload(content) {
     URL.revokeObjectURL(url);
 }
 
+/**
+ * @description: 将输出区盲文内容复制到剪贴板（优先 Clipboard API，降级为 execCommand）
+ * @return {void}
+ */
+export async function handleCopyContent() {
+    if (outputItems.length === 0) {
+        speak.alert('当前没有可复制的内容');
+        return;
+    }
+
+    const brailleText = outputItems.map(item => item.braille).join('');
+
+    try {
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(brailleText);
+        } else {
+            copyWithExecCommand(brailleText);
+        }
+        speak.text('已复制' + outputItems.length + '个盲文字符');
+    } catch (e) {
+        console.error('复制失败:', e);
+        speak.alert('复制失败，请重试');
+    }
+}
+
+function copyWithExecCommand(content) {
+    const textarea = document.createElement('textarea');
+    textarea.value = content;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+}
+
 export function initFileOperations() {
     document.getElementById('btnOpenFile').addEventListener('click', handleOpenFile);
     document.getElementById('btnSaveContent').addEventListener('click', handleSaveContent);
+    document.getElementById('btnCopyContent').addEventListener('click', handleCopyContent);
 
     document.addEventListener('dragover', (e) => {
         e.preventDefault();

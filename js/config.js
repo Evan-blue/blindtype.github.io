@@ -63,6 +63,7 @@ export const CONFIGURABLE_ACTIONS = {
 export const KEY_COMBOS = [
     { ctrl: true, key: 'a', action: 'selectAll' },
     { ctrl: true, key: 's', action: 'save' },
+    { ctrl: true, key: 'c', action: 'copy' },
     { ctrl: true, key: 'z', action: 'undo' },
     { ctrl: true, key: 'y', action: 'redo' },
     { ctrl: true, shift: true, key: 'Z', action: 'redo' },
@@ -105,6 +106,7 @@ export const DEFAULT_SETTINGS = {
     omitToneMapping: true,
     showVisualizer: true,
     dotFeedbackMode: 'beep',
+    speechIndicatorMode: 'text',
     textConversionDisplay: 'pinyin',
 };
 
